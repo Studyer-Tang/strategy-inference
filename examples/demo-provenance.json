@@ -1,0 +1,12 @@
+{
+  "kind": "synthetic; not a historical trading backtest",
+  "n_obs": 256,
+  "n_strategies": 6,
+  "process": "gaussian_ar",
+  "phi": 0.4,
+  "cross_corr": 0.3,
+  "sigma": 0.01,
+  "mean": 0,
+  "seed": 17,
+  "search_complete": true
+}
