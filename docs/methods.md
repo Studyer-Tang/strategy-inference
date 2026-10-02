@@ -1,6 +1,6 @@
 # 时间依赖与策略筛选的显著性检验
 
-本文说明 `strategy-inference` 第一版的统计对象、算法与实验设计。问题是：在同一段历史上比较多个候选策略之后，观察到的正收益是否仍有足够的统计证据？
+本文说明 `strategy-inference` 的统计对象、算法与实验设计。问题是：在同一段历史上比较多个候选策略之后，观察到的正收益是否仍有足够的统计证据？第 1–10 节保留 v0.1 固定尺度基线，第 11 节说明 v0.2 增加的重新学生化方法、方差诊断和独立评价协议。
 
 第一版采用均值检验、Bartlett HAC 标准误和 stationary bootstrap。实现选择固定原样本尺度的最大统计量检验，便于核对每一步计算。它没有实现 Hansen 的 SPA，也没有提出新的统计定理。本文的公式描述实际算法；渐近论证说明算法适用的条件，有限样本表现由实验报告。
 
@@ -406,10 +406,10 @@ $$
 
 ```bash
 python -m pip install '.[figures]'
-strategy-inference reproduce --profile full --output results/full --seed 20261002
+strategy-inference reproduce --study baseline --profile full --output results/full --seed 20261002
 ```
 
-`quick` 只检查流程，使用 $T=256$、$R=40$、$B=99$；当前 `full` 使用 $T=512$、$R=2000$、$B=1999$。具体版本以 [protocol.json](../experiments/protocol.json) 和该次运行保存的 `run-metadata.json` 为准。主实验的 $p$ 值分辨率为 $1/2000=0.0005$；在条件尾概率约 0.05 时，内层计数比例的标准差约为 0.0049。分辨率细不等于尾概率估计也同样精确。
+v0.1 的 `quick` 只检查流程，使用 $T=256$、$R=40$、$B=99$；其 `full` 使用 $T=512$、$R=2000$、$B=1999$。具体版本以 [protocol.json](../experiments/protocol.json) 和该次运行保存的 `run-metadata.json` 为准。基线主实验的 $p$ 值分辨率为 $1/2000=0.0005$；在条件尾概率约 0.05 时，内层计数比例的标准差约为 0.0049。分辨率细不等于尾概率估计也同样精确。v0.2 的独立协议使用另一组抽样参数，见第 11.6 节。
 
 | 文件 | 内容 |
 | --- | --- |
@@ -422,7 +422,7 @@ strategy-inference reproduce --profile full --output results/full --seed 2026100
 | `block-length-sensitivity.csv` | 事前固定的块长敏感性附表 |
 | `run-metadata.json` | 已解析配置、协议、随机种子、环境版本和文件校验信息 |
 
-块长敏感性是单独的实验流，当前完整配置使用 $R=200$、$B=399$，块长为 $\{4,8,16,32\}$。它不用于反过来挑选主实验的默认块长。其较宽的不确定性需要在解读附表时保留。
+v0.1 的块长敏感性是单独的实验流，完整配置使用 $R=200$、$B=399$，块长为 $\{4,8,16,32\}$。它不用于反过来挑选主实验的默认块长。其较宽的不确定性需要在解读附表时保留。
 
 随机流按根种子与 `(figure, scenario, replicate, purpose)` 的逻辑地址建立。模拟与重抽样使用不同 purpose，增加外层重复数不会改动已有重复的随机地址。嵌套候选集与局部均值平移共享抽样，是事前约定的配对比较；不同实验场景则用各自的流。
 
@@ -436,7 +436,7 @@ $$
 
 实现先按 stationary-bootstrap 规则生成索引，再生成行计数，最后用计数矩阵乘中心化数据。这样保留了块索引所产生的抽样分布，同时不分配 $B\times T\times K$ 的收益张量。计数没有按独立 multinomial 抽取；否则会变成另一个算法。
 
-以批大小 $C$ 计算时，索引和计数的工作内存为 $O(CT)$，另有 $O(TK)$ 输入和 $O(BK)$ 输出。矩阵乘法的总计算阶数仍为 $O(BTK)$，HAC 计算为 $O(LTK)$。批处理减少峰值内存，不会从复杂度上消除策略数或重抽样次数的影响。
+以批大小 $C$ 计算时，索引和计数的工作内存为 $O(CT)$，另有 $O(TK)$ 输入和 $O(BK)$ 输出。矩阵乘法的总计算阶数仍为 $O(BTK)$，HAC 计算为 $O((L+1)TK)$。批处理减少峰值内存，不会从复杂度上消除策略数或重抽样次数的影响。
 
 ### 9.3 代码接口与统计对象
 
@@ -464,3 +464,249 @@ $$
 如果结果不显著，应写“当前数据不足以拒绝全族零假设”，而不是“已经证明所有策略无效”。如果单列 HAC 显著、全族检验不显著，应说明搜索调整改变了证据强度。拒绝全族零假设以后，仍需检验策略身份、样本外表现和经济可实施性。
 
 本文的方法依据与软件资料在 [references.bib](references.bib) 中列出。论文承担原方法的学术来源；本项目承担有限范围内的实现、可核对说明和实验记录。
+
+## 11. v0.2：重新学生化与独立评价
+
+### 11.1 为什么增加另一种尺度计算
+
+v0.1 完整模拟表明，在 $T=512$、名义水平 5% 下，固定尺度方法仍有明显误报膨胀：正态 AR(1) 的 $\phi=0.8$、$K=1$ 格点为 9.70%；$\phi=0.5$、$K=50$ 格点为 10.85%。这些结果保留为开发证据，不能在同一批样本上反复改动后，再把更好看的结果称为独立验证。
+
+v0.2 增加 `studentization="resampled"`，每轮重抽样重新估计 HAC 尺度。`studentization="fixed"` 仍为默认值，保持既有调用的含义。两个选项不是对原始数据作不同筛选，而是构造不同的重抽样统计量；它们使用相同的原样本 HAC 统计量、候选胜出规则、中心化方式和共同时间索引。
+
+只有一列时，固定尺度比较可以写成
+
+$$
+\frac{\bar{\tilde d}^{*(b)}}{\widehat{\operatorname{se}}}
+\geq\frac{\bar d}{\widehat{\operatorname{se}}}
+\quad\Longleftrightarrow\quad
+\bar{\tilde d}^{*(b)}\geq\bar d.
+$$
+
+因此，对固定尺度单列检验，仅改变原样本 HAC 带宽不会改变 bootstrap $p$ 值。增加 $B$ 也只会减小当前条件重抽样尾概率的计算误差。要改变这一路线的有限样本行为，需要改变重抽样分布或统计量本身。
+
+### 11.2 逐轮 HAC 学生化
+
+沿用第 5 节的中心化数据 $\tilde d_{tj}=d_{tj}-\bar d_j$。第 $b$ 轮共享时间索引形成
+
+$$
+y^{*(b)}_{tj}=\tilde d_{I_t^{(b)},j},\qquad
+\bar y^{*(b)}_j=\frac1T\sum_t y^{*(b)}_{tj}.
+$$
+
+计算该轮尺度时，再围绕该轮均值中心化：
+
+$$
+e^{*(b)}_{tj}=y^{*(b)}_{tj}-\bar y^{*(b)}_j,\qquad
+\hat\gamma^{*(b)}_j(h)=\frac1T\sum_{t=h+1}^T
+e^{*(b)}_{tj}e^{*(b)}_{t-h,j}.
+$$
+
+使用与原样本相同的滞后数 $L$ 和 Bartlett 权重，得到
+
+$$
+\hat\Omega^{*(b)}_{jj}
+=\hat\gamma^{*(b)}_j(0)
++2\sum_{h=1}^L\left(1-\frac h{L+1}\right)
+\hat\gamma^{*(b)}_j(h),\qquad
+Z^{*(b),\mathrm{resampled}}_j
+=\frac{\sqrt T\,\bar y^{*(b)}_j}{\sqrt{\hat\Omega^{*(b)}_{jj}}}.
+$$
+
+原样本仍采用 $z_j^{\mathrm{HAC}}=\sqrt T\,\bar d_j/\sqrt{\hat\Omega_{jj}}$。在每轮重抽样中取 $\max_j Z^{*(b),\mathrm{resampled}}_j$，再代入第 5.3 节的加一尾概率。列级单步调整也使用该轮的全族最大值。不能先选原胜出列，再只重抽那一列；筛选调整需要保留完整候选族。
+
+该步骤将原样本尺度估计误差的类似变化纳入重抽样，比固定分母多模拟了一层随机性。它是否在给定样本量和数据过程中改善误报率，需要由独立评价回答。学生化并没有移除块拼接对依赖的近似、短带宽偏差或重尾影响。
+
+### 11.3 实现、区间与计算成本
+
+`stationary_bootstrap_statistics` 返回 $B\times K$ 的逐轮 HAC 统计量。实现先生成一批共同索引，再分列批次处理 $C\times T\times Q$ 的样本数组，其中 $C$ 为重抽样批大小，$Q$ 为列批大小。每轮均值在第二次中心化前保存，HAC 自协方差在第二次中心化后计算。列批次不产生新的索引，各列仍共享同一份抽样。
+
+行计数矩阵足以计算均值，却没有记录观测在伪时间序列中的邻接关系，所以不能直接用第 9.2 节的均值加速步骤计算逐轮 HAC。新实现的工作内存为 $O(CTQ+CT)$，另有输入与输出；总计算阶数为 $O(BT(L+1)K)$。以有界的批大小换取较小峰值内存，而不是分配完整收益张量。
+
+若某轮 HAC 方差为零、负数或非有限值，函数报错。它不静默删去该轮、不重新抽取直至成功，也不加任意正数继续计算；这些处理会改动目标重抽样分布。模拟中出现此类失败时也应保留诊断，不能从误报率分母中悄悄排除。
+
+实现使用双精度浮点数。有限输入并不意味着其平方、FFT 功率或方差除以 $T$ 后仍处于可表示范围；极端计价尺度可能溢出或下溢。无效标准误、统计量及条件方差应明确报错，不能继续输出貌似有效的 $p$ 值。数值范围校验不改变正常尺度下的统计构造，也不提供任意精度计算。
+
+双侧同时区间使用 $\max_j|Z^{*(b),\mathrm{resampled}}_j|$ 的经验分位数，再乘回**原样本**标准误：
+
+$$
+\bar d_j\ \pm\ c^{\mathrm{resampled}}_{1-\alpha}
+\widehat{\operatorname{se}}_j.
+$$
+
+这仍是 max-absolute 的对称同时带，不是单列等尾 bootstrap-$t$ 区间。单侧下界使用单侧最大值分位数。加一 $p$ 值、`higher` 分位数和双侧／单侧区别仍适用第 5.4 节的说明，不新增有限 $B$ 的严格对偶性保证。
+
+实际调用为：
+
+```python
+from strategy_inference import audit_returns, stationary_mean_variance
+
+# excess_returns 为已经定义好的 T x K 差分矩阵。
+result = audit_returns(
+    excess_returns,
+    studentization="resampled",
+    n_resamples=1999,
+    seed=17,
+    search_complete=None,
+)
+conditional_variance = stationary_mean_variance(
+    excess_returns, block_length=result.block_length
+)
+```
+
+CSV 审计入口支持 `--studentization resampled`。结果对象保存 `studentization`，JSON 使用 `schema_version=2`，记录方法选项和内层条件尾概率区间。`stationary_mean_variance` 是单独的诊断接口，不会自动把其返回值替换为审计标准误。
+
+### 11.4 stationary-bootstrap 均值方差的精确诊断
+
+令 $a=1-1/\ell$，定义中心化原数据的循环自协方差
+
+$$
+\hat\gamma^{\mathrm{circ}}_j(h)
+=\frac1T\sum_{t=1}^T
+\tilde d_{tj}\tilde d_{1+((t+h-1)\bmod T),j}.
+$$
+
+在当前数据固定时，如果相隔 $h$ 步的索引之间没有重启，其概率为 $a^h$，条件协方差为循环自协方差；一旦重启，中心化行的条件期望为零。再对样本均值中的观测对计数，得到
+
+$$
+V^{\mathrm{SB}}_j
+=\operatorname{Var}^*(\bar y^*_j\mid D)
+=\frac1T\left[\hat\gamma^{\mathrm{circ}}_j(0)
++2\sum_{h=1}^{T-1}\left(1-\frac hT\right)
+a^h\hat\gamma^{\mathrm{circ}}_j(h)\right].
+$$
+
+`stationary_mean_variance` 用 FFT 计算循环自协方差，返回各列 $V^{\mathrm{SB}}_j$，而非 $T V^{\mathrm{SB}}_j$。精确一词针对当前数据和已约定 stationary-bootstrap 索引法的条件方差；浮点计算仍有数值误差。该量不是未知总体均值方差的精确估计，也不是 Monte Carlo 置信区间。
+
+使用第 3.2 节的非循环样本自协方差，等价表达为
+
+$$
+T V^{\mathrm{SB}}_j
+=\hat\gamma_j(0)+2\sum_{h=1}^{T-1}
+\left[\left(1-\frac hT\right)a^h
++\frac hT a^{T-h}\right]\hat\gamma_j(h).
+$$
+
+这是 [Nordman (2009)](https://arxiv.org/pdf/0903.0474) 式 (3) 的形式。$\ell=1$ 时返回 $\hat\gamma_j(0)/T$，与独立经验重抽样的均值方差一致。块长变大并不保证方差单调增大：有限循环样本与长块还会产生边界效应。
+
+适当平稳、协方差和累积量可和及块长条件下，文献给出 leading bias
+
+$$
+\mathbb E[T V^{\mathrm{SB}}_j]-T\operatorname{Var}(\bar d_j)
+=-\frac{G_j}{\ell}+o(1/\ell),\qquad
+G_j=\sum_{h\in\mathbb Z}|h|\gamma_j(h).
+$$
+
+对正自相关 AR(1)，$G_j>0$，这能解释块重启使均值方差估计偏低的一个机制。它是渐近展开，不能直接当作有限 $T$ 的精确校正系数。
+
+独立评价保存两个主要诊断比值：原样本 $\hat\Omega_{jj}/[T\operatorname{Var}(\bar d_j)]$ 与 $V^{\mathrm{SB}}_j/\operatorname{Var}(\bar d_j)$。总体方差在模拟中来自已知 DGP；真实数据中没有该真值。前者检查 HAC 尺度，后者检查均值重抽样分布。低方差比值可以解释误报方向，却不直接决定该样本的正确 $p$ 值，更不能据此临时缩放临界值。
+
+### 11.5 已知协方差的模型参考
+
+正态 AR(1) 场景在精确平稳初始化、相同 $\phi$、相同 $\sigma$ 和共同创新参数 $\rho$ 下，样本均值有已知联合正态分布。其单列有限样本方差为
+
+$$
+v_T=\frac{\sigma^2}T
+\left[1+2\sum_{h=1}^{T-1}\left(1-\frac hT\right)\phi^h\right],
+$$
+
+列间协方差为 $\rho v_T$。因此
+
+$$
+Z^{\mathrm{oracle}}_j=\frac{\bar d_j}{\sqrt{v_T}},\qquad
+(Z^{\mathrm{oracle}}_1,\ldots,Z^{\mathrm{oracle}}_K)
+\sim N\big(0,(1-\rho)I+\rho\mathbf1\mathbf1^\top\big)
+$$
+
+在零均值边界下成立。对于 $0<\rho<1$，令 $U,\epsilon_1,\ldots,\epsilon_K$ 独立标准正态，并写 $Z_j=\sqrt\rho U+\sqrt{1-\rho}\epsilon_j$，则最大值分布为
+
+$$
+F_{K,\rho}(c)
+=\int_{-\infty}^{\infty}
+\Phi\!\left(\frac{c-\sqrt\rho\,u}{\sqrt{1-\rho}}\right)^K
+\varphi(u)\,du.
+$$
+
+当 $\rho=0$ 时为 $\Phi(c)^K$；$\rho=1$ 或 $K=1$ 时为 $\Phi(c)$。代码通过一维数值积分求值，用确定性求根得到临界值。参考检验使用 $\max_j Z_j^{\mathrm{oracle}}$；其尾部和积分有数值容差，参考正态模型本身的分布无需渐近近似。
+
+数值计算的支持域与参考分布的数学定义需要区分。对一般 $K>1$、$0<\rho<1$，`equicorrelated_max_quantile(p, ...)` 只接受 $p\in[10^{-12},1-10^{-12}]$，超出时明确报错。$K=1$ 或 $\rho\in\{0,1\}$ 使用解析分支，没有这一额外区间限制，但仍要求 $0<p<1$。极端概率下，未缩放的数值积分可能漏掉很远的密度峰，不能以一个看似有限的求根结果宣称支持任意尾部。
+
+CDF 积分设置绝对误差容限 $10^{-12}$；容限不是严格的数学误差界，也不保证极小概率的相对精度。上尾函数直接积分条件生存概率，避免仅由 $1-F(c)$ 相减造成的损失，仍不承诺任意小尾部的相对精度。本文名义 5% 的模型参考使用 $p=0.95$，属于正常支持域；新增范围校验没有改动该计算路径。
+
+`gaussian_ar_mean_variance`、`equicorrelated_max_cdf`、`equicorrelated_max_tail` 和 `equicorrelated_max_quantile` 位于 `strategy_inference.reference`。它们接收模拟生成参数，没有从策略收益估计这些参数。**不能把已知协方差最大值的临界值套到随机 HAC 分母的最大统计量上。** 真实数据没有已知 $\phi,\sigma,\rho$，重尾和 GARCH 场景也不具有这里的有限样本正态参考分布。
+
+该参考帮助核对 Monte Carlo 流程和已有模型下的基准拒绝率。它不是审计 API 的隐藏输入，更不用于自动选取表现最好的方法。
+
+### 11.6 独立评价协议和工程标准
+
+新增实验以 [calibration-protocol.json](../experiments/calibration-protocol.json) 为准，保留旧基线。pilot 根种子为 `20261003`，正式评价使用未用于 pilot 的 `20261004`。主实验固定 $T=512$、$R=2000$、$B=999$，同一份数据上比较 `fixed` 与 `resampled`；两者共享索引和原样本统计量。HAC 仍采用 $L(T)$ 规则，共同期望块长仍为 $\lceil2T^{1/3}\rceil$。本轮不同时改动带宽或加入自动块长。
+
+主图的零均值格点包括时间依赖 5 个、候选规模 5 个和过程比较 3 个，共 13 个。协议还固定 6 个 holdout 设置，每个使用 $R=1000$：
+
+| 过程 | $T$ | $K$ | $\phi$ | $\rho$ |
+| --- | ---: | ---: | ---: | ---: |
+| 正态 AR | 256 | 10 | 0.7 | 0 |
+| 正态 AR | 1024 | 10 | 0.7 | 0.8 |
+| 正态 AR | 2048 | 10 | 0.9 | 0.35 |
+| 重尾成分 AR | 1024 | 10 | 0.7 | 0 |
+| 重尾成分 GARCH | 1024 | 10 | 0 | 0.8 |
+| 正态 AR | 512 | 10 | -0.4 | 0.35 |
+
+holdout 在正式评价前规定，覆盖不同长度、创新相关性、较强持久性和负自相关。它不是运行后选出的好看格点，也不意味着覆盖所有金融过程。不同格点用明确的随机地址；一个格点内的两个 bootstrap 方法保持配对。
+
+另有两个预设敏感性场景：$(\phi,K)=(0.8,1)$ 与 $(0.5,50)$，共同默认块长乘数为 $\{0.5,1,2,4\}$，各使用 $R=1000$。敏感性是诊断附表，不用于挑出一个乘数替换主实验默认值。
+
+工程验收只评价 `resampled` 方法在 19 个主实验与 holdout 零均值格点的误报率，不包括正均值功效格点和块长敏感性。每个格点的拒绝次数为 $s_i$、重复次数为 $R_i$，设 $\eta=0.05/19$，计算单侧 Clopper–Pearson 上界
+
+$$
+U_i=
+\begin{cases}
+\operatorname{Beta}^{-1}(1-\eta;\ s_i+1,R_i-s_i), & s_i<R_i,\\
+1, & s_i=R_i.
+\end{cases}
+$$
+
+该表达来自二项尾概率反演，[Clopper–Pearson (1934)](https://doi.org/10.1093/biomet/26.4.404)是其原始来源。Bonferroni 分配使这 19 个上界的联合 Monte Carlo 置信水平至少为 95%，不要求格点之间相互独立；每个格点内部仍需独立重复、固定 $R_i$。
+
+预先约定的通过条件是**所有 $U_i\leq0.07$**。7% 是本项目为名义 5% 检验规定的有限基准容忍上限，不是把名义水平改为 7%，也不是文献给出的普遍校准保证。`quick` 只验证流程，永不据此宣布通过。普通图中的 Wilson 区间仍是点态展示，不能代替这组验收上界。
+
+如果某格点失败，按协议保存失败和全部参数，不根据正式评价结果再次改规则后继续称同一轮独立验证。如果以后修改方法，应保留此轮记录并另立协议和独立数据流。通过也只提供对这一组有限模型和样本长度的证据；不通过仍可公开为有清楚失败边界的研究实现。
+
+功效与误报率并列报告，不能靠牺牲所有检出能力换取看似合格的误报率。局部均值平移对原样本和重抽样 HAC 的中心化残差都不产生影响，所以同一份噪声和重抽样可复用到不同 $\delta$；原样本的第一列统计量和全族最大值随信号更新。该配对下，拒绝事件对 $\delta$ 单调，可作为实现核对。
+
+独立确认的复现入口与旧基线分开：
+
+```bash
+strategy-inference reproduce --study calibration --profile full --output results/calibration/full
+```
+
+[完整运行记录](../results/calibration/full/run-metadata.json)已保存软件执行成功的 `status=complete`，以及统计验收未过的 `assessment.status=failed`：19 个格点中 1 个上界不高于 7%，18 个未过。原运行使用冻结提交 `579697d`，没有因后续增加输入校验、安装资源查找或数值域限制而改写其源码哈希；版本差异和 quick 对照范围见[结果解读](results.md)。这种未通过记录是有限模型证据，不是“真实误报率已被证明超过 7%”的一般断言。
+
+### 11.7 为什么暂不启用自动块长
+
+[Politis–White (2004)](https://doi.org/10.1081/ETC-120028836)及 [Patton–Politis–White (2009)](https://doi.org/10.1080/07474930802459016)提出、修正了数据驱动块长选择。其 stationary-bootstrap 形式可写成
+
+$$
+\hat\ell_j
+=\left(\frac{T\hat G_j^2}{\hat\Omega_j^2}\right)^{1/3},
+$$
+
+其中 $\hat G_j$ 与 $\hat\Omega_j$ 由 flat-top 自协方差加权估计；具体截断规则、常数和边界需参照完整算法。[arch 的官方说明](https://arch.readthedocs.io/en/stable/bootstrap/generated/arch.bootstrap.optimal_block_length.html)给出了这些约定，并明确二维输入逐列计算。
+
+该方法针对方差估计 MSE 的块长选择，不是最大统计量检验误报率的直接优化。单位边际方差 AR(1) 的对应理论量为
+
+$$
+\ell_{\mathrm{SB}}^{\mathrm{MSE}}
+=\left[T\left(\frac{2\phi}{1-\phi^2}\right)^2\right]^{1/3}.
+$$
+
+在 $T=512$ 时，$\phi=0.5$ 约为 9.69，$\phi=0.8$ 约为 21.63；它不总比当前默认 16 更大，不能预先认定能解决误报膨胀。各列建议块长还必须聚合为一个共同块长，才可保留全族共享索引；这种聚合需要独立说明与评价。GARCH 收益没有线性自相关，也不意味着涉及平方收益的尺度统计量没有依赖。
+
+因此，v0.2 暂时只改变学生化方式，使有限样本差异能够解释。自动块长可以作为后续独立扩展，而不能根据本轮误报结果临时启用。类似地，[Newey–West (1994)](https://doi.org/10.2307/2297912)的自动 HAC 滞后选择也以协方差估计 MSE 为目标，其原文同时报告有限样本 size distortion；自动选择不是校准证书。
+
+### 11.8 关于理论精度的表述
+
+原尺度和重抽样尺度均一致、联合均值 bootstrap 有效、最大值分布在临界值处连续时，重新学生化可由联合收敛与 Slutsky 定理得到一阶渐近依据。v0.2 仍沿用固定有限候选族的范围，没有推导 $K$ 快速增长时的有效性。
+
+[Götze–Künsch (1996)](https://doi.org/10.1214/aos/1069362303)的高阶结果要求合适的方差估计和相应正则条件；[Politis (2003)](https://math.ucsd.edu/~politis/StatSci03.pdf)也强调尺度估计方式的重要性。[arch 的学生化说明](https://arch.readthedocs.io/en/stable/bootstrap/confidence-intervals.html)使用“在一些条件下可能改善精度”的措辞，并不把它作为所有样本上的保证。
+
+本项目仅重算 Bartlett HAC，没有证明其有限样本精确性或二阶正确性，也没有验证重尾模拟满足这些高阶结果的全部矩和依赖条件。论文中的学生化研究为构造提供依据；正式评价提供有限模型下的实验记录。两者应分别陈述，不能把采用一个统计术语写成已经获得相应定理。

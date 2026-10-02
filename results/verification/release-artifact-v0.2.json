@@ -1,0 +1,30 @@
+{
+  "wheel": "strategy_inference-0.2.0-py3-none-any.whl",
+  "wheel_sha256": "58599bf3d9bb6a9df7024ac6360dea66701309d51080489bac0de59311e86b6c",
+  "status": "passed",
+  "checked_source_files": [
+    "strategy_inference/__init__.py",
+    "strategy_inference/__main__.py",
+    "strategy_inference/_validation.py",
+    "strategy_inference/audit.py",
+    "strategy_inference/bootstrap.py",
+    "strategy_inference/calibration.py",
+    "strategy_inference/calibration_plotting.py",
+    "strategy_inference/calibration_report.py",
+    "strategy_inference/cli.py",
+    "strategy_inference/experiments.py",
+    "strategy_inference/inference.py",
+    "strategy_inference/io.py",
+    "strategy_inference/plotting.py",
+    "strategy_inference/protocols/calibration-protocol.json",
+    "strategy_inference/protocols/protocol.json",
+    "strategy_inference/reference.py",
+    "strategy_inference/report.py",
+    "strategy_inference/simulations.py"
+  ],
+  "sdist": {
+    "filename": "strategy_inference-0.2.0.tar.gz",
+    "sha256": "208ba30ad8078e5755b1b606fa14f5b2374bf2e22a5ace0590afab3b7c0210ef"
+  },
+  "interpretation": "Final release artifacts were rebuilt after documentation completion. All packaged Python modules and protocol resources equal the final repository source."
+}

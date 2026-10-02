@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite the software version and frozen experiment protocol used in your study."
+type: software
+title: "Strategy inference: mean-return tests under time dependence and strategy selection"
+authors:
+  - name: "Studyer-Tang"
+    website: "https://github.com/Studyer-Tang"
+version: 0.2.0
+date-released: 2026-10-02
+url: "https://github.com/Studyer-Tang/strategy-inference"
+license: BSD-3-Clause

@@ -77,8 +77,12 @@ def infer_mean(
         distribution = norm
     else:
         raise ValueError("method must be 'iid' or 'hac'.")
+    if not np.isfinite(standard_error).all() or np.any(standard_error <= 0):
+        raise ValueError("The standard error is outside the positive finite float range.")
     mean = data.mean(axis=0)
     statistic = mean / standard_error
+    if not np.isfinite(statistic).all():
+        raise ValueError("The mean statistic is outside the finite float range.")
     radius = distribution.ppf((1 + confidence) / 2) * standard_error
     return MeanInference(
         sample_size=n_obs,

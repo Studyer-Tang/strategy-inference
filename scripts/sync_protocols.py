@@ -1,0 +1,25 @@
+"""Keep the installable protocol resources identical to the research originals."""
+
+import argparse
+from pathlib import Path
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1]
+    target = root / "src" / "strategy_inference" / "protocols"
+    for source in sorted((root / "experiments").glob("*.json")):
+        destination = target / source.name
+        if args.check:
+            if not destination.is_file() or destination.read_bytes() != source.read_bytes():
+                raise SystemExit(f"Protocol resource differs: {source.name}")
+        else:
+            target.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(source.read_bytes())
+    print("Protocol resources match." if args.check else "Protocol resources synchronized.")
+
+
+if __name__ == "__main__":
+    main()

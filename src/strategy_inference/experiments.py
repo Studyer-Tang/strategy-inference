@@ -50,6 +50,7 @@ CSV_COLUMNS = (
 def _load_protocol() -> tuple[dict[str, Any], bytes, Path]:
     candidates = (
         Path(__file__).resolve().parents[2] / "experiments" / "protocol.json",
+        Path(__file__).resolve().parent / "protocols" / "protocol.json",
         Path(sys.prefix) / "share" / "strategy-inference" / "protocol.json",
     )
     for path in candidates:

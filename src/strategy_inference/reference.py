@@ -114,7 +114,9 @@ def equicorrelated_max_cdf(value: float, n_strategies: int, cross_corr: float) -
 
     For 0 < rho < 1, Z_j = sqrt(rho) U + sqrt(1-rho) epsilon_j and the CDF is
     the one-dimensional integral E[Phi((value-sqrt(rho)U)/sqrt(1-rho))**K].
-    Numerical quadrature is used; this is a reference law, not an estimated test.
+    Numerical quadrature has an absolute tolerance of 1e-12. Tiny probabilities
+    do not have guaranteed relative accuracy. This is a model reference, not
+    an estimated test.
     """
     value = _finite_real(value, "value")
     n_strategies, cross_corr = _maximum_parameters(n_strategies, cross_corr)
@@ -122,7 +124,11 @@ def equicorrelated_max_cdf(value: float, n_strategies: int, cross_corr: float) -
 
 
 def equicorrelated_max_tail(value: float, n_strategies: int, cross_corr: float) -> float:
-    """One-sided Gaussian maximum tail, computed without subtracting a CDF from 1."""
+    """One-sided Gaussian maximum tail, without subtracting a CDF from 1.
+
+    Quadrature is intended for ordinary test levels; relative accuracy in
+    extremely small tails is not guaranteed.
+    """
     value = _finite_real(value, "value")
     n_strategies, cross_corr = _maximum_parameters(n_strategies, cross_corr)
     union_bound = min(1.0, n_strategies * norm.sf(value))
@@ -155,15 +161,20 @@ def _maximum_quantile(probability: float, n_strategies: int, cross_corr: float) 
     return float(brentq(residual, lower, upper, xtol=1e-11, rtol=1e-12))
 
 
-def equicorrelated_max_quantile(
-    probability: float, n_strategies: int, cross_corr: float
-) -> float:
+def equicorrelated_max_quantile(probability: float, n_strategies: int, cross_corr: float) -> float:
     """Quantile of the known-correlation Gaussian maximum; inputs are validated.
 
     At level alpha, use probability=1-alpha. Repeated simulation settings
     reuse the cached deterministic critical value. This function does not
     estimate covariance or choose an inferential method from observed returns.
+    The numerical common-factor case supports probabilities in [1e-12, 1-1e-12].
+    More extreme requests are rejected because unscaled quadrature can miss a
+    distant density peak. Analytic K=1 and rho=0/1 cases have no such restriction.
     """
     probability = validate_probability(probability, "probability")
     n_strategies, cross_corr = _maximum_parameters(n_strategies, cross_corr)
+    if n_strategies > 1 and 0 < cross_corr < 1 and not 1e-12 <= probability <= 1 - 1e-12:
+        raise ValueError(
+            "Numerical Gaussian maximum quantiles require probability in [1e-12, 1-1e-12]."
+        )
     return _maximum_quantile(probability, n_strategies, cross_corr)

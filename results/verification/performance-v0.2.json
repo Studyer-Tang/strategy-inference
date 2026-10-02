@@ -1,0 +1,20 @@
+{
+  "n_obs": 512,
+  "n_strategies": 50,
+  "n_bootstrap": 1999,
+  "lags": 5,
+  "block_length": 16,
+  "seed": 17,
+  "records": {
+    "fixed_means": {
+      "median_seconds": 0.01621045800857246,
+      "traced_peak_mib": 5.528114318847656
+    },
+    "resampled_hac": {
+      "median_seconds": 0.39936233300250024,
+      "traced_peak_mib": 3.0981674194335938
+    }
+  },
+  "direct_tensor_mib": 390.4296875,
+  "note": "Median of three calls while the full simulation was running. Tracemalloc peak is not total process RSS. Default batches: means128; studentized32 draws and8 columns."
+}

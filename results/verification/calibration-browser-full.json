@@ -1,0 +1,109 @@
+{
+  "url": "http://127.0.0.1:8769/docs/index.html",
+  "checked_at": "2026-10-02T12:19:30.347Z",
+  "measurements": [
+    {
+      "label": "desktop",
+      "width": 1440,
+      "bodyWidth": 1440,
+      "viewportWidth": 1440,
+      "images": [
+        {
+          "name": "assets/figure-1-calibration-dependence.png",
+          "loaded": true
+        },
+        {
+          "name": "assets/figure-2-calibration-selection.png",
+          "loaded": true
+        },
+        {
+          "name": "assets/figure-3-calibration-processes.png",
+          "loaded": true
+        }
+      ],
+      "title": "时间依赖与策略筛选 · 独立校准评价"
+    },
+    {
+      "localLinks": [
+        {
+          "path": "/docs/assets/figure-1-calibration-dependence.pdf",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-1-calibration-dependence.svg",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-1-dependence.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-2-calibration-selection.pdf",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-2-calibration-selection.svg",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-2-selection.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-3-calibration-processes.pdf",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-3-calibration-processes.svg",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-3-size.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/figure-3-power.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/run-metadata.json",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/holdout.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/block-sensitivity.csv",
+          "status": 200
+        },
+        {
+          "path": "/docs/assets/variance-diagnostics.csv",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "label": "mobile",
+      "width": 390,
+      "bodyWidth": 390,
+      "viewportWidth": 390,
+      "images": [
+        {
+          "name": "assets/figure-1-calibration-dependence.png",
+          "loaded": true
+        },
+        {
+          "name": "assets/figure-2-calibration-selection.png",
+          "loaded": true
+        },
+        {
+          "name": "assets/figure-3-calibration-processes.png",
+          "loaded": true
+        }
+      ],
+      "title": "时间依赖与策略筛选 · 独立校准评价"
+    }
+  ],
+  "errors": []
+}

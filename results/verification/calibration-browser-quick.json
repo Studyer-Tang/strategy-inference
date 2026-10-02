@@ -1,0 +1,194 @@
+[
+  {
+    "name": "desktop",
+    "width": 1440,
+    "checks": {
+      "images": [
+        {
+          "src": "figure-1-calibration-dependence.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-calibration-selection.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-calibration-processes.png",
+          "loaded": true
+        }
+      ],
+      "bodyFits": true,
+      "links": [
+        "figure-1-calibration-dependence.pdf",
+        "figure-1-calibration-dependence.svg",
+        "figure-1-dependence.csv",
+        "figure-2-calibration-selection.pdf",
+        "figure-2-calibration-selection.svg",
+        "figure-2-selection.csv",
+        "figure-3-calibration-processes.pdf",
+        "figure-3-calibration-processes.svg",
+        "figure-3-size.csv",
+        "figure-3-power.csv",
+        "run-metadata.json",
+        "holdout.csv",
+        "block-sensitivity.csv",
+        "variance-diagnostics.csv"
+      ],
+      "linkStatus": [
+        {
+          "link": "figure-1-calibration-dependence.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-1-calibration-dependence.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-1-dependence.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-2-calibration-selection.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-2-calibration-selection.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-2-selection.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-3-calibration-processes.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-3-calibration-processes.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-3-size.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-3-power.csv",
+          "status": 200
+        },
+        {
+          "link": "run-metadata.json",
+          "status": 200
+        },
+        {
+          "link": "holdout.csv",
+          "status": 200
+        },
+        {
+          "link": "block-sensitivity.csv",
+          "status": 200
+        },
+        {
+          "link": "variance-diagnostics.csv",
+          "status": 200
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "width": 390,
+    "checks": {
+      "images": [
+        {
+          "src": "figure-1-calibration-dependence.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-calibration-selection.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-calibration-processes.png",
+          "loaded": true
+        }
+      ],
+      "bodyFits": true,
+      "links": [
+        "figure-1-calibration-dependence.pdf",
+        "figure-1-calibration-dependence.svg",
+        "figure-1-dependence.csv",
+        "figure-2-calibration-selection.pdf",
+        "figure-2-calibration-selection.svg",
+        "figure-2-selection.csv",
+        "figure-3-calibration-processes.pdf",
+        "figure-3-calibration-processes.svg",
+        "figure-3-size.csv",
+        "figure-3-power.csv",
+        "run-metadata.json",
+        "holdout.csv",
+        "block-sensitivity.csv",
+        "variance-diagnostics.csv"
+      ],
+      "linkStatus": [
+        {
+          "link": "figure-1-calibration-dependence.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-1-calibration-dependence.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-1-dependence.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-2-calibration-selection.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-2-calibration-selection.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-2-selection.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-3-calibration-processes.pdf",
+          "status": 200
+        },
+        {
+          "link": "figure-3-calibration-processes.svg",
+          "status": 200
+        },
+        {
+          "link": "figure-3-size.csv",
+          "status": 200
+        },
+        {
+          "link": "figure-3-power.csv",
+          "status": 200
+        },
+        {
+          "link": "run-metadata.json",
+          "status": 200
+        },
+        {
+          "link": "holdout.csv",
+          "status": 200
+        },
+        {
+          "link": "block-sensitivity.csv",
+          "status": 200
+        },
+        {
+          "link": "variance-diagnostics.csv",
+          "status": 200
+        }
+      ]
+    },
+    "errors": []
+  }
+]

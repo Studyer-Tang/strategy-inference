@@ -76,6 +76,11 @@ def write_audit_report(
         else "完整搜索记录未确认"
     )
     tail_low, tail_high = result.bootstrap_tail_interval
+    scale_description = (
+        "每次重抽样重新计算同一滞后阶的 HAC 标准误（Bootstrap t）"
+        if result.studentization == "resampled"
+        else "每次重抽样使用原样本的固定 HAC 尺度"
+    )
     content = f"""
     <header><div class="eyebrow">STRATEGY INFERENCE · RESEARCH RECORD</div>
     <h1>候选策略的平均收益推断</h1><p class="note">时间依赖与策略筛选 · 第一阶段</p></header>
@@ -94,7 +99,7 @@ def write_audit_report(
     [{tail_low:.4f}, {tail_high:.4f}]。它只反映内层模拟误差，不衡量方法假设是否成立。
     若该区间跨过检验水平，应增加抽样次数再作边界判断。</p>
     <h2>解释边界</h2><ul>
-    <li>Bootstrap 使用逐列去均值数据与共享时间索引；每次重抽样使用原样本的固定 HAC 尺度。</li>
+    <li>Bootstrap 使用逐列去均值数据与共享时间索引；{scale_description}。</li>
     <li>结论依赖平稳性、弱依赖和适当矩条件，有限样本精度不能由一次输出保证。</li>
     <li>数据时间、完整搜索记录与交易成本需由研究者核实。该报告不检测全部数据泄漏。</li>
     <li>全族拒绝不代表未来盈利，也不意味着已确定某条策略适合交易。</li>

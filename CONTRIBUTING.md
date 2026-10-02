@@ -13,4 +13,7 @@ point because its result is inconvenient.
 
 Run `python -m pytest` and `ruff check .`. A quick reproduction checks the plotting
 and data pipeline; it does not establish calibration. The full experiment protocol
-is stored in `experiments/protocol.json` and must be versioned alongside changes.
+is stored in `experiments/protocol.json` and `experiments/calibration-protocol.json`.
+Freeze a new protocol before evaluation and preserve completed protocols and results.
+Run both `reproduce --study baseline --profile quick` and
+`reproduce --study calibration --profile quick` after changing the experiment pipeline.

@@ -138,7 +138,15 @@ def stationary_bootstrap_statistics(
                 variance += 2 * (1 - lag / (lags + 1)) * covariance
             if not np.isfinite(variance).all() or np.any(variance <= 0):
                 raise ValueError("A resampled HAC variance is not positive and finite.")
-            output[first:last, column:end] = mean / np.sqrt(variance / n_obs)
+            standard_error = np.sqrt(variance / n_obs)
+            if not np.isfinite(standard_error).all() or np.any(standard_error <= 0):
+                raise ValueError(
+                    "A resampled HAC standard error is outside the positive finite float range."
+                )
+            statistics = mean / standard_error
+            if not np.isfinite(statistics).all():
+                raise ValueError("A resampled HAC statistic is outside the finite float range.")
+            output[first:last, column:end] = statistics
     return output
 
 
@@ -156,8 +164,19 @@ def stationary_mean_variance(
     block_length = default_block_length(n_obs) if block_length is None else block_length
     block_length = _block_length(block_length, n_obs)
     centered = data - data.mean(axis=0)
-    spectrum = np.fft.rfft(centered, axis=0)
-    circular = np.fft.irfft(spectrum * spectrum.conj(), n=n_obs, axis=0) / n_obs
-    lag = np.arange(1, n_obs)
-    weights = (1 - lag / n_obs) * (1 - 1 / block_length) ** lag
-    return (circular[0] + 2 * weights @ circular[1:]) / n_obs
+    try:
+        with np.errstate(over="raise", invalid="raise"):
+            spectrum = np.fft.rfft(centered, axis=0)
+            circular = np.fft.irfft(spectrum * spectrum.conj(), n=n_obs, axis=0) / n_obs
+            lag = np.arange(1, n_obs)
+            weights = (1 - lag / n_obs) * (1 - 1 / block_length) ** lag
+            variance = (circular[0] + 2 * weights @ circular[1:]) / n_obs
+    except FloatingPointError as exc:
+        raise ValueError(
+            "The conditional bootstrap mean variance is outside the finite float range."
+        ) from exc
+    if not np.isfinite(variance).all() or np.any(variance <= 0):
+        raise ValueError(
+            "The conditional bootstrap mean variance is outside the positive finite float range."
+        )
+    return variance

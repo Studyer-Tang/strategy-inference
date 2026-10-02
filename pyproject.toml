@@ -11,6 +11,11 @@ requires-python = ">=3.10"
 license = "BSD-3-Clause"
 dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
+[project.urls]
+Repository = "https://github.com/Studyer-Tang/strategy-inference"
+Documentation = "https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/methods.md"
+Issues = "https://github.com/Studyer-Tang/strategy-inference/issues"
+
 [project.optional-dependencies]
 figures = ["matplotlib>=3.8"]
 dev = ["pytest>=8", "ruff>=0.9", "build>=1.2", "statsmodels>=0.14"]
@@ -21,8 +26,8 @@ strategy-inference = "strategy_inference.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.data-files]
-"share/strategy-inference" = ["experiments/protocol.json", "experiments/calibration-protocol.json"]
+[tool.setuptools.package-data]
+strategy_inference = ["protocols/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,7 +1,11 @@
+import math
 from decimal import Decimal, localcontext
 
 import numpy as np
 import pytest
+from scipy.integrate import quad
+from scipy.optimize import brentq
+from scipy.special import log_ndtr
 from scipy.stats import norm
 
 from strategy_inference.reference import (
@@ -155,3 +159,98 @@ def test_invalid_maximum_reference_parameters_raise_value_error(kwargs):
 def test_invalid_reference_quantile_probability_raises_value_error(probability):
     with pytest.raises(ValueError):
         equicorrelated_max_quantile(probability, 8, 0.35)
+
+
+def _mode_centered_log_cdf(value, n_strategies, cross_corr):
+    """Independent quadrature with its density peak shifted to zero.
+
+    Removing the log-density scale tests rare left-tail inversion without
+    allowing QUAD's absolute stopping rule to miss a distant, narrow peak.
+    This test reference uses only the existing SciPy dependency.
+    """
+    common = math.sqrt(cross_corr)
+    residual = math.sqrt(1 - cross_corr)
+
+    def derivative(location):
+        standardized = (value - common * location) / residual
+        inverse_mills = math.exp(norm.logpdf(standardized) - log_ndtr(standardized))
+        return -location - n_strategies * common / residual * inverse_mills
+
+    lower = -max(20, 2 * abs(value) / common + 20)
+    mode = brentq(derivative, lower, 0, xtol=1e-12)
+
+    def log_density(location):
+        standardized = (value - common * location) / residual
+        return n_strategies * log_ndtr(standardized) + norm.logpdf(location)
+
+    peak = log_density(mode)
+    integral, _error = quad(
+        lambda offset: math.exp(log_density(offset + mode) - peak),
+        -math.inf,
+        math.inf,
+        epsabs=1e-11,
+        epsrel=1e-11,
+        limit=200,
+    )
+    return peak + math.log(integral)
+
+
+@pytest.mark.parametrize(
+    "probability",
+    [
+        1e-50,
+        1e-200,
+        1e-300,
+        np.nextafter(1e-12, 0),
+        np.nextafter(1 - 1e-12, 1),
+        np.nextafter(1.0, 0),
+    ],
+)
+def test_numerical_quantile_rejects_probabilities_outside_documented_domain(probability):
+    with pytest.raises(ValueError, match="Numerical Gaussian maximum quantiles"):
+        equicorrelated_max_quantile(probability, 50, 0.35)
+
+
+@pytest.mark.parametrize("probability", [1e-50, 1e-200, 1e-300, np.nextafter(1.0, 0)])
+@pytest.mark.parametrize("n_strategies,cross_corr", [(1, 0.35), (50, 0), (50, 1)])
+def test_analytic_cases_preserve_extreme_probability_support(probability, n_strategies, cross_corr):
+    value = equicorrelated_max_quantile(probability, n_strategies, cross_corr)
+    if probability > 0.5:
+        observed = equicorrelated_max_tail(value, n_strategies, cross_corr)
+        assert observed == pytest.approx(1 - probability, rel=2e-10, abs=0)
+    else:
+        observed = equicorrelated_max_cdf(value, n_strategies, cross_corr)
+        assert observed == pytest.approx(probability, rel=2e-10, abs=0)
+
+
+def test_supported_lower_endpoint_matches_independent_log_scaled_quadrature():
+    probability = 1e-12
+    value = equicorrelated_max_quantile(probability, 50, 0.35)
+    observed = math.exp(_mode_centered_log_cdf(value, 50, 0.35))
+    assert observed == pytest.approx(probability, rel=2e-8, abs=0)
+
+
+def test_supported_upper_endpoint_inverts_tail_without_cdf_cancellation():
+    probability = 1 - 1e-12
+    value = equicorrelated_max_quantile(probability, 50, 0.35)
+    assert equicorrelated_max_tail(value, 50, 0.35) == pytest.approx(
+        1 - probability, rel=2e-8, abs=0
+    )
+
+
+@pytest.mark.parametrize(
+    "n_strategies,cross_corr,original",
+    [
+        (5, 0.35, 2.274620185564835),
+        (32, 0.35, 2.8576170823499565),
+        (50, 0.35, 2.981500871885773),
+        (10, 0.8, 2.2237346346022275),
+    ],
+)
+def test_numerical_domain_guard_does_not_change_five_percent_references(
+    n_strategies, cross_corr, original
+):
+    value = equicorrelated_max_quantile(0.95, n_strategies, cross_corr)
+    assert value == pytest.approx(original, abs=2e-11)
+    independent = math.exp(_mode_centered_log_cdf(value, n_strategies, cross_corr))
+    assert independent == pytest.approx(0.95, abs=2e-11)

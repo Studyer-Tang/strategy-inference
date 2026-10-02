@@ -1,0 +1,441 @@
+{
+  "schema_version": 2,
+  "study": "calibration",
+  "status": "complete",
+  "profile": "full",
+  "seed": 20261004,
+  "seed_overridden": false,
+  "protocol": {
+    "protocol_version": "calibration-study-1",
+    "frozen_before_evaluation": true,
+    "purpose": "Compare fixed and resampled HAC scales; diagnose finite-sample error without tuning to evaluation outcomes.",
+    "seed": 20261004,
+    "alpha": 0.05,
+    "confidence": 0.95,
+    "cross_corr": 0.35,
+    "sigma": 0.01,
+    "burnin": 512,
+    "data_generating_processes": {
+      "gaussian_ar": "Stationary AR(1) with marginal sigma, Gaussian equicorrelated shocks and exact stationary initial state; all null means zero.",
+      "student_ar": "AR(1) with sqrt(rho)*u+sqrt(1-rho)*v shocks; each u/v is an independent standardized Student t5 draw (variance one); marginal returns are not exactly t5; initialize zero and discard 512 observations.",
+      "garch": "phi=0; alpha=0.06, beta=0.90, omega=(1-alpha-beta)*sigma^2; same standardized t5 mixture shocks; initialize h=sigma^2 and discard 512 observations.",
+      "implementation": "src/strategy_inference/simulations.py; source hash recorded with each run"
+    },
+    "tests": {
+      "observed": "max_j(mean_j / original Bartlett HAC standard_error_j)",
+      "fixed": "max_j(centered bootstrap mean_j / original HAC standard_error_j)",
+      "resampled": "max_j(centered bootstrap mean_j / bootstrap HAC standard_error_j); re-center each draw when estimating its HAC; original and bootstrap use the same lags and divisor T",
+      "resampling": "Shared circular row indices, independent geometric restarts of probability 1/block_length, uniform starts, first row always a restart",
+      "pvalue": "(1 + count(bootstrap maximum >= observed maximum))/(B+1); reject when pvalue <= alpha",
+      "oracle": "Gaussian only: max_j(mean_j / sqrt(known finite-T mean variance)); known-correlation Gaussian maximum critical value from common-factor one-dimensional quadrature. Does not use observed HAC t."
+    },
+    "hac_rule": "floor(4*(T/100)^(2/9)), bounded by T-2",
+    "block_rule": "ceil(2*T^(1/3)), bounded by T",
+    "profiles": {
+      "quick": {
+        "n_obs": 256,
+        "n_mc": 40,
+        "n_bootstrap": 99,
+        "supplement_mc": 20
+      },
+      "full": {
+        "n_obs": 512,
+        "n_mc": 2000,
+        "n_bootstrap": 999,
+        "supplement_mc": 1000
+      }
+    },
+    "figure_1": {
+      "process": "gaussian_ar",
+      "mean": 0.0,
+      "phi": [
+        0.0,
+        0.2,
+        0.4,
+        0.6,
+        0.8
+      ],
+      "n_strategies": 1
+    },
+    "figure_2": {
+      "process": "gaussian_ar",
+      "mean": 0.0,
+      "phi": 0.5,
+      "strategy_counts": [
+        1,
+        5,
+        10,
+        25,
+        50
+      ]
+    },
+    "figure_3": {
+      "n_strategies": 20,
+      "delta": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "signal_column": 0,
+      "signal_definition": "mean[0] = delta * known long-run standard deviation / sqrt(T)",
+      "processes": [
+        {
+          "process": "gaussian_ar",
+          "phi": 0.5
+        },
+        {
+          "process": "student_ar",
+          "phi": 0.5
+        },
+        {
+          "process": "garch",
+          "phi": 0.0
+        }
+      ]
+    },
+    "holdout": [
+      {
+        "n_obs": 256,
+        "n_strategies": 10,
+        "process": "gaussian_ar",
+        "phi": 0.7,
+        "cross_corr": 0.0
+      },
+      {
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "process": "gaussian_ar",
+        "phi": 0.7,
+        "cross_corr": 0.8
+      },
+      {
+        "n_obs": 2048,
+        "n_strategies": 10,
+        "process": "gaussian_ar",
+        "phi": 0.9,
+        "cross_corr": 0.35
+      },
+      {
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "process": "student_ar",
+        "phi": 0.7,
+        "cross_corr": 0.0
+      },
+      {
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "process": "garch",
+        "phi": 0.0,
+        "cross_corr": 0.8
+      },
+      {
+        "n_obs": 512,
+        "n_strategies": 10,
+        "process": "gaussian_ar",
+        "phi": -0.4,
+        "cross_corr": 0.35
+      }
+    ],
+    "block_sensitivity": {
+      "block_multipliers": [
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "length_rule": "min(T, max(1, default_block_length(T) * multiplier)); keep fractional expected lengths; no extra rounding",
+      "scenarios": [
+        {
+          "process": "gaussian_ar",
+          "phi": 0.8,
+          "n_strategies": 1
+        },
+        {
+          "process": "gaussian_ar",
+          "phi": 0.5,
+          "n_strategies": 50
+        }
+      ]
+    },
+    "assessment": {
+      "method": "resampled",
+      "cells": "All zero-mean main and holdout cells; exclude block-sensitivity experiments and positive-mean power cells.",
+      "maximum_false_positive_rate": 0.07,
+      "family_confidence": 0.95,
+      "bound": "One-sided Clopper-Pearson upper bounds with Bonferroni adjustment over the 19 prespecified assessment cells.",
+      "n_assessment_cells": 19,
+      "policy": "Passing is limited evidence for this finite benchmark, not general calibration. Failure is reported without changing settings or discarding cells. Quick never qualifies."
+    },
+    "diagnostics": [
+      "median original HAC variance / finite-T true variance",
+      "median exact conditional bootstrap mean variance / finite-T true variance"
+    ],
+    "pairing": "The two bootstrap methods share all row draws, data and observed HAC statistics. Nested candidate sets reuse the same maximum-K draws. Power shifts reuse centered draws, every resampled HAC scale, and original standard errors; translation leaves these quantities unchanged.",
+    "seed_addresses": "SeedSequence(root, spawn_key=(study, scenario, replicate, purpose)); study=11/12/13/14/15 for dependence/selection/processes/holdout/sensitivity, purpose=0 for data and 1 for shared bootstrap rows.",
+    "claim_limit": "Gaussian known-covariance tests are simulation references; the real-data API never receives true phi, sigma or covariance. No assertion of second-order correctness, universal nominal size or novel theory."
+  },
+  "protocol_sha256": "35cd94d77baf238919a438c968350ae4b79e66fac4de47cecbef05a025395ea8",
+  "protocol_source": "calibration-protocol.json",
+  "resolved_protocol": {
+    "alpha": 0.05,
+    "confidence": 0.95,
+    "sigma": 0.01,
+    "cross_corr": 0.35,
+    "burnin": 512,
+    "n_obs": 512,
+    "n_mc": 2000,
+    "n_bootstrap": 999,
+    "supplement_mc": 1000,
+    "seed": 20261004,
+    "n_assessment_cells": 19
+  },
+  "started_at_utc": "2026-10-02T11:29:07.760096+00:00",
+  "software_versions": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.2.0"
+  },
+  "outputs": [
+    "figure-1-dependence.csv",
+    "figure-2-selection.csv",
+    "figure-3-size.csv",
+    "figure-3-power.csv",
+    "holdout.csv",
+    "block-sensitivity.csv",
+    "variance-diagnostics.csv",
+    "figure-1-calibration-dependence.pdf",
+    "figure-1-calibration-dependence.svg",
+    "figure-1-calibration-dependence.png",
+    "figure-2-calibration-selection.pdf",
+    "figure-2-calibration-selection.svg",
+    "figure-2-calibration-selection.png",
+    "figure-3-calibration-processes.pdf",
+    "figure-3-calibration-processes.svg",
+    "figure-3-calibration-processes.png",
+    "report.html"
+  ],
+  "elapsed_seconds": 2735.36615,
+  "git_revision": "579697d85a3304898cb171a5e3b6b0d043f10b0e",
+  "source_sha256": {
+    "bootstrap.py": "177a6f4ee5db9a8745b3413d59c548cc316ba08232f7ebaeb89b4d9a0e80238e",
+    "simulations.py": "83807e027a03da778ae12b75caa8d4db7e73052592278a133165c23b0b16303e",
+    "experiments.py": "8601bd6cf9e216dccfa08d641e4f04f4f4f2600ebfd928b99a999c13c0466ed8",
+    "_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "reference.py": "d53ee98602bf17e1f1ec0a7cfce173a2dd9dabbf3c2299d5f23fff6d13458957",
+    "inference.py": "7e973587b7eb42f5a877df7284275007e23aa6fbec1614d771ca3f3efc669394",
+    "calibration.py": "2d512872ade23902969fa751bd6aa0195ea8daa65e46c505d892689e7d7dbd15"
+  },
+  "assessment": {
+    "status": "failed",
+    "maximum_false_positive_rate": 0.07,
+    "n_cells": 19,
+    "worst_simultaneous_upper": 0.13587547506885392,
+    "failed_cells": [
+      {
+        "stage": "dependence",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.0,
+        "cross_corr": 0.35,
+        "rate": 0.0565,
+        "size_upper_simultaneous": 0.07242109542809812
+      },
+      {
+        "stage": "dependence",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.2,
+        "cross_corr": 0.35,
+        "rate": 0.0575,
+        "size_upper_simultaneous": 0.07353677833235676
+      },
+      {
+        "stage": "dependence",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.4,
+        "cross_corr": 0.35,
+        "rate": 0.068,
+        "size_upper_simultaneous": 0.08518289878840733
+      },
+      {
+        "stage": "dependence",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.6,
+        "cross_corr": 0.35,
+        "rate": 0.0595,
+        "size_upper_simultaneous": 0.07576451364851508
+      },
+      {
+        "stage": "dependence",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.8,
+        "cross_corr": 0.35,
+        "rate": 0.0675,
+        "size_upper_simultaneous": 0.08463093648969285
+      },
+      {
+        "stage": "selection",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 1,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.063,
+        "size_upper_simultaneous": 0.0796519800759121
+      },
+      {
+        "stage": "selection",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 5,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.063,
+        "size_upper_simultaneous": 0.0796519800759121
+      },
+      {
+        "stage": "selection",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 10,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.0665,
+        "size_upper_simultaneous": 0.08352627715028733
+      },
+      {
+        "stage": "selection",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 25,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.065,
+        "size_upper_simultaneous": 0.08186741279549954
+      },
+      {
+        "stage": "selection",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 50,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.061,
+        "size_upper_simultaneous": 0.07743224970190665
+      },
+      {
+        "stage": "process",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 20,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.0665,
+        "size_upper_simultaneous": 0.08352627715028733
+      },
+      {
+        "stage": "process",
+        "process": "student_ar",
+        "n_obs": 512,
+        "n_strategies": 20,
+        "phi": 0.5,
+        "cross_corr": 0.35,
+        "rate": 0.068,
+        "size_upper_simultaneous": 0.08518289878840733
+      },
+      {
+        "stage": "holdout",
+        "process": "gaussian_ar",
+        "n_obs": 256,
+        "n_strategies": 10,
+        "phi": 0.7,
+        "cross_corr": 0.0,
+        "rate": 0.085,
+        "size_upper_simultaneous": 0.11246095693460412
+      },
+      {
+        "stage": "holdout",
+        "process": "gaussian_ar",
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "phi": 0.7,
+        "cross_corr": 0.8,
+        "rate": 0.069,
+        "size_upper_simultaneous": 0.09432981187876513
+      },
+      {
+        "stage": "holdout",
+        "process": "gaussian_ar",
+        "n_obs": 2048,
+        "n_strategies": 10,
+        "phi": 0.9,
+        "cross_corr": 0.35,
+        "rate": 0.106,
+        "size_upper_simultaneous": 0.13587547506885392
+      },
+      {
+        "stage": "holdout",
+        "process": "student_ar",
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "phi": 0.7,
+        "cross_corr": 0.0,
+        "rate": 0.068,
+        "size_upper_simultaneous": 0.09318633542785933
+      },
+      {
+        "stage": "holdout",
+        "process": "garch",
+        "n_obs": 1024,
+        "n_strategies": 10,
+        "phi": 0.0,
+        "cross_corr": 0.8,
+        "rate": 0.064,
+        "size_upper_simultaneous": 0.08859863313501562
+      },
+      {
+        "stage": "holdout",
+        "process": "gaussian_ar",
+        "n_obs": 512,
+        "n_strategies": 10,
+        "phi": -0.4,
+        "cross_corr": 0.35,
+        "rate": 0.05,
+        "size_upper_simultaneous": 0.07234106826684274
+      }
+    ]
+  },
+  "file_sha256": {
+    "figure-1-dependence.csv": "108082b80f3b30cc20a4d527075d0575895a8c106bdbc80cc52c8139c62ba0f0",
+    "figure-2-selection.csv": "102af7ed6be3063859415cb482ca69b6b05819b39652a153ee04404b04b4db5a",
+    "figure-3-size.csv": "e7b7ba3a7028695c40ec8ee2896fae2bda8dded03f4dbb011cd51833a7666665",
+    "figure-3-power.csv": "fb780bf615005d9b40172e86713abae13b11edac9f1770a6f98e03aa9c366d34",
+    "holdout.csv": "d73761681ed5e9f231b3fda840ef8293f6aeb6b01363c3467e97919d1811d96f",
+    "block-sensitivity.csv": "4668e1d9414aea317e250b40b2b18b0dd6e915abd9afd67fdbd64342b51ea2b4",
+    "variance-diagnostics.csv": "8cfb525628ac27c13b7047c058e8031a05c061ef47bee9e45cb09547408b1c94",
+    "figure-1-calibration-dependence.pdf": "9b5c7a17b8da3fca21f3ff92a1aae0d24be250c6cedde5ace68a73f1d6d8aa77",
+    "figure-1-calibration-dependence.svg": "254bb0a085c99501bd5e7a595960ff13ebf9da55aed7e0364a15b2e95934787b",
+    "figure-1-calibration-dependence.png": "7d781ecf37c556645f2df86c10f9ffe4e8d89132e6490a98895dab50e5cb5c30",
+    "figure-2-calibration-selection.pdf": "49e76d0d95b7d2aac085ee8a113fe7d375a0044b43572d1d3810002f587333cc",
+    "figure-2-calibration-selection.svg": "4f346794fe5ab1ba557df0ff33ac4069f592a542a59102b01765eff8206ff144",
+    "figure-2-calibration-selection.png": "072c9d4881ab22e6a5257871c9fcb81a22dfbd1b7336ba1b1cb70817ab1bbc6f",
+    "figure-3-calibration-processes.pdf": "3da4620239437e677ac1949b752e62b56782cc538ade6449586cf7caa93c177c",
+    "figure-3-calibration-processes.svg": "6d6bf2d82e8049029d338fe254c1ed825d1075bb76d3ff4f79bda1282b873d24",
+    "figure-3-calibration-processes.png": "b33d01e4d80232a0ba2e4f53286ef7d85c92d434851e1477d0542c1961ee24bd",
+    "report.html": "0af45210aacde1ae7f5c26215a79e81f8261bd8b17facc866fdf0555ea69e6b1"
+  },
+  "finished_at_utc": "2026-10-02T12:14:43.112162+00:00"
+}

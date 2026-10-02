@@ -213,6 +213,8 @@ def audit_returns(
             )
             / hac.standard_error
         )
+    if not np.isfinite(draws).all():
+        raise ValueError("Bootstrap statistics must be finite.")
     maximum = draws.max(axis=1)
     absolute_maximum = np.abs(draws).max(axis=1)
     marginal = (1 + (draws >= hac.statistic).sum(axis=0)) / (len(draws) + 1)

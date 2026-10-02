@@ -32,6 +32,7 @@ from .simulations import simulate_returns
 def _protocol() -> tuple[dict[str, Any], bytes, Path]:
     for path in (
         Path(__file__).resolve().parents[2] / "experiments" / "calibration-protocol.json",
+        Path(__file__).resolve().parent / "protocols" / "calibration-protocol.json",
         Path(sys.prefix) / "share" / "strategy-inference" / "calibration-protocol.json",
     ):
         if path.is_file():

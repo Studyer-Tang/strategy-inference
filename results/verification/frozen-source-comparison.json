@@ -1,0 +1,15 @@
+{
+  "frozen_revision": "579697d",
+  "profile": "quick",
+  "matched_tables": [
+    "block-sensitivity.csv",
+    "figure-1-dependence.csv",
+    "figure-2-selection.csv",
+    "figure-3-power.csv",
+    "figure-3-size.csv",
+    "holdout.csv",
+    "variance-diagnostics.csv"
+  ],
+  "differences": [],
+  "interpretation": "Finite guards and installed resource lookup preserve the frozen computation on the complete quick design."
+}

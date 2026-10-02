@@ -1,0 +1,315 @@
+{
+  "artifact_role": "final-code verification build",
+  "build": {
+    "build_backend_setuptools_version": "84.0.0",
+    "command": [
+      ".venv/bin/python",
+      "-m",
+      "build",
+      "--outdir",
+      "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/dist"
+    ],
+    "exit_code": 0,
+    "isolated_build": true,
+    "sdist_filename": "strategy_inference-0.2.0.tar.gz",
+    "sdist_sha256": "d7b2ceb9812287478f78bf78b1e1ceb0309838e9d26617672d88dacb06c16a1e",
+    "wheel_filename": "strategy_inference-0.2.0-py3-none-any.whl",
+    "wheel_sha256": "b4639d25d767ea9ce44fe039bd486335f0cc3180d8a34fe0b37cc259067c1fb7",
+    "wheel_size_bytes": 54956
+  },
+  "calibration_quick_csv_comparison": {
+    "all_seven_byte_equal": true,
+    "files": {
+      "block-sensitivity.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "3c9e8afd6e877c4b12ac55c8115fd1acbaf1ca4ae2539c5d2b9a63d6d70e1e20",
+        "installed_sha256": "3c9e8afd6e877c4b12ac55c8115fd1acbaf1ca4ae2539c5d2b9a63d6d70e1e20"
+      },
+      "figure-1-dependence.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "77278a53f164f0f85ccc8ec9495a4d55c66cf93027bff0cb75616e035ee6d65c",
+        "installed_sha256": "77278a53f164f0f85ccc8ec9495a4d55c66cf93027bff0cb75616e035ee6d65c"
+      },
+      "figure-2-selection.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "46d747a8c1964803fbecbcbf9f4142bafcd4bf6b379ae44c636985c078af62d7",
+        "installed_sha256": "46d747a8c1964803fbecbcbf9f4142bafcd4bf6b379ae44c636985c078af62d7"
+      },
+      "figure-3-power.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "f5eac98c7d03c36970a88fef7f62be429650de9381fc426470073a940e229ef2",
+        "installed_sha256": "f5eac98c7d03c36970a88fef7f62be429650de9381fc426470073a940e229ef2"
+      },
+      "figure-3-size.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "e827d08748896afd097ad17d06858696753fb8e164f6c58e54a977a88c53b259",
+        "installed_sha256": "e827d08748896afd097ad17d06858696753fb8e164f6c58e54a977a88c53b259"
+      },
+      "holdout.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "9f1e3b95be9e13e4a98781d9b98e77594a4cd6cef89bce78e0b00a356be0daf2",
+        "installed_sha256": "9f1e3b95be9e13e4a98781d9b98e77594a4cd6cef89bce78e0b00a356be0daf2"
+      },
+      "variance-diagnostics.csv": {
+        "bytes_equal": true,
+        "checkout_sha256": "5671d7da56af591e6a672684898f772a2f18a2211d0522c89923cc85e377fff8",
+        "installed_sha256": "5671d7da56af591e6a672684898f772a2f18a2211d0522c89923cc85e377fff8"
+      }
+    },
+    "reference_directory": "results/calibration/quick"
+  },
+  "current_checkout_source_differences": {
+    "calibration_plotting.py": {
+      "current_checkout_sha256": "b0c1c55d26deb8888bd54e8d97787c4d23dd6fe727f06d49927403cb9eef71dd",
+      "verified_wheel_sha256": "b3e226e2e49f6ce53a6be3c9f35a588ffa551a1067d70ac91bc2cc8c169e6292"
+    }
+  },
+  "figure_byte_comparison": "Not required: CSV numerical outputs were compared; figure metadata and the post-build percentage-label correction can change figure bytes.",
+  "independent_numeric_checks": {
+    "bootstrap_means_explicit_indices_max_abs_error": 2.220446049250313e-16,
+    "conditional_variance_check": "Full 8 x 8 stationary-bootstrap Markov pair-covariance calculation at mean block length 4 compared with installed FFT implementation; tolerance 1e-12.",
+    "conditional_variance_markov_chain_max_abs_error": 2.7755575615628914e-17,
+    "interpretation": "Numerical implementation checks, not evidence of finite-sample calibration.",
+    "means_check": "Explicit indexed resample means compared with installed matrix-weight implementation; tolerance 1e-12.",
+    "passed": true,
+    "studentized_bootstrap_scalar_hac_max_abs_error": 3.552713678800501e-15,
+    "studentized_check": "41 common-index resamples of a 48 x 3 centered AR(0.4) path; independent scalar Bartlett HAC with divisor T, lags 4, block length 7, seed 81; tolerance 1e-12."
+  },
+  "installation": {
+    "cwd_outside_checkout": true,
+    "dependency_resolution": "normal pip resolution; cached distributions used",
+    "editable": false,
+    "extras": [
+      "figures"
+    ],
+    "fresh_virtual_environment": true,
+    "module_from_isolated_install": true,
+    "package_module": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/__init__.py",
+    "pip_check_exit_code": 0,
+    "pip_check_result": "No broken requirements found.",
+    "platform": "macOS-26.4-arm64-arm-64bit-Mach-O",
+    "python": "3.13.15",
+    "pythonpath_cleared": true,
+    "versions": {
+      "contourpy": "1.4.0",
+      "cycler": "0.12.1",
+      "fonttools": "4.66.1",
+      "kiwisolver": "1.5.1",
+      "matplotlib": "3.11.2",
+      "numpy": "2.5.3",
+      "packaging": "26.3",
+      "pillow": "12.3.0",
+      "pip": "26.2.1",
+      "pyparsing": "3.3.3",
+      "python-dateutil": "2.9.0.post0",
+      "scipy": "1.18.1",
+      "six": "1.17.0",
+      "strategy-inference": "0.2.0"
+    }
+  },
+  "installed_module_sha256": {
+    "__init__.py": "a9c4a25b7259bc73f7675e78a5881a5e31b9f7cc69f3306ea3e2fb9c3937dbd3",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "audit.py": "b25a62e3d71dc288a1ae93bad664f520d8d664b758e22e48aea73aaad1964ea3",
+    "bootstrap.py": "1cbafc83860707e4a536c8bb1f09d1a6f785b390c960fb2a13769551bd8c0a64",
+    "calibration.py": "9a125e62a19fc3c05a22b83c60dc9c78605aafe81fc798d58416980c04a18cde",
+    "calibration_plotting.py": "b3e226e2e49f6ce53a6be3c9f35a588ffa551a1067d70ac91bc2cc8c169e6292",
+    "calibration_report.py": "30ffd021af48ed89c893205cf4d39cf23d9341dbf7656eabe01dcfbf67612f7f",
+    "cli.py": "0f15a4ba828329aaa029a48519e78545f942973e1895ba32340b0549157401de",
+    "experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9",
+    "inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "io.py": "fe039fc9e0367bed25f1b8532493afcfc134cbeb5350b8222b10fe5ac5668614",
+    "plotting.py": "994546ec43c5b5f8b0cd358546d62a3e9f31b3d54fd7e5ed956ee7f1f929bae6",
+    "reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "report.py": "b19d6180f9c2472960175faa5ab94a597aef90577dd2dd983871ac6c8b5eb3af",
+    "simulations.py": "83807e027a03da778ae12b75caa8d4db7e73052592278a133165c23b0b16303e"
+  },
+  "installed_protocol_resources": {
+    "calibration-protocol.json": {
+      "canonical_bytes_equal": true,
+      "installed_path": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/protocols/calibration-protocol.json",
+      "seed": 20261004,
+      "sha256": "35cd94d77baf238919a438c968350ae4b79e66fac4de47cecbef05a025395ea8"
+    },
+    "protocol.json": {
+      "canonical_bytes_equal": true,
+      "installed_path": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/protocols/protocol.json",
+      "seed": null,
+      "sha256": "5b24d022054d3dbf321d7dfe43bac8f88bbbde48c4b2b33e50d5217cc6e201d4"
+    }
+  },
+  "release_artifact_note": "This is a verification build, not the final release artifact. Root rebuilds the release wheel after documentation and presentation edits and verifies its source hashes separately.",
+  "runs": {
+    "baseline_quick": {
+      "arguments": [
+        "reproduce",
+        "--study",
+        "baseline",
+        "--profile",
+        "quick"
+      ],
+      "artifact_counts": {
+        "csv": 5,
+        "pdf": 3,
+        "png": 3,
+        "svg": 3
+      },
+      "exit_code": 0,
+      "file_sha256": {
+        "block-length-sensitivity.csv": "910a1f2b992b170cd65b8a3d58ffcc6b079d11fd1989084dd2af849a078a25c7",
+        "figure-1-autocorrelation.pdf": "e523c3dae03afac86cb67ba68cc08b950d69a08889e43fc7f741dd39ae7aa48d",
+        "figure-1-autocorrelation.png": "6fac8871ba843fb1268b8da51fc44f0fa4c11dd1186998ad1c09080b2a485f66",
+        "figure-1-autocorrelation.svg": "a2fdad6d199f235f889d96130382afaec55ef5f38890d1bf85ba93bb7859fc9a",
+        "figure-1-dependence.csv": "b26579c272efe08dc13620640780aee2bf1ff91cad4c37cb66c308205d5bc520",
+        "figure-2-selection.csv": "9996f3d3978ae1900560658242ac1902a7586757797be4991e9901db6e389b59",
+        "figure-2-selection.pdf": "3f176e2c67e493ac84ebb03be974fda2848b1604e6be4b95502db786d29af133",
+        "figure-2-selection.png": "81c3bcfb2634a19ca6f85d425164fef8d0396876a01a2ffc13bd874da2f45666",
+        "figure-2-selection.svg": "74ef88efbbbe3211681b43e828acfaffca64f9757c2a21672ca6cce99380aff7",
+        "figure-3-power.csv": "987af5618b444b4fdc68c34cb3b346195af2c34b5d5e807bd5c1b811191c4b4d",
+        "figure-3-robustness.pdf": "41a8133a806909d233fe4cab47e8d3f58fc64c17d149816ed5f8090b8a64e20d",
+        "figure-3-robustness.png": "e83ed6bf3f8b39e1852f70d8e17de8345e86f83f0dda0464f1bc62e7dea7b3d7",
+        "figure-3-robustness.svg": "d6202b04c58b8f95e08b72cb8419ba7dd35b183736cd3808ecaae916b410005c",
+        "figure-3-size.csv": "d079e112fb04aff55ccf09fe8578e3ae4c963f125fcc79b4e5fa687914fc871f"
+      },
+      "metadata_output_hashes_verified": true,
+      "profile": "quick",
+      "protocol_resource_actual": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/protocols/protocol.json",
+      "protocol_sha256": "5b24d022054d3dbf321d7dfe43bac8f88bbbde48c4b2b33e50d5217cc6e201d4",
+      "protocol_source_reported": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/protocols/protocol.json",
+      "report": {
+        "all_local_links_exist": true,
+        "checked_links": [
+          "block-length-sensitivity.csv",
+          "figure-1-autocorrelation.pdf",
+          "figure-1-autocorrelation.png",
+          "figure-1-autocorrelation.svg",
+          "figure-1-dependence.csv",
+          "figure-2-selection.csv",
+          "figure-2-selection.pdf",
+          "figure-2-selection.png",
+          "figure-2-selection.svg",
+          "figure-3-power.csv",
+          "figure-3-robustness.pdf",
+          "figure-3-robustness.png",
+          "figure-3-robustness.svg",
+          "figure-3-size.csv",
+          "run-metadata.json"
+        ],
+        "sha256": "b8520f43487d87aa41fda9a3ae45dd68a19fff7d852306b6c150fd017c123927"
+      },
+      "seed": 20261002,
+      "status": "complete"
+    },
+    "calibration_quick": {
+      "arguments": [
+        "reproduce",
+        "--study",
+        "calibration",
+        "--profile",
+        "quick"
+      ],
+      "artifact_counts": {
+        "csv": 7,
+        "pdf": 3,
+        "png": 3,
+        "svg": 3
+      },
+      "assessment_status": "smoke_only",
+      "exit_code": 0,
+      "file_sha256": {
+        "block-sensitivity.csv": "3c9e8afd6e877c4b12ac55c8115fd1acbaf1ca4ae2539c5d2b9a63d6d70e1e20",
+        "figure-1-calibration-dependence.pdf": "e02ef0b2aebbdd046d7fc3ac0189e6ab2b3346781cb06ee8ed893945ce1126cf",
+        "figure-1-calibration-dependence.png": "9975ef8d6c606cdddd4bccb0ec1c9713b75ca0cb97c1c006115d593c79ac5ba5",
+        "figure-1-calibration-dependence.svg": "5ce02c4240fab4ab2979a7fe8f5268606fa3ccf56ef7bd718d67ffe414331659",
+        "figure-1-dependence.csv": "77278a53f164f0f85ccc8ec9495a4d55c66cf93027bff0cb75616e035ee6d65c",
+        "figure-2-calibration-selection.pdf": "39162448b84443c7b977559958ee657f65e3c268599a16e1edaf7465f84d0c3d",
+        "figure-2-calibration-selection.png": "782f24ddf69e9d409997fcef14018950656ab7e3dbf0049bd99b2eea63757e62",
+        "figure-2-calibration-selection.svg": "bcde2a77e0c87e8f61641dd8ee6fc4fb8e2a017cea80c5902dfd63bf5288519a",
+        "figure-2-selection.csv": "46d747a8c1964803fbecbcbf9f4142bafcd4bf6b379ae44c636985c078af62d7",
+        "figure-3-calibration-processes.pdf": "92f81facfb233f9396116d86809652e207d71ac6d40377160f88fa9816d3b561",
+        "figure-3-calibration-processes.png": "2353f80c207be602bb23be6f1cfe2029a787370f455a6cc6c625627c161224ff",
+        "figure-3-calibration-processes.svg": "2f636e772ad3c9fd2d7f7738aeef1350c241072986c4c95302d351e074791a6e",
+        "figure-3-power.csv": "f5eac98c7d03c36970a88fef7f62be429650de9381fc426470073a940e229ef2",
+        "figure-3-size.csv": "e827d08748896afd097ad17d06858696753fb8e164f6c58e54a977a88c53b259",
+        "holdout.csv": "9f1e3b95be9e13e4a98781d9b98e77594a4cd6cef89bce78e0b00a356be0daf2",
+        "report.html": "979a900878176bccb4dcfb97a97d814f9d5704e6450b54bdb42b902faadf68f6",
+        "variance-diagnostics.csv": "5671d7da56af591e6a672684898f772a2f18a2211d0522c89923cc85e377fff8"
+      },
+      "interpretation": "Quick profile verifies execution and reproducibility; it does not establish statistical calibration.",
+      "metadata_output_hashes_verified": true,
+      "profile": "quick",
+      "protocol_resource_actual": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/environment/lib/python3.13/site-packages/strategy_inference/protocols/calibration-protocol.json",
+      "protocol_sha256": "35cd94d77baf238919a438c968350ae4b79e66fac4de47cecbef05a025395ea8",
+      "protocol_source_reported": "calibration-protocol.json",
+      "report": {
+        "all_local_links_exist": true,
+        "checked_links": [
+          "block-sensitivity.csv",
+          "figure-1-calibration-dependence.pdf",
+          "figure-1-calibration-dependence.png",
+          "figure-1-calibration-dependence.svg",
+          "figure-1-dependence.csv",
+          "figure-2-calibration-selection.pdf",
+          "figure-2-calibration-selection.png",
+          "figure-2-calibration-selection.svg",
+          "figure-2-selection.csv",
+          "figure-3-calibration-processes.pdf",
+          "figure-3-calibration-processes.png",
+          "figure-3-calibration-processes.svg",
+          "figure-3-power.csv",
+          "figure-3-size.csv",
+          "holdout.csv",
+          "run-metadata.json",
+          "variance-diagnostics.csv"
+        ],
+        "sha256": "979a900878176bccb4dcfb97a97d814f9d5704e6450b54bdb42b902faadf68f6"
+      },
+      "seed": 20261004,
+      "status": "complete"
+    },
+    "resampled_audit": {
+      "arguments": [
+        "audit",
+        "/Users/a13849/Documents/ChatGPT/qingjun/strategy-inference/examples/demo_returns.csv",
+        "--studentization",
+        "resampled",
+        "--n-resamples",
+        "199",
+        "--seed",
+        "41",
+        "--output",
+        "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0/work/audit-resampled"
+      ],
+      "audit_json_sha256": "a1cdf1008298f74aa41dc2a46755e906f916fdc5f332e9b7c70ec765a2f48f18",
+      "exit_code": 0,
+      "global_pvalue": 0.08,
+      "input_sha256": "69fb9ce4503858be6e3f5c23e39a0f2b8c0b941b52962d316f873a25239d00c9",
+      "input_sha256_verified": true,
+      "json_is_finite": true,
+      "n_resamples": 199,
+      "report": {
+        "all_local_links_exist": true,
+        "checked_links": [
+          "audit.json"
+        ],
+        "sha256": "e90168178a0582b33a6be894a21b1c92f05452cd02dd1fb7954788fd0760a418"
+      },
+      "search_complete": null,
+      "studentization": "resampled"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Independent non-editable installed-wheel validation outside the source checkout.",
+  "source_snapshot_note": "The only post-build source difference is calibration_plotting.py, whose percentage tick labels were corrected while validation ran. Computational modules and both protocol resources match the installed wheel.",
+  "status": "passed",
+  "temporary_environment": {
+    "path": "/private/var/folders/_h/096pxgvn267f1h4mz2_mfjw00000gn/T/strategy-inference-wheel-verify-ca6sqfh0",
+    "removed": true
+  },
+  "verified_at_utc": "2026-10-02T12:28:47.817202+00:00",
+  "wheel_package_resources": [
+    "strategy_inference/protocols/calibration-protocol.json",
+    "strategy_inference/protocols/protocol.json"
+  ]
+}

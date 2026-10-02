@@ -25,6 +25,7 @@ def parser() -> argparse.ArgumentParser:
     audit.add_argument("--n-resamples", type=int, default=999)
     audit.add_argument("--block-length", type=float)
     audit.add_argument("--lags", type=int)
+    audit.add_argument("--studentization", choices=("fixed", "resampled"), default="fixed")
     audit.add_argument("--alpha", type=float, default=0.05)
     audit.add_argument("--seed", type=int, default=0)
     complete = audit.add_mutually_exclusive_group()
@@ -39,8 +40,9 @@ def parser() -> argparse.ArgumentParser:
         "reproduce", help="Run the three prespecified simulation figures."
     )
     reproduce.add_argument("--profile", choices=("quick", "full"), default="full")
-    reproduce.add_argument("--output", type=Path, default=Path("results/full"))
-    reproduce.add_argument("--seed", type=int, default=20261002)
+    reproduce.add_argument("--study", choices=("baseline", "calibration"), default="baseline")
+    reproduce.add_argument("--output", type=Path)
+    reproduce.add_argument("--seed", type=int)
     return root
 
 
@@ -58,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
                 alpha=args.alpha,
                 seed=args.seed,
                 search_complete=args.search_complete,
+                studentization=args.studentization,
             )
             report = write_audit_report(
                 result,
@@ -76,10 +79,38 @@ def main(argv: list[str] | None = None) -> int:
             for warning in result.warnings:
                 print(f"Note: {warning}", file=sys.stderr)
         else:
-            from .experiments import run_experiments
+            output = args.output or (
+                Path("results/calibration") / args.profile
+                if args.study == "calibration"
+                else Path("results") / args.profile
+            )
+            if args.study == "calibration":
+                from .calibration import run_calibration
+                from .calibration_plotting import plot_calibration
+                from .calibration_report import write_calibration_report
 
-            metadata = run_experiments(args.output, profile=args.profile, seed=args.seed)
-            report = write_experiment_report(args.output)
+                metadata = run_calibration(output, profile=args.profile, seed=args.seed)
+                paths = plot_calibration(output, metadata)
+                report = write_calibration_report(output)
+                paths.append(report)
+                for path in paths:
+                    metadata["outputs"].append(path.name)
+                    metadata["file_sha256"][path.name] = hashlib.sha256(
+                        path.read_bytes()
+                    ).hexdigest()
+                import json
+
+                (output / "run-metadata.json").write_text(
+                    json.dumps(metadata, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+                    encoding="utf-8",
+                )
+            else:
+                from .experiments import run_experiments
+
+                metadata = run_experiments(
+                    output, profile=args.profile, seed=20261002 if args.seed is None else args.seed
+                )
+                report = write_experiment_report(output)
             print(f"Status: {metadata['status']}; elapsed: {metadata['elapsed_seconds']:.1f}s")
             print(f"Report: {report.resolve()}")
     except ImportError as exc:

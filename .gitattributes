@@ -1,0 +1,10 @@
+# Keep source text consistent and preserve recorded output hashes on every OS.
+* text=auto eol=lf
+results/** -text
+docs/assets/** -text
+experiments/*.json -text
+src/strategy_inference/protocols/*.json -text
+
+# csv.writer uses CRLF; Matplotlib's generated SVG paths contain trailing spaces.
+*.csv -text whitespace=cr-at-eol
+*.svg -text whitespace=-blank-at-eol
