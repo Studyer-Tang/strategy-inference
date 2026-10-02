@@ -108,8 +108,7 @@ def simulate_returns(
     else:
         raw = rng.standard_t(STUDENT_DF, (n_steps, n_strategies + 1))
         raw *= math.sqrt((STUDENT_DF - 2) / STUDENT_DF)
-    shocks = (math.sqrt(cross_corr) * raw[:, :1]
-              + math.sqrt(1 - cross_corr) * raw[:, 1:])
+    shocks = math.sqrt(cross_corr) * raw[:, :1] + math.sqrt(1 - cross_corr) * raw[:, 1:]
     values = np.empty((n_steps, n_strategies), dtype=np.float64)
 
     if process == "garch":

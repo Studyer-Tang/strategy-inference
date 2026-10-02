@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "tested_outside_source_checkout": true,
+  "installed_protocol_lookup": "sys.prefix/share/strategy-inference/protocol.json",
+  "all_source_and_installed_artifact_bytes_match": true,
+  "artifact_comparisons": {
+    "figure-1-dependence.csv": true,
+    "figure-1-autocorrelation.pdf": true,
+    "figure-1-autocorrelation.svg": true,
+    "figure-1-autocorrelation.png": true,
+    "figure-2-selection.csv": true,
+    "figure-2-selection.pdf": true,
+    "figure-2-selection.svg": true,
+    "figure-2-selection.png": true,
+    "figure-3-size.csv": true,
+    "figure-3-power.csv": true,
+    "figure-3-robustness.pdf": true,
+    "figure-3-robustness.svg": true,
+    "figure-3-robustness.png": true,
+    "block-length-sensitivity.csv": true
+  }
+}

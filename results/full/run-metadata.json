@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "started_at_utc": "2026-10-02T10:40:28.240941+00:00",
+  "seed": 20261002,
+  "profile": "full",
+  "resolved_protocol": {
+    "profile": "full",
+    "seed": 20261002,
+    "n_obs": 512,
+    "n_mc": 2000,
+    "n_bootstrap": 1999,
+    "hac_lags": 5,
+    "block_length": 16,
+    "batch_size": 128,
+    "alpha": 0.05,
+    "confidence": 0.95,
+    "sigma": 0.01,
+    "cross_corr": 0.35,
+    "burnin": 512
+  },
+  "protocol": {
+    "schema_version": 1,
+    "frozen_date": "2026-10-02",
+    "scope": "Finite-sample Monte Carlo of one-sided positive mean tests; synthetic excess returns only",
+    "profiles": {
+      "quick": {
+        "n_obs": 256,
+        "monte_carlo_replicates": 40,
+        "bootstrap_resamples": 99
+      },
+      "full": {
+        "n_obs": 512,
+        "monte_carlo_replicates": 2000,
+        "bootstrap_resamples": 1999
+      }
+    },
+    "alpha": 0.05,
+    "confidence": 0.95,
+    "default_seed": 20261002,
+    "sigma": 0.01,
+    "cross_corr": 0.35,
+    "burnin": 512,
+    "hac": {
+      "kernel": "Bartlett",
+      "lags_rule": "floor(4 * (T / 100) ** (2 / 9))",
+      "note": "Predeclared sample-size heuristic, not a data-tuned optimal bandwidth"
+    },
+    "bootstrap": {
+      "type": "stationary bootstrap with common circular time rows across all strategies",
+      "expected_block_length_rule": "ceil(2 * T ** (1 / 3))",
+      "batch_size": 128,
+      "center": true,
+      "statistic": "max_k(mean_k / original_HAC_standard_error_k)",
+      "bootstrap_statistic": "max_k(centered_bootstrap_mean_k / original_HAC_standard_error_k)",
+      "pvalue": "(1 + number of bootstrap statistics >= observed statistic) / (B + 1)",
+      "rejection": "pvalue <= 0.05",
+      "note": "A fixed-scale centered stationary-bootstrap max test; not Hansen SPA. The block-length heuristic is predeclared, not optimized from the results."
+    },
+    "random_streams": {
+      "scheme": "SeedSequence(root_seed, spawn_key=(figure, scenario, replicate, purpose)).generate_state(1, uint64)",
+      "purpose": {
+        "0": "simulation",
+        "1": "bootstrap"
+      },
+      "note": "Logical addresses are independent of the number of Monte Carlo replicates; extending MC preserves existing replicates. Sensitivity uses figure=4 and a separate bootstrap purpose for each fixed block length."
+    },
+    "data_generating_processes": {
+      "common_shock": "z_k = sqrt(cross_corr) * common + sqrt(1-cross_corr) * idiosyncratic_k",
+      "gaussian_ar": {
+        "equation": "x_t = phi*x_(t-1) + sigma*sqrt(1-phi^2)*z_t; return_t = mean+x_t",
+        "initialization": "Exact joint Gaussian stationary law with marginal standard deviation sigma",
+        "innovation": "Unit-variance normal component shocks",
+        "long_run_std": "sigma * sqrt((1+phi)/(1-phi))"
+      },
+      "student_ar": {
+        "equation": "x_t = phi*x_(t-1) + sigma*sqrt(1-phi^2)*z_t; return_t = mean+x_t",
+        "initialization": "Zero initial state, discard 512 observations; approximate stationarity",
+        "innovation": "Independent t5 component shocks multiplied by sqrt(3/5), then common/idiosyncratic mixture; neither the mixture nor AR marginal is exactly t5",
+        "long_run_std": "sigma * sqrt((1+phi)/(1-phi))"
+      },
+      "garch": {
+        "equation": "epsilon_t=sqrt(h_t)*z_t; h_(t+1)=omega+alpha*epsilon_t^2+beta*h_t; return_t=mean+epsilon_t",
+        "phi": 0.0,
+        "alpha": 0.06,
+        "beta": 0.9,
+        "omega": "(1-alpha-beta)*sigma^2",
+        "initialization": "h_0=sigma^2, discard 512 observations; approximate stationarity",
+        "innovation": "Unit-variance mixture of standardized t5 component shocks. Cross_corr controls shock correlation, not exact unconditional return correlation. Mixture fourth moment <= 9.",
+        "long_run_std": "sigma, since phi=0 and returns are martingale differences"
+      }
+    },
+    "figure_1": {
+      "scenario_id": 1,
+      "process": "gaussian_ar",
+      "phi": [
+        0.0,
+        0.2,
+        0.4,
+        0.6,
+        0.8
+      ],
+      "n_strategies": 1,
+      "mean": 0.0,
+      "methods": [
+        "iid_t",
+        "hac_z",
+        "stationary_bootstrap"
+      ],
+      "theoretical_reference": "1-Phi(z_0.95/sqrt((1+phi)/(1-phi))); IID normal-limit prediction, not a finite-T t-test identity"
+    },
+    "figure_2": {
+      "scenario_id": 2,
+      "process": "gaussian_ar",
+      "phi": 0.5,
+      "strategy_counts": [
+        1,
+        5,
+        10,
+        25,
+        50
+      ],
+      "mean": 0.0,
+      "selection": "Within each nested prefix, choose the same argmax HAC statistic winner for both IID and HAC naive p-values",
+      "reuse": "Simulate Kmax=50 once and bootstrap Kmax once per replicate; use identical data and resamples for all prefixes",
+      "methods": [
+        "iid_winner",
+        "hac_winner",
+        "bootstrap_max"
+      ]
+    },
+    "figure_3": {
+      "scenario_id": 3,
+      "processes": [
+        "gaussian_ar",
+        "student_ar",
+        "garch"
+      ],
+      "n_strategies": 20,
+      "ar_phi": 0.5,
+      "garch_phi": 0.0,
+      "null_mean": 0.0,
+      "local_signal_delta": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "alternative": "Only strategy 1 has mean delta*theoretical_long_run_std/sqrt(T); other strategies have zero mean",
+      "size_methods": [
+        "iid_winner",
+        "hac_winner",
+        "bootstrap_max"
+      ],
+      "power_method": "bootstrap_max",
+      "reuse": "Within process/replicate, reuse null noise, original HAC scale and centered bootstrap across mean shifts (translation invariant)"
+    },
+    "block_sensitivity": {
+      "scenario_id": 4,
+      "profiles": {
+        "quick": {
+          "monte_carlo_replicates": 20,
+          "bootstrap_resamples": 99
+        },
+        "full": {
+          "monte_carlo_replicates": 200,
+          "bootstrap_resamples": 399
+        }
+      },
+      "process": "gaussian_ar",
+      "phi": 0.5,
+      "n_strategies": 20,
+      "mean": 0.0,
+      "expected_block_lengths": [
+        4,
+        8,
+        16,
+        32
+      ],
+      "output": "CSV only; no extra main figure; not used to tune the main results"
+    },
+    "uncertainty": {
+      "interval": "95% pointwise Wilson Monte Carlo interval for a binomial rejection proportion",
+      "note": "Intervals describe Monte Carlo noise, are not simultaneous across curves, and do not establish uniform bootstrap validity. Finite-sample size errors are retained."
+    }
+  },
+  "protocol_sha256": "5b24d022054d3dbf321d7dfe43bac8f88bbbde48c4b2b33e50d5217cc6e201d4",
+  "protocol_source": "/Users/a13849/Documents/ChatGPT/qingjun/strategy-inference/experiments/protocol.json",
+  "software_versions": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.1.0"
+  },
+  "platform": "macOS-26.4-arm64-arm-64bit-Mach-O",
+  "outputs": [
+    "figure-1-dependence.csv",
+    "figure-1-autocorrelation.pdf",
+    "figure-1-autocorrelation.svg",
+    "figure-1-autocorrelation.png",
+    "figure-2-selection.csv",
+    "figure-2-selection.pdf",
+    "figure-2-selection.svg",
+    "figure-2-selection.png",
+    "figure-3-size.csv",
+    "figure-3-power.csv",
+    "figure-3-robustness.pdf",
+    "figure-3-robustness.svg",
+    "figure-3-robustness.png",
+    "block-length-sensitivity.csv"
+  ],
+  "stage_elapsed_seconds": {
+    "figure_1": 160.422867,
+    "figure_2": 33.962513,
+    "figure_3": 103.189282,
+    "block_sensitivity": 2.664031
+  },
+  "elapsed_seconds": 300.239482,
+  "interpretation": "One-sided mean tests and a fixed-scale stationary-bootstrap max test; not SPA. Wilson intervals measure pointwise Monte Carlo uncertainty. Finite-sample size distortions are reported, not tuned away.",
+  "git_revision": "ae92d19b4a7d25767e880543cf65582e85a02f79",
+  "finished_at_utc": "2026-10-02T10:45:28.497163+00:00",
+  "file_sha256": {
+    "figure-1-dependence.csv": "05e5e1438da1ddc3785e3c4025293de247db6c15f226d82ca13cd990b4878f8a",
+    "figure-1-autocorrelation.pdf": "3630bc02c23c04d3d36f5cb3591863becae50e4b6ee897bb84a7f628dfbff99d",
+    "figure-1-autocorrelation.svg": "af63daf12b9d627818c76889405142b663c990ca7d69fb7b5a7c7744831f62b2",
+    "figure-1-autocorrelation.png": "0e29ff7eb9d8c76c15d9afdfb31402eb7f623a46b7b220354ac20099ea4b1470",
+    "figure-2-selection.csv": "b7f746515646d8cdb3ab68f5c05c11b924b9812b15d23064a8466824e14d9224",
+    "figure-2-selection.pdf": "020d91dc268977e1b6e3565a52aa4fcc831ed30be099109aaeebfd571231f03d",
+    "figure-2-selection.svg": "f23c8d0b79f8a2bf06b4cc4303122f00a1c965926c85e333a4605cdd5115a5b0",
+    "figure-2-selection.png": "2a2f5e8a3500710b1bc6175214411b9084eaa1acc41a98fc50771624b951ac0e",
+    "figure-3-size.csv": "5b6c40d5a8e8bfcc247c68f9f34b39aafc75ca5e9b3e64dd20b615505275d85b",
+    "figure-3-power.csv": "b5fda1e96e7a09c46edd1145ca7c15e7147033c118e0c15d46864269f742a839",
+    "figure-3-robustness.pdf": "0d2ef23d769cde610e4653361b09234e66a3d73df8f3ab796912cad44034063a",
+    "figure-3-robustness.svg": "ce40b8293cc868f0732cd1922785fcb2c4a976cc0b9e42d8b9a911f0312d064b",
+    "figure-3-robustness.png": "af01a696a7acce367fe5ee021d34b9df89b6157dc11e20e9e54f63008935361a",
+    "block-length-sensitivity.csv": "1acaca09179496aa311740809bd83f6d68de3ae132203fb5ff9638034c6bea82"
+  }
+}

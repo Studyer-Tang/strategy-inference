@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "method": "fixed-scale stationary-bootstrap max test",
+  "null": "All supplied candidates have mean benchmark-adjusted return <= 0.",
+  "sample_size": 256,
+  "n_strategies": 6,
+  "selected_name": "candidate_1",
+  "selection_rule": "largest HAC mean statistic; ties use first column",
+  "global_pvalue": 0.068,
+  "alpha": 0.05,
+  "n_resamples": 999,
+  "pvalue_resolution": 0.001,
+  "conditional_bootstrap_tail_interval_95": [
+    0.053155422240809325,
+    0.08429547551404695
+  ],
+  "block_length": 13.0,
+  "lags": 4,
+  "search_complete": true,
+  "max_cutoff": 2.3709829271182805,
+  "max_abs_cutoff": 2.653661706299298,
+  "warnings": [
+    "Inference is asymptotic under stationarity, weak dependence and suitable moments.",
+    "Data timing, transaction costs and unrecorded trials are not inferred from returns."
+  ],
+  "candidates": [
+    {
+      "name": "candidate_1",
+      "mean": 0.001672512603948851,
+      "standard_error": 0.0007640050348460498,
+      "statistic": 2.1891381963024226,
+      "iid_pvalue": 0.0022474043247347076,
+      "hac_pvalue": 0.01429339852848352,
+      "marginal_bootstrap_pvalue": 0.014,
+      "adjusted_pvalue": 0.068,
+      "simultaneous_ci": [
+        -0.0003548983004419725,
+        0.003699923508339674
+      ],
+      "one_sided_lower": -0.00013893028990353998
+    },
+    {
+      "name": "candidate_2",
+      "mean": 0.0013308708620460455,
+      "standard_error": 0.0008603724114358835,
+      "statistic": 1.5468544136892335,
+      "iid_pvalue": 0.01989198620634213,
+      "hac_pvalue": 0.06094917782182982,
+      "marginal_bootstrap_pvalue": 0.074,
+      "adjusted_pvalue": 0.206,
+      "simultaneous_ci": [
+        -0.0009522664593377428,
+        0.003614008183429834
+      ],
+      "one_sided_lower": -0.0007090574364320191
+    },
+    {
+      "name": "candidate_3",
+      "mean": 0.000488242146536594,
+      "standard_error": 0.0008744596414702146,
+      "statistic": 0.5583358263575441,
+      "iid_pvalue": 0.21946230193643232,
+      "hac_pvalue": 0.2883075425462298,
+      "marginal_bootstrap_pvalue": 0.245,
+      "adjusted_pvalue": 0.648,
+      "simultaneous_ci": [
+        -0.0018322779177371283,
+        0.002808762210810316
+      ],
+      "one_sided_lower": -0.0015850867338432577
+    },
+    {
+      "name": "candidate_4",
+      "mean": 0.0005283348850078428,
+      "standard_error": 0.0009449256790805128,
+      "statistic": 0.5591285078864131,
+      "iid_pvalue": 0.21392469242468212,
+      "hac_pvalue": 0.28803701006500826,
+      "marginal_bootstrap_pvalue": 0.285,
+      "adjusted_pvalue": 0.648,
+      "simultaneous_ci": [
+        -0.001979178204866974,
+        0.0030358479748826593
+      ],
+      "one_sided_lower": -0.0017120677674877004
+    },
+    {
+      "name": "candidate_5",
+      "mean": 0.00022109085437964484,
+      "standard_error": 0.0010820400778970248,
+      "statistic": 0.2043277868314648,
+      "iid_pvalue": 0.37709500334218016,
+      "hac_pvalue": 0.41904867862028816,
+      "marginal_bootstrap_pvalue": 0.408,
+      "adjusted_pvalue": 0.772,
+      "simultaneous_ci": [
+        -0.0026502774650167993,
+        0.003092459173776089
+      ],
+      "one_sided_lower": -0.0023444076967719355
+    },
+    {
+      "name": "candidate_6",
+      "mean": 0.0003417895851935714,
+      "standard_error": 0.0009266961311840486,
+      "statistic": 0.36882595458433987,
+      "iid_pvalue": 0.30413353982500774,
+      "hac_pvalue": 0.35612872875925383,
+      "marginal_bootstrap_pvalue": 0.375,
+      "adjusted_pvalue": 0.729,
+      "simultaneous_ci": [
+        -0.0021173484515052492,
+        0.002800927621892392
+      ],
+      "one_sided_lower": -0.0018553911204703703
+    }
+  ],
+  "provenance": {
+    "input_name": "demo_returns.csv",
+    "input_sha256": "69fb9ce4503858be6e3f5c23e39a0f2b8c0b941b52962d316f873a25239d00c9",
+    "benchmark_column": null,
+    "date_column_present": false,
+    "seed": 17,
+    "package_version": "0.1.0"
+  }
+}

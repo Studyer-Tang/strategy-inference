@@ -36,7 +36,9 @@ def test_csv_preserves_observations_and_subtracts_benchmark(tmp_path):
 
 def test_csv_without_dates_and_with_utf8_bom(tmp_path):
     path = tmp_path / "returns.csv"
-    path.write_text("\ufeff  alpha  , beta\n" + "\n".join(f"{i},{i*i}" for i in range(8)), encoding="utf-8")
+    path.write_text(
+        "\ufeff  alpha  , beta\n" + "\n".join(f"{i},{i * i}" for i in range(8)), encoding="utf-8"
+    )
     table = read_returns_csv(path)
     assert table.names == ("alpha", "beta")
     assert table.dates is None
@@ -45,11 +47,20 @@ def test_csv_without_dates_and_with_utf8_bom(tmp_path):
 
 @pytest.mark.parametrize(
     "text",
-    ["", "x,x\n1,2\n", "x,\n1,2\n", "date\n2026-01-01\n",
-     "x,y\n1,2\n3\n", "x,y\n1,2\n3,4,5\n", "x\n1\nnot-a-return\n",
-     "x,y\n1,2\n3,\n", "x\n0\n1\n2\n", "x\n0\n1\n\n2\n",
-     "x\n" + "\n".join(["0", "1", "2", "3", "4", "5", "6", "nan"]),
-     "x\n" + "\n".join(["0", "1", "2", "3", "4", "5", "6", "inf"])],
+    [
+        "",
+        "x,x\n1,2\n",
+        "x,\n1,2\n",
+        "date\n2026-01-01\n",
+        "x,y\n1,2\n3\n",
+        "x,y\n1,2\n3,4,5\n",
+        "x\n1\nnot-a-return\n",
+        "x,y\n1,2\n3,\n",
+        "x\n0\n1\n2\n",
+        "x\n0\n1\n\n2\n",
+        "x\n" + "\n".join(["0", "1", "2", "3", "4", "5", "6", "nan"]),
+        "x\n" + "\n".join(["0", "1", "2", "3", "4", "5", "6", "inf"]),
+    ],
 )
 def test_malformed_csv_is_rejected_without_deleting_rows(tmp_path, text):
     path = tmp_path / "invalid.csv"
@@ -61,8 +72,12 @@ def test_malformed_csv_is_rejected_without_deleting_rows(tmp_path, text):
 
 @pytest.mark.parametrize(
     "dates",
-    [["2026-01-01", "2026-01-01"], ["2026-01-02", "2026-01-01"],
-     ["2026-01-01", "2026-13-01"], ["2026-01-01", "2026-01-02T00:00:00+00:00"]],
+    [
+        ["2026-01-01", "2026-01-01"],
+        ["2026-01-02", "2026-01-01"],
+        ["2026-01-01", "2026-13-01"],
+        ["2026-01-01", "2026-01-02T00:00:00+00:00"],
+    ],
 )
 def test_dates_must_be_valid_consistent_and_strictly_increasing(tmp_path, dates):
     path = _write_csv(tmp_path / "dates.csv", ["x"], np.array([[1], [2]]), dates)
@@ -77,7 +92,9 @@ def test_benchmark_needs_another_numeric_candidate(tmp_path, benchmark):
         read_returns_csv(path, benchmark=benchmark)
 
 
-@pytest.mark.parametrize("flag, expected", [(None, None), ("--complete-search", True), ("--incomplete-search", False)])
+@pytest.mark.parametrize(
+    "flag, expected", [(None, None), ("--complete-search", True), ("--incomplete-search", False)]
+)
 def test_cli_records_search_scope_hash_and_finite_numbers(tmp_path, capsys, flag, expected):
     values = np.random.default_rng(19).normal(size=(32, 2))
     values -= values.mean(axis=0)
@@ -101,6 +118,9 @@ def test_cli_records_search_scope_hash_and_finite_numbers(tmp_path, capsys, flag
     assert name not in report
     assert "&lt;script&gt;" in report
     assert "尚不能拒绝全族原假设" in report
+    assert "固定当前数据时" in report
+    assert "只反映内层模拟误差" in report
+    assert "不衡量方法假设是否成立" in report
     captured = capsys.readouterr()
     assert "family p" in captured.out
     assert ("supplied columns only" in captured.err) is (expected is not True)
@@ -111,7 +131,21 @@ def test_cli_benchmark_is_reflected_in_record(tmp_path, capsys):
     values = rng.normal(size=(32, 2))
     path = _write_csv(tmp_path / "returns.csv", ["strategy", "cash"], values)
     output = tmp_path / "report"
-    assert main(["audit", str(path), "--benchmark", "cash", "--output", str(output), "--n-resamples", "99"]) == 0
+    assert (
+        main(
+            [
+                "audit",
+                str(path),
+                "--benchmark",
+                "cash",
+                "--output",
+                str(output),
+                "--n-resamples",
+                "99",
+            ]
+        )
+        == 0
+    )
     record = json.loads((output / "audit.json").read_text(encoding="utf-8"))
     assert record["n_strategies"] == 1
     assert record["provenance"]["benchmark_column"] == "cash"

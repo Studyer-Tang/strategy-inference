@@ -52,13 +52,23 @@ class AuditResult:
         This concerns simulation error conditional on the observed data, not
         statistical validity or uncertainty about the population mean.
         """
-        count = np.count_nonzero(self.bootstrap_statistics.max(axis=1) >= self.statistic[self.selected_index])
+        count = np.count_nonzero(
+            self.bootstrap_statistics.max(axis=1) >= self.statistic[self.selected_index]
+        )
         estimate = count / self.n_resamples
         z = norm.ppf(0.975)
         denominator = 1 + z * z / self.n_resamples
         center = (estimate + z * z / (2 * self.n_resamples)) / denominator
-        radius = z * np.sqrt(estimate * (1 - estimate) / self.n_resamples + z * z / (4 * self.n_resamples**2)) / denominator
-        return float(center - radius), float(center + radius)
+        radius = (
+            z
+            * np.sqrt(
+                estimate * (1 - estimate) / self.n_resamples + z * z / (4 * self.n_resamples**2)
+            )
+            / denominator
+        )
+        low = 0.0 if count == 0 else max(0.0, float(center - radius))
+        high = 1.0 if count == self.n_resamples else min(1.0, float(center + radius))
+        return low, high
 
     @property
     def warnings(self) -> list[str]:
@@ -67,36 +77,49 @@ class AuditResult:
             "Data timing, transaction costs and unrecorded trials are not inferred from returns.",
         ]
         if self.search_complete is False:
-            messages.append("The search family is known to be incomplete; adjustment covers supplied columns only.")
+            messages.append(
+                "The search family is known to be incomplete; adjustment covers supplied columns only."
+            )
         elif self.search_complete is None:
             messages.append(
                 "The complete search family is unconfirmed; adjustment covers supplied columns only."
             )
         if self.n_resamples * self.alpha < 20:
-            messages.append("Few bootstrap draws in the target tail; p values have substantial Monte Carlo error.")
+            messages.append(
+                "Few bootstrap draws in the target tail; p values have substantial Monte Carlo error."
+            )
         low, high = self.bootstrap_tail_interval
         if low <= self.alpha <= high:
-            messages.append("The conditional bootstrap tail interval straddles alpha; increase draws before a boundary decision.")
+            messages.append(
+                "The conditional bootstrap tail interval straddles alpha; increase draws before a boundary decision."
+            )
         if self.sample_size < 100:
-            messages.append("Short time series: asymptotic and block-bootstrap approximations may be poor.")
+            messages.append(
+                "Short time series: asymptotic and block-bootstrap approximations may be poor."
+            )
         return messages
 
     def to_dict(self) -> dict[str, Any]:
         """A compact, JSON-serializable record, excluding bootstrap draws."""
         candidates = []
         for index, name in enumerate(self.names):
-            candidates.append({
-                "name": name,
-                "mean": float(self.mean[index]),
-                "standard_error": float(self.standard_error[index]),
-                "statistic": float(self.statistic[index]),
-                "iid_pvalue": float(self.iid_pvalue[index]),
-                "hac_pvalue": float(self.hac_pvalue[index]),
-                "marginal_bootstrap_pvalue": float(self.marginal_bootstrap_pvalue[index]),
-                "adjusted_pvalue": float(self.adjusted_pvalue[index]),
-                "simultaneous_ci": [float(self.simultaneous_ci_low[index]), float(self.simultaneous_ci_high[index])],
-                "one_sided_lower": float(self.one_sided_lower[index]),
-            })
+            candidates.append(
+                {
+                    "name": name,
+                    "mean": float(self.mean[index]),
+                    "standard_error": float(self.standard_error[index]),
+                    "statistic": float(self.statistic[index]),
+                    "iid_pvalue": float(self.iid_pvalue[index]),
+                    "hac_pvalue": float(self.hac_pvalue[index]),
+                    "marginal_bootstrap_pvalue": float(self.marginal_bootstrap_pvalue[index]),
+                    "adjusted_pvalue": float(self.adjusted_pvalue[index]),
+                    "simultaneous_ci": [
+                        float(self.simultaneous_ci_low[index]),
+                        float(self.simultaneous_ci_high[index]),
+                    ],
+                    "one_sided_lower": float(self.one_sided_lower[index]),
+                }
+            )
         return {
             "schema_version": 1,
             "method": "fixed-scale stationary-bootstrap max test",
@@ -146,17 +169,30 @@ def audit_returns(
     else:
         if isinstance(names, str):
             raise ValueError("names must contain one distinct label per candidate.")
-        names = tuple(names)
-        if (len(names) != data.shape[1] or len(set(names)) != len(names)
-                or any(not isinstance(name, str) or not name.strip() for name in names)):
+        try:
+            names = tuple(names)
+        except TypeError as exc:
+            raise ValueError("names must contain one distinct label per candidate.") from exc
+        if (
+            len(names) != data.shape[1]
+            or any(not isinstance(name, str) or not name.strip() for name in names)
+            or len(set(names)) != len(names)
+        ):
             raise ValueError("names must contain one distinct, nonempty label per candidate.")
     iid = infer_mean(data, method="iid", confidence=1 - alpha)
     hac = infer_mean(data, method="hac", lags=lags, confidence=1 - alpha)
     block_length = default_block_length(len(data)) if block_length is None else block_length
-    draws = stationary_bootstrap_means(
-        data, n_resamples=n_resamples, block_length=block_length,
-        seed=seed, batch_size=batch_size, center=True,
-    ) / hac.standard_error
+    draws = (
+        stationary_bootstrap_means(
+            data,
+            n_resamples=n_resamples,
+            block_length=block_length,
+            seed=seed,
+            batch_size=batch_size,
+            center=True,
+        )
+        / hac.standard_error
+    )
     maximum = draws.max(axis=1)
     absolute_maximum = np.abs(draws).max(axis=1)
     marginal = (1 + (draws >= hac.statistic).sum(axis=0)) / (len(draws) + 1)
@@ -165,15 +201,26 @@ def audit_returns(
     max_cutoff = float(np.quantile(maximum, 1 - alpha, method="higher"))
     max_abs_cutoff = float(np.quantile(absolute_maximum, 1 - alpha, method="higher"))
     return AuditResult(
-        sample_size=len(data), names=names, selected_index=selected,
-        mean=hac.mean, standard_error=hac.standard_error, statistic=hac.statistic,
-        iid_pvalue=iid.pvalue, hac_pvalue=hac.pvalue,
-        marginal_bootstrap_pvalue=marginal, adjusted_pvalue=adjusted,
+        sample_size=len(data),
+        names=names,
+        selected_index=selected,
+        mean=hac.mean,
+        standard_error=hac.standard_error,
+        statistic=hac.statistic,
+        iid_pvalue=iid.pvalue,
+        hac_pvalue=hac.pvalue,
+        marginal_bootstrap_pvalue=marginal,
+        adjusted_pvalue=adjusted,
         global_pvalue=float(adjusted[selected]),
         simultaneous_ci_low=hac.mean - max_abs_cutoff * hac.standard_error,
         simultaneous_ci_high=hac.mean + max_abs_cutoff * hac.standard_error,
         one_sided_lower=hac.mean - max_cutoff * hac.standard_error,
-        max_cutoff=max_cutoff, max_abs_cutoff=max_abs_cutoff,
-        n_resamples=len(draws), block_length=float(block_length), lags=hac.lags,
-        alpha=alpha, search_complete=search_complete, bootstrap_statistics=draws,
+        max_cutoff=max_cutoff,
+        max_abs_cutoff=max_abs_cutoff,
+        n_resamples=len(draws),
+        block_length=float(block_length),
+        lags=hac.lags,
+        alpha=alpha,
+        search_complete=search_complete,
+        bootstrap_statistics=draws,
     )

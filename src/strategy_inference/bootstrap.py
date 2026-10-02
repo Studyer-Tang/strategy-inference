@@ -13,9 +13,19 @@ def default_block_length(n_obs: int) -> int:
 
 
 def _block_length(value: float, n_obs: int) -> float:
-    if not np.isscalar(value) or not np.isfinite(value) or not 1 <= value <= n_obs:
+    if (
+        isinstance(value, (bool, np.bool_, str, bytes))
+        or not np.isscalar(value)
+        or not np.isrealobj(value)
+    ):
         raise ValueError("block_length must lie in [1, T].")
-    return float(value)
+    try:
+        result = float(value)
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise ValueError("block_length must lie in [1, T].") from exc
+    if not np.isfinite(result) or not 1 <= result <= n_obs:
+        raise ValueError("block_length must lie in [1, T].")
+    return result
 
 
 def _indices(

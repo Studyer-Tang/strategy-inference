@@ -80,3 +80,9 @@ def test_batch_partition_does_not_change_random_sample(returns, batch_size):
 def test_one_dimensional_input_returns_one_strategy(returns):
     means = stationary_bootstrap_means(returns[:, 0], n_resamples=37, seed=15)
     assert means.shape == (37, 1)
+
+
+@pytest.mark.parametrize("block_length", ["3", 3 + 0j, object(), [3]])
+def test_nonnumeric_block_length_raises_value_error(returns, block_length):
+    with pytest.raises(ValueError):
+        stationary_bootstrap_means(returns, n_resamples=19, block_length=block_length)

@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>时间依赖与策略筛选</title><style>
+:root{color-scheme:light;--ink:#222b32;--muted:#626b71;--rule:#d7d9d9;--blue:#274a60}
+*{box-sizing:border-box}body{margin:0;background:#f2f1ed;color:var(--ink);font:16px/1.8 Georgia,'Noto Serif SC','Songti SC',serif}
+main{max-width:1040px;margin:42px auto;padding:48px 60px 56px;background:#fff;box-shadow:0 2px 14px #00000008}
+header{border-top:3px solid var(--ink);padding-top:15px;margin-bottom:30px}
+.eyebrow{font:12px/1.5 system-ui,sans-serif;letter-spacing:.12em;color:var(--muted)}
+h1{font-size:34px;font-weight:600;line-height:1.35;margin:16px 0 8px}h2{font-size:23px;margin-top:38px;font-weight:600}
+p{margin:14px 0}a{color:var(--blue);text-underline-offset:3px}.note,figcaption,footer{color:var(--muted);font-size:14px}
+table{border-collapse:collapse;width:100%;font:13px/1.6 system-ui,sans-serif;margin:20px 0}
+th,td{padding:10px 9px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}thead{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+tr.selected{background:#f1f5f6}.scroll{overflow-x:auto}figure{margin:30px 0}figure img{display:block;width:100%;height:auto}
+figcaption{margin-top:12px}code{font:13px ui-monospace,SFMono-Regular,monospace;background:#f3f4f3;padding:2px 4px;overflow-wrap:anywhere}
+li{margin:7px 0}footer{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px}
+@media(max-width:700px){main{margin:0;padding:28px 20px;box-shadow:none}h1{font-size:28px}}
+@media print{body{background:white}main{margin:0;padding:0;box-shadow:none}figure{break-inside:avoid}a{color:inherit}}
+</style></head><body><main>
+    <header><div class="eyebrow">STRATEGY INFERENCE · SIMULATION STUDY</div>
+    <h1>时间依赖与策略筛选<br>如何影响显著性</h1>
+    <p class="note">第一阶段 · 零均值检验、联合重抽样与有限样本表现</p></header>
+    <p>本轮研究检验平均基准调整收益是否大于零。模拟中的均值已知，
+    因而可以直接比较误报率与检出能力。实现采用固定 HAC 尺度的 stationary-bootstrap max 检验。</p>
+    
+    <p class="note">每个主实验情形 T = 512，外层重复 2,000 次，
+    每次 Bootstrap 1,999 次；名义水平 5%。
+    HAC 滞后 5，期望块长 16，种子 20261002。</p>
+    <h2>三个零均值情形</h2>
+    <div class="scroll"><table><thead><tr><th>情形</th><th>IID 未调整</th><th>HAC 未调整</th>
+    <th>联合 Bootstrap</th></tr></thead><tbody><tr><td>单策略，φ = 0.8</td><td>29.65%<br><span class='note'>[27.69%, 31.69%]</span></td><td>14.25%<br><span class='note'>[12.79%, 15.85%]</span></td><td>9.70%<br><span class='note'>[8.48%, 11.08%]</span></td></tr><tr><td>筛选 50 条，φ = 0.5</td><td>89.70%<br><span class='note'>[88.29%, 90.96%]</span></td><td>70.90%<br><span class='note'>[68.87%, 72.85%]</span></td><td>10.85%<br><span class='note'>[9.56%, 12.29%]</span></td></tr><tr><td>GARCH，20 条</td><td>42.55%<br><span class='note'>[40.40%, 44.73%]</span></td><td>43.95%<br><span class='note'>[41.79%, 46.13%]</span></td><td>6.25%<br><span class='note'>[5.27%, 7.40%]</span></td></tr></tbody></table></div>
+    <p class="note">第一行没有筛选，Bootstrap 为单列检验。其余两行有筛选，联合方法检验提交的候选族。
+    方括号内为外层拒绝比例的 95% Wilson 区间，不能解释为跨表格的同时保证。</p>
+    <h2>一 · 时间依赖</h2><figure><img src="figure-1-autocorrelation.png" alt="一 · 时间依赖的模拟实验图"><figcaption>零均值高斯 AR(1)，每次只检验一个策略。虚线参考线使用大样本近似；所有误差棒是点态 Monte Carlo 区间。较强依赖下，默认带宽与块长仍可能出现有限样本偏差。<br><a href="figure-1-autocorrelation.pdf">PDF</a> · <a href="figure-1-autocorrelation.svg">SVG</a> · <a href="figure-1-dependence.csv">figure-1-dependence.csv</a></figcaption></figure><h2>二 · 策略筛选</h2><figure><img src="figure-2-selection.png" alt="二 · 策略筛选的模拟实验图"><figcaption>全部候选的真实均值都是零。每个嵌套候选集都按最大 HAC 统计量选择胜出者，IID 与 HAC 读取同一个胜出者的未调整 p 值；联合 Bootstrap 检验整族。<br><a href="figure-2-selection.pdf">PDF</a> · <a href="figure-2-selection.svg">SVG</a> · <a href="figure-2-selection.csv">figure-2-selection.csv</a></figcaption></figure><h2>三 · 过程与检出能力</h2><figure><img src="figure-3-robustness.png" alt="三 · 过程与检出能力的模拟实验图"><figcaption>左侧是三个过程下的误报率；右侧只在第一列植入正均值，比较全族检验的拒绝概率。这不是正确选中信号策略的概率。重尾创新由标准化 t₅ 成分构造；有限四阶矩不代替完整有效性证明。<br><a href="figure-3-robustness.pdf">PDF</a> · <a href="figure-3-robustness.svg">SVG</a> · <a href="figure-3-size.csv">figure-3-size.csv</a> · <a href="figure-3-power.csv">figure-3-power.csv</a></figcaption></figure>
+    <h2>如何理解这些结果</h2>
+    <p><strong>当前默认设置在本轮基准中存在有限样本误报偏差。
+    第一版用于研究与核对，不能称为已校准的实务检验。</strong></p>
+    <p>时间依赖调整与候选筛选调整处理不同问题。名义水平是比较基线，
+    实际误报率由保存的计数估计。联合重抽样的有限样本偏差也需要保留；
+    三个模拟过程的结果不能推出对所有金融数据都有效。</p>
+    <p>第一版是现有统计方法的实现与模拟研究，不声明原创定理，
+    不包含历史交易实证。对真实策略还需核实数据时间、成本、完整搜索记录和样本外评价。</p>
+    <h2>复现与记录</h2>
+    <p><code>strategy-inference reproduce --profile full --output results/full --seed 20261002</code></p>
+    <p class="note">本轮运行用时 300.2 秒。
+    计算版本：<code>ae92d19b4a7d25767e880543cf65582e85a02f79</code>。环境版本、协议、计数与文件哈希见
+    <a href="run-metadata.json">运行记录</a>；预先指定的块长敏感性见
+    <a href="block-length-sensitivity.csv">附表</a>，未用于挑选主图参数。</p>
+    <footer>方法推导：项目内 docs/methods.md。报告直接读取已保存的 CSV 与图文件，
+    所有展示结果均可回到拒绝次数核对。</footer>
+    </main></body></html>

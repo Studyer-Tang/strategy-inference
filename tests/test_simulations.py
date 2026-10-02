@@ -44,15 +44,18 @@ def test_heavy_tailed_processes_have_unit_stationary_variance(process, phi):
 
 def test_garch_parameters_admit_a_finite_fourth_moment():
     innovation_fourth_moment = 3 * (STUDENT_DF - 2) / (STUDENT_DF - 4)
-    upper_bound = (GARCH_ALPHA**2 * innovation_fourth_moment
-                   + 2 * GARCH_ALPHA * GARCH_BETA + GARCH_BETA**2)
+    upper_bound = (
+        GARCH_ALPHA**2 * innovation_fourth_moment + 2 * GARCH_ALPHA * GARCH_BETA + GARCH_BETA**2
+    )
     assert GARCH_ALPHA + GARCH_BETA < 1
     assert upper_bound < 1
 
 
 def test_gaussian_needs_no_burnin_when_initialized_stationarily():
     kwargs = dict(n_obs=48, n_strategies=3, phi=0.95, seed=831)
-    np.testing.assert_array_equal(simulate_returns(**kwargs, burnin=0), simulate_returns(**kwargs, burnin=1024))
+    np.testing.assert_array_equal(
+        simulate_returns(**kwargs, burnin=0), simulate_returns(**kwargs, burnin=1024)
+    )
 
 
 @pytest.mark.parametrize("process, phi", [("gaussian_ar", 0.5), ("student_ar", 0.5), ("garch", 0)])
@@ -68,10 +71,23 @@ def test_garch_cannot_silently_ignore_autoregressive_phi():
 
 @pytest.mark.parametrize(
     "changed",
-    [{"n_obs": 1}, {"n_strategies": 0}, {"burnin": -1}, {"seed": -1},
-     {"phi": 1}, {"phi": -1}, {"cross_corr": -0.1}, {"cross_corr": 1.1},
-     {"sigma": 0}, {"sigma": np.inf}, {"process": "unrecognized"},
-     {"mean": [0, 1]}, {"mean": np.nan}, {"mean": 1j}, {"phi": "0.5"}],
+    [
+        {"n_obs": 1},
+        {"n_strategies": 0},
+        {"burnin": -1},
+        {"seed": -1},
+        {"phi": 1},
+        {"phi": -1},
+        {"cross_corr": -0.1},
+        {"cross_corr": 1.1},
+        {"sigma": 0},
+        {"sigma": np.inf},
+        {"process": "unrecognized"},
+        {"mean": [0, 1]},
+        {"mean": np.nan},
+        {"mean": 1j},
+        {"phi": "0.5"},
+    ],
 )
 def test_invalid_simulation_parameters_are_rejected(changed):
     kwargs = {"n_obs": 32, "n_strategies": 3, **changed}

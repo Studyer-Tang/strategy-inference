@@ -6,6 +6,13 @@ from .inference import MeanInference, default_lags, infer_mean, long_run_varianc
 
 __version__ = "0.1.0"
 __all__ = [
-    "AuditResult", "MeanInference", "audit_returns", "default_block_length", "default_lags",
-    "infer_mean", "long_run_variance", "stationary_bootstrap_means", "stationary_indices",
+    "AuditResult",
+    "MeanInference",
+    "audit_returns",
+    "default_block_length",
+    "default_lags",
+    "infer_mean",
+    "long_run_variance",
+    "stationary_bootstrap_means",
+    "stationary_indices",
 ]

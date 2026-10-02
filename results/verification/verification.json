@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "unit_tests": 125,
+  "full_experiment": {
+    "profile": "full",
+    "n_obs": 512,
+    "outer_replicates": 2000,
+    "bootstrap_resamples": 1999,
+    "elapsed_seconds": 300.239482,
+    "source_revision": "ae92d19b4a7d25767e880543cf65582e85a02f79",
+    "protocol_sha256": "5b24d022054d3dbf321d7dfe43bac8f88bbbde48c4b2b33e50d5217cc6e201d4",
+    "all_14_output_hashes_match": true,
+    "data_rows_checked": 58
+  },
+  "bootstrap_memory_probe": {
+    "T": 512,
+    "K": 50,
+    "B": 1999,
+    "batch_size": 128,
+    "elapsed_seconds": 0.01724208300583996,
+    "traced_peak_mib": 5.529752731323242,
+    "hypothetical_direct_return_tensor_mib": 390.4296875,
+    "scope": "tracemalloc includes tracked allocations, not complete process RSS"
+  },
+  "known_limitation": "Default max test has finite-sample size distortion in saved benchmarks; not a calibrated practical test."
+}

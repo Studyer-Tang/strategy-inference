@@ -1,0 +1,62 @@
+{
+  "desktop": {
+    "bodyOverflow": false,
+    "imageCount": 3,
+    "imagesLoaded": true
+  },
+  "mobile": {
+    "bodyOverflow": false,
+    "imagesLoaded": true
+  },
+  "errors": [],
+  "links": [
+    {
+      "path": "/figure-1-autocorrelation.pdf",
+      "status": 200
+    },
+    {
+      "path": "/figure-1-autocorrelation.svg",
+      "status": 200
+    },
+    {
+      "path": "/figure-1-dependence.csv",
+      "status": 200
+    },
+    {
+      "path": "/figure-2-selection.pdf",
+      "status": 200
+    },
+    {
+      "path": "/figure-2-selection.svg",
+      "status": 200
+    },
+    {
+      "path": "/figure-2-selection.csv",
+      "status": 200
+    },
+    {
+      "path": "/figure-3-robustness.pdf",
+      "status": 200
+    },
+    {
+      "path": "/figure-3-robustness.svg",
+      "status": 200
+    },
+    {
+      "path": "/figure-3-size.csv",
+      "status": 200
+    },
+    {
+      "path": "/figure-3-power.csv",
+      "status": 200
+    },
+    {
+      "path": "/run-metadata.json",
+      "status": 200
+    },
+    {
+      "path": "/block-length-sensitivity.csv",
+      "status": 200
+    }
+  ]
+}

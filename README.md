@@ -6,6 +6,8 @@
 
 第一阶段只研究一个问题：**对已经给定的候选策略集合，是否有策略的平均基准调整收益大于零？** 输入是同期、等间隔、已扣成本的收益差分矩阵。实现包括 IID t 检验、Bartlett HAC 推断，以及共享时间索引的 stationary-bootstrap max 检验。方法与原始研究之间的关系见[方法说明](docs/methods.md)。
 
+完整模拟已运行。当前设置中，50 条零均值候选经过筛选后，单列 HAC 的误报率为 **70.9%**，联合 Bootstrap 为 **10.85%**（95% Monte Carlo 区间 **9.56%–12.29%**），仍高于名义 5%。第一版是用于检查这种偏差的研究基线，不能称为已校准的实务检验。详见[结果解读](docs/results.md)与[三图报告](results/full/report.html)。
+
 ## 安装
 
 Python 3.10 或更高版本，在项目目录运行：
@@ -63,6 +65,8 @@ strategy-inference reproduce --profile full --output results/full
 
 完整运行还保存块长敏感性数据。三张主图分别输出 PNG、SVG、PDF，CSV 是图中数值的来源。
 
+![候选筛选的误报率](results/full/figure-2-selection.png)
+
 ## 边界
 
 检验依赖平稳性、弱时间依赖、适当矩条件及渐近近似。默认带宽与块长是事前启发式；有限样本误报率应由实验检查。去均值 Bootstrap 和固定 HAC 尺度的构造不是 Hansen SPA，也不提供有限样本精确保证。
@@ -78,6 +82,7 @@ ruff check .
 ```
 
 - [方法说明](docs/methods.md)：统计目标、公式、假设、实现与失败边界。
+- [结果解读](docs/results.md)：本轮模拟中的具体发现及尚未解决的校准问题。
 - [项目讨论](docs/interview-notes.md)：可以据实介绍的内容，以及需要进一步掌握的问题。
 - [文献](docs/references.bib)：方法来源。第一版是实现与模拟研究，不声明原创定理。
 

@@ -13,13 +13,26 @@ def positive_integer(value: int, name: str, minimum: int = 1) -> int:
 
 
 def probability(value: float, name: str) -> float:
-    if not np.isscalar(value) or not np.isfinite(value) or not 0 < value < 1:
+    if (
+        isinstance(value, (bool, np.bool_, str, bytes))
+        or not np.isscalar(value)
+        or not np.isrealobj(value)
+    ):
         raise ValueError(f"{name} must lie strictly between 0 and 1.")
-    return float(value)
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{name} must lie strictly between 0 and 1.") from exc
+    if not np.isfinite(result) or not 0 < result < 1:
+        raise ValueError(f"{name} must lie strictly between 0 and 1.")
+    return result
 
 
 def as_returns(values: ArrayLike) -> NDArray[np.float64]:
     try:
+        raw = np.asarray(values)
+        if not np.isrealobj(raw) or raw.dtype.kind not in "iuf":
+            raise ValueError("Returns must contain real numeric values.")
         data = np.asarray(values, dtype=np.float64)
     except (ValueError, TypeError) as exc:
         raise ValueError("Returns must be a rectangular numeric array.") from exc

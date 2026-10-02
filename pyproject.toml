@@ -13,7 +13,7 @@ dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
 [project.optional-dependencies]
 figures = ["matplotlib>=3.8"]
-dev = ["pytest>=8", "ruff>=0.9", "build>=1.2"]
+dev = ["pytest>=8", "ruff>=0.9", "build>=1.2", "statsmodels>=0.14"]
 
 [project.scripts]
 strategy-inference = "strategy_inference.cli:main"

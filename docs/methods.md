@@ -4,6 +4,8 @@
 
 第一版采用均值检验、Bartlett HAC 标准误和 stationary bootstrap。实现选择固定原样本尺度的最大统计量检验，便于核对每一步计算。它没有实现 Hansen 的 SPA，也没有提出新的统计定理。本文的公式描述实际算法；渐近论证说明算法适用的条件，有限样本表现由实验报告。
 
+Hansen 的 [SPA 原文](https://doi.org/10.1198/073500105000000063)同时涉及 studentized 统计量与样本依赖的零假设分布修正。仅给最大均值加一个 HAC 分母，不能把实现称作该方法。
+
 ## 1. 输入、目标和候选集
 
 输入为有限实数矩阵
@@ -382,7 +384,7 @@ $$
 \hat\pi=\frac1R\sum_{r=1}^{R}J_r.
 $$
 
-零假设下它估计实际误报率；备择下它估计检出率。图中的误差范围针对有限 $R$ 带来的比例估计不确定性，不是原策略均值的置信区间。若使用 Wilson 区间，令 $z=z_{0.975}$，中心和半宽为
+零假设下它估计实际误报率；备择下它估计检出率。图中的误差范围针对有限 $R$ 带来的比例估计不确定性，不是原策略均值的置信区间。使用 95% Wilson 区间，令 $z=z_{0.975}$，中心和半宽为
 
 $$
 m=\frac{\hat\pi+z^2/(2R)}{1+z^2/R},\qquad
@@ -390,11 +392,68 @@ w=\frac{z}{1+z^2/R}
 \sqrt{\frac{\hat\pi(1-\hat\pi)}R+\frac{z^2}{4R^2}}.
 $$
 
-该区间仍是比例推断的近似，尤其不能把覆盖名义 $0.05$ 的某一根误差棒解释成方法已经得到普遍有效性证明。[Wilson (1927)](https://doi.org/10.2307/2276774)给出了这一反演思路。
+报告区间为 $[m-w,m+w]$，数值上截到 $[0,1]$。它是每个格点的点态 Monte Carlo 区间，不是跨所有格点、曲线和场景的同时区间。该区间仍是比例推断的近似，尤其不能把覆盖名义 $0.05$ 的某一根误差棒解释成方法已经得到普遍有效性证明。[Wilson (1927)](https://doi.org/10.2307/2276774)给出了这一反演思路。
 
 外层 Monte Carlo 次数 $R$ 和内层 bootstrap 次数 $B$ 控制两种不同误差。把 $B$ 调大不会弥补 $R$ 太小，换一个随机种子也不能把方法校准得更好。对每个实验格点保留拒绝次数、重复次数、方法名称、数据参数和区间端点，图由这些表格生成。环境版本、完整参数和随机种子随结果记录，便于逐项核对。
 
+单次审计还返回 `bootstrap_tail_interval`：在当前数据固定的条件下，用内层超越次数除以 $B$ 计算尾概率的 95% Wilson 区间。它衡量重抽样计算误差，不是总体均值区间，也不保证统计假设成立。它针对事先固定的 $B$，不是可随时停止的置信序列。若需要更精确的边界判断，应事先约定更大的 $B$ 后重新计算，不能反复追加抽样直到区间符合期望。
+
 复现应先验证输入和公式，再运行较小配置检查流程，最后按保存的标准配置生成三图。运行成本随 $R\times B\times T\times K$ 增长。固定随机种子保证同一配置和环境下能重现抽样；没有相应数值测试时，不承诺所有 Python、NumPy 和硬件组合的逐位一致性。
+
+### 9.1 运行命令与输出
+
+在源码目录安装实验依赖，然后使用同一个命令运行三图：
+
+```bash
+python -m pip install '.[figures]'
+strategy-inference reproduce --profile full --output results/full --seed 20261002
+```
+
+`quick` 只检查流程，使用 $T=256$、$R=40$、$B=99$；当前 `full` 使用 $T=512$、$R=2000$、$B=1999$。具体版本以 [protocol.json](../experiments/protocol.json) 和该次运行保存的 `run-metadata.json` 为准。主实验的 $p$ 值分辨率为 $1/2000=0.0005$；在条件尾概率约 0.05 时，内层计数比例的标准差约为 0.0049。分辨率细不等于尾概率估计也同样精确。
+
+| 文件 | 内容 |
+| --- | --- |
+| `figure-1-autocorrelation.{png,svg,pdf}` | 时间依赖图 |
+| `figure-2-selection.{png,svg,pdf}` | 候选筛选图 |
+| `figure-3-robustness.{png,svg,pdf}` | 三过程的校准与局部检出图 |
+| `figure-1-dependence.csv` | 图 1 的计数、比例和区间 |
+| `figure-2-selection.csv` | 图 2 的计数、比例和区间 |
+| `figure-3-size.csv`、`figure-3-power.csv` | 图 3 的两组数据 |
+| `block-length-sensitivity.csv` | 事前固定的块长敏感性附表 |
+| `run-metadata.json` | 已解析配置、协议、随机种子、环境版本和文件校验信息 |
+
+块长敏感性是单独的实验流，当前完整配置使用 $R=200$、$B=399$，块长为 $\{4,8,16,32\}$。它不用于反过来挑选主实验的默认块长。其较宽的不确定性需要在解读附表时保留。
+
+随机流按根种子与 `(figure, scenario, replicate, purpose)` 的逻辑地址建立。模拟与重抽样使用不同 purpose，增加外层重复数不会改动已有重复的随机地址。嵌套候选集与局部均值平移共享抽样，是事前约定的配对比较；不同实验场景则用各自的流。
+
+### 9.2 为什么不用三维重抽样数组
+
+均值计算只需要每个原始时间行在某轮抽样中出现的次数。记该计数为 $N_{bt}$，则
+
+$$
+\bar{\tilde d}^{*(b)}_j=\frac1T\sum_{t=1}^{T}N_{bt}\tilde d_{tj}.
+$$
+
+实现先按 stationary-bootstrap 规则生成索引，再生成行计数，最后用计数矩阵乘中心化数据。这样保留了块索引所产生的抽样分布，同时不分配 $B\times T\times K$ 的收益张量。计数没有按独立 multinomial 抽取；否则会变成另一个算法。
+
+以批大小 $C$ 计算时，索引和计数的工作内存为 $O(CT)$，另有 $O(TK)$ 输入和 $O(BK)$ 输出。矩阵乘法的总计算阶数仍为 $O(BTK)$，HAC 计算为 $O(LTK)$。批处理减少峰值内存，不会从复杂度上消除策略数或重抽样次数的影响。
+
+### 9.3 代码接口与统计对象
+
+| 接口／字段 | 对应对象 |
+| --- | --- |
+| `infer_mean(..., method="iid")` | 独立 Student 单列推断；区间为双侧点态区间 |
+| `infer_mean(..., method="hac")` | Bartlett HAC 单列正态近似；区间为双侧点态区间 |
+| `long_run_variance(...)` | 各列 $\hat\Omega_{jj}$，不是样本均值方差本身 |
+| `stationary_bootstrap_means(..., center=True)` | 中心化数据的共同索引抽样均值，形状为 $B\times K$ |
+| `audit_returns(...)` | 完整候选族的固定尺度 bootstrap 推断 |
+| `global_pvalue` | $\hat p_{\mathrm{family}}$ |
+| `marginal_bootstrap_pvalue`／`adjusted_pvalue` | 列级边际值／单步 max 调整值 |
+| `simultaneous_ci_low`／`simultaneous_ci_high` | 双侧 max-absolute 同时区间 |
+| `one_sided_lower` | 单侧 max-statistic 同时下界 |
+| `search_complete` | 研究者对候选族完整性的声明，不是算法识别结果 |
+
+`search_complete=None` 是默认的未知状态；即使设为 `True`，软件也不验证隐藏搜索是否存在。原始输入为差分时直接传入数组；CSV 接口的 `--benchmark` 选项才执行同期基准列减法。两个入口不能重复减去基准。
 
 ## 10. 结果如何表述
 

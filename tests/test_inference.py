@@ -12,9 +12,7 @@ def _bartlett_variance(values, lags):
     size = len(values)
     variance = sum(value * value for value in centered) / size
     for lag in range(1, lags + 1):
-        covariance = sum(
-            centered[t] * centered[t - lag] for t in range(lag, size)
-        ) / size
+        covariance = sum(centered[t] * centered[t - lag] for t in range(lag, size)) / size
         variance += 2 * (1 - lag / (lags + 1)) * covariance
     return variance
 
@@ -31,10 +29,9 @@ def returns():
 
 @pytest.mark.parametrize("lags", [0, 1, 7, 20])
 def test_hac_matches_scalar_reference(returns, lags):
-    expected = np.array([
-        _bartlett_variance(returns[:, column], lags)
-        for column in range(returns.shape[1])
-    ])
+    expected = np.array(
+        [_bartlett_variance(returns[:, column], lags) for column in range(returns.shape[1])]
+    )
     np.testing.assert_allclose(long_run_variance(returns, lags=lags), expected)
     inference = infer_mean(returns, method="hac", lags=lags)
     np.testing.assert_allclose(inference.standard_error, np.sqrt(expected / len(returns)))
@@ -106,9 +103,13 @@ def test_inference_is_invariant_to_positive_units_and_column_order(returns, meth
 
 @pytest.mark.parametrize(
     "values",
-    [np.ones(12), np.arange(7), np.arange(24).reshape(2, 3, 4),
-     np.array([0, 1, 2, 3, 4, 5, 6, np.nan]),
-     np.array([0, 1, 2, 3, 4, 5, 6, np.inf])],
+    [
+        np.ones(12),
+        np.arange(7),
+        np.arange(24).reshape(2, 3, 4),
+        np.array([0, 1, 2, 3, 4, 5, 6, np.nan]),
+        np.array([0, 1, 2, 3, 4, 5, 6, np.inf]),
+    ],
 )
 def test_invalid_samples_are_rejected(values):
     with pytest.raises(ValueError):
@@ -118,3 +119,15 @@ def test_invalid_samples_are_rejected(values):
 def test_constant_strategy_invalidates_multistrategy_input(returns):
     with pytest.raises(ValueError):
         infer_mean(np.column_stack([returns, np.zeros(len(returns))]))
+
+
+@pytest.mark.parametrize("imaginary", [0, 1])
+def test_complex_returns_are_not_silently_cast_to_real(returns, imaginary):
+    with pytest.raises(ValueError):
+        infer_mean(returns.astype(complex) + imaginary * 1j)
+
+
+@pytest.mark.parametrize("confidence", ["0.95", 0.95 + 0j, object(), [0.95]])
+def test_nonnumeric_confidence_raises_value_error(returns, confidence):
+    with pytest.raises(ValueError):
+        infer_mean(returns, confidence=confidence)

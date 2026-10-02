@@ -2,6 +2,7 @@ import json
 
 import numpy as np
 import pytest
+from scipy import stats
 
 from strategy_inference import audit_returns, infer_mean, stationary_bootstrap_means
 
@@ -125,5 +126,61 @@ def test_record_is_json_serializable_and_states_search_scope(returns):
 
 @pytest.mark.parametrize("names", ["abcde", ["x"] * 5, ["x", "y"], ["", "b", "c", "d", "e"]])
 def test_ambiguous_candidate_names_are_rejected(returns, names):
+    with pytest.raises(ValueError):
+        audit_returns(returns, n_resamples=19, names=names)
+
+
+def _audit_with_tail_count(monkeypatch, count, total=99, alpha=0.05):
+    values = np.array([-4, -3, -2, -1, 1, 2, 3, 4], dtype=float)
+    scale = infer_mean(values, method="hac", lags=1).standard_error[0]
+    statistics = np.concatenate([np.ones(count), -np.ones(total - count)])
+    monkeypatch.setattr(
+        "strategy_inference.audit.stationary_bootstrap_means",
+        lambda *_args, **_kwargs: statistics[:, None] * scale,
+    )
+    return audit_returns(values, n_resamples=total, lags=1, alpha=alpha)
+
+
+@pytest.mark.parametrize(
+    "count,total", [(0, 99), (1, 99), (5, 99), (50, 99), (99, 99), (0, 999), (999, 999)]
+)
+def test_conditional_tail_interval_inverts_binomial_score_equation(monkeypatch, count, total):
+    audit = _audit_with_tail_count(monkeypatch, count, total)
+    z_squared = stats.norm.ppf(0.975) ** 2
+    # Roots of (B+z²) q² - (2k+z²) q + k²/B = 0.
+    discriminant = z_squared * (z_squared + 4 * count * (1 - count / total))
+    expected = np.array(
+        [
+            (2 * count + z_squared - np.sqrt(discriminant)) / (2 * (total + z_squared)),
+            (2 * count + z_squared + np.sqrt(discriminant)) / (2 * (total + z_squared)),
+        ]
+    )
+    low, high = audit.bootstrap_tail_interval
+    np.testing.assert_allclose([low, high], expected, atol=1e-14)
+    assert 0 <= low <= high <= 1
+    assert audit.global_pvalue == (count + 1) / (total + 1)
+    if count == 0:
+        assert low == 0
+    if count == total:
+        assert high == 1
+
+
+def test_tail_interval_is_conditional_simulation_uncertainty_not_mean_interval(monkeypatch):
+    audit = _audit_with_tail_count(monkeypatch, 5, alpha=0.05)
+    other_level = _audit_with_tail_count(monkeypatch, 5, alpha=0.1)
+    assert audit.bootstrap_tail_interval == other_level.bootstrap_tail_interval
+    record = audit.to_dict()
+    assert record["conditional_bootstrap_tail_interval_95"] == list(audit.bootstrap_tail_interval)
+    assert record["candidates"][0]["simultaneous_ci"] != list(audit.bootstrap_tail_interval)
+
+
+@pytest.mark.parametrize("count, straddles", [(0, False), (2, True), (99, False)])
+def test_boundary_warning_depends_on_conditional_tail_interval(monkeypatch, count, straddles):
+    audit = _audit_with_tail_count(monkeypatch, count)
+    assert any("straddles alpha" in warning for warning in audit.warnings) is straddles
+
+
+@pytest.mark.parametrize("names", [[["a"], ["b"], ["c"], ["d"], ["e"]], 7])
+def test_nonstring_or_noniterable_names_raise_value_error(returns, names):
     with pytest.raises(ValueError):
         audit_returns(returns, n_resamples=19, names=names)

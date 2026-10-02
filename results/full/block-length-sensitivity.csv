@@ -1,0 +1,5 @@
+profile,process,phi,cross_corr,sigma,n_strategies,delta,method,n_obs,n_mc,n_bootstrap,hac_lags,block_length,reject_count,rate,ci_low,ci_high,alpha,confidence,iid_limit_reference
+full,gaussian_ar,0.5,0.35,0.01,20,,bootstrap_max,512,200,399,5,4,32,0.16,0.1156741203158702,0.21714070162067106,0.05,0.95,
+full,gaussian_ar,0.5,0.35,0.01,20,,bootstrap_max,512,200,399,5,8,23,0.115,0.07786373232561955,0.16664716898487572,0.05,0.95,
+full,gaussian_ar,0.5,0.35,0.01,20,,bootstrap_max,512,200,399,5,16,20,0.1,0.06567044866909588,0.1494058124327174,0.05,0.95,
+full,gaussian_ar,0.5,0.35,0.01,20,,bootstrap_max,512,200,399,5,32,22,0.11,0.07377244460125303,0.1609269099730149,0.05,0.95,

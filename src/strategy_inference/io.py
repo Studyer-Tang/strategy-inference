@@ -39,23 +39,31 @@ def read_returns_csv(path: str | Path, *, benchmark: str | None = None) -> Retur
         if not names:
             raise ValueError("The CSV contains no candidate columns.")
         if benchmark is not None and (benchmark not in names or len(names) == 1):
-            raise ValueError("benchmark must name a numeric column alongside at least one candidate.")
+            raise ValueError(
+                "benchmark must name a numeric column alongside at least one candidate."
+            )
         rows, dates = [], []
         previous_date = None
         for line, row in enumerate(reader, start=2):
             if len(row) != len(header):
-                raise ValueError(f"CSV line {line}: expected {len(header)} fields, found {len(row)}.")
+                raise ValueError(
+                    f"CSV line {line}: expected {len(header)} fields, found {len(row)}."
+                )
             try:
                 rows.append([float(row[index]) for index in numeric_indices])
             except ValueError as exc:
-                raise ValueError(f"CSV line {line}: every return must be numeric and nonempty.") from exc
+                raise ValueError(
+                    f"CSV line {line}: every return must be numeric and nonempty."
+                ) from exc
             if date_index is not None:
                 label = row[date_index].strip()
                 try:
                     observed_date = datetime.fromisoformat(label)
                     ordered = previous_date is None or observed_date > previous_date
                 except (ValueError, TypeError) as exc:
-                    raise ValueError(f"CSV line {line}: date must be a consistent ISO date or timestamp.") from exc
+                    raise ValueError(
+                        f"CSV line {line}: date must be a consistent ISO date or timestamp."
+                    ) from exc
                 if not ordered:
                     raise ValueError(f"CSV line {line}: dates must be strictly increasing.")
                 previous_date = observed_date
