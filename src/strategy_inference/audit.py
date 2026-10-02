@@ -1,4 +1,4 @@
-"""Fixed-scale max-statistic inference over a supplied candidate family."""
+"""Stationary-bootstrap max inference over a supplied candidate family."""
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -7,8 +7,12 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.stats import norm
 
-from ._validation import as_returns, probability
-from .bootstrap import default_block_length, stationary_bootstrap_means
+from ._validation import as_returns, positive_integer, probability
+from .bootstrap import (
+    default_block_length,
+    stationary_bootstrap_means,
+    stationary_bootstrap_statistics,
+)
 from .inference import infer_mean
 
 
@@ -35,6 +39,7 @@ class AuditResult:
     lags: int
     alpha: float
     search_complete: bool | None
+    studentization: str
     bootstrap_statistics: NDArray[np.float64] = field(repr=False, compare=False)
 
     @property
@@ -121,8 +126,9 @@ class AuditResult:
                 }
             )
         return {
-            "schema_version": 1,
-            "method": "fixed-scale stationary-bootstrap max test",
+            "schema_version": 2,
+            "method": f"{self.studentization}-scale stationary-bootstrap max test",
+            "studentization": self.studentization,
             "null": "All supplied candidates have mean benchmark-adjusted return <= 0.",
             "sample_size": self.sample_size,
             "n_strategies": self.n_strategies,
@@ -154,6 +160,7 @@ def audit_returns(
     batch_size: int = 128,
     names: list[str] | tuple[str, ...] | None = None,
     search_complete: bool | None = None,
+    studentization: str = "fixed",
 ) -> AuditResult:
     """Test the joint null and report single-step max-adjusted p values.
 
@@ -162,6 +169,9 @@ def audit_returns(
     """
     data = as_returns(returns)
     alpha = probability(alpha, "alpha")
+    batch_size = positive_integer(batch_size, "batch_size")
+    if not isinstance(studentization, str) or studentization not in ("fixed", "resampled"):
+        raise ValueError("studentization must be 'fixed' or 'resampled'.")
     if search_complete is not None and not isinstance(search_complete, bool):
         raise ValueError("search_complete must be True, False or None.")
     if names is None:
@@ -182,17 +192,27 @@ def audit_returns(
     iid = infer_mean(data, method="iid", confidence=1 - alpha)
     hac = infer_mean(data, method="hac", lags=lags, confidence=1 - alpha)
     block_length = default_block_length(len(data)) if block_length is None else block_length
-    draws = (
-        stationary_bootstrap_means(
+    if studentization == "resampled":
+        draws = stationary_bootstrap_statistics(
             data,
             n_resamples=n_resamples,
             block_length=block_length,
+            lags=hac.lags,
             seed=seed,
-            batch_size=batch_size,
-            center=True,
+            batch_size=min(batch_size, 32),
         )
-        / hac.standard_error
-    )
+    else:
+        draws = (
+            stationary_bootstrap_means(
+                data,
+                n_resamples=n_resamples,
+                block_length=block_length,
+                seed=seed,
+                batch_size=batch_size,
+                center=True,
+            )
+            / hac.standard_error
+        )
     maximum = draws.max(axis=1)
     absolute_maximum = np.abs(draws).max(axis=1)
     marginal = (1 + (draws >= hac.statistic).sum(axis=0)) / (len(draws) + 1)
@@ -222,5 +242,6 @@ def audit_returns(
         lags=hac.lags,
         alpha=alpha,
         search_complete=search_complete,
+        studentization=studentization,
         bootstrap_statistics=draws,
     )

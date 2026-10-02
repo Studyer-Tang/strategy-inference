@@ -5,6 +5,7 @@ import pytest
 from scipy import stats
 
 from strategy_inference import audit_returns, infer_mean, stationary_bootstrap_means
+from strategy_inference.bootstrap import stationary_bootstrap_statistics
 
 
 @pytest.fixture
@@ -184,3 +185,54 @@ def test_boundary_warning_depends_on_conditional_tail_interval(monkeypatch, coun
 def test_nonstring_or_noniterable_names_raise_value_error(returns, names):
     with pytest.raises(ValueError):
         audit_returns(returns, n_resamples=19, names=names)
+
+
+def test_resampled_audit_uses_draw_scales_and_original_observed_hac_statistic(returns):
+    kwargs = dict(n_resamples=103, block_length=7, lags=5, seed=451)
+    audit = audit_returns(returns, studentization="resampled", **kwargs)
+    expected = stationary_bootstrap_statistics(returns, **kwargs)
+    observed = infer_mean(returns, method="hac", lags=5)
+    np.testing.assert_allclose(audit.bootstrap_statistics, expected)
+    np.testing.assert_allclose(audit.statistic, observed.statistic)
+    expected_p = (1 + np.count_nonzero(expected.max(axis=1) >= observed.statistic.max())) / 104
+    assert audit.global_pvalue == expected_p
+    assert audit.studentization == "resampled"
+    assert audit.to_dict()["studentization"] == "resampled"
+
+
+def test_resampled_audit_family_intervals_use_studentized_maximum(returns):
+    audit = audit_returns(returns, n_resamples=103, studentization="resampled", seed=711)
+    absolute = np.abs(audit.bootstrap_statistics).max(axis=1)
+    assert np.mean(absolute <= audit.max_abs_cutoff) >= 1 - audit.alpha
+    np.testing.assert_allclose(
+        audit.simultaneous_ci_low, audit.mean - audit.max_abs_cutoff * audit.standard_error
+    )
+    np.testing.assert_allclose(
+        audit.simultaneous_ci_high, audit.mean + audit.max_abs_cutoff * audit.standard_error
+    )
+    assert np.all(audit.adjusted_pvalue >= audit.marginal_bootstrap_pvalue)
+
+
+def test_resampled_audit_preserves_units_column_order_and_batch_partition(returns):
+    kwargs = dict(n_resamples=103, block_length=7, lags=5, seed=451, studentization="resampled")
+    audit = audit_returns(returns, batch_size=103, **kwargs)
+    order = np.array([3, 1, 4, 0, 2])
+    scales = np.array([0.01, 7, 2, 100, 0.5])
+    changed = audit_returns((returns * scales)[:, order], batch_size=7, **kwargs)
+    np.testing.assert_allclose(
+        changed.bootstrap_statistics, audit.bootstrap_statistics[:, order], atol=1e-12
+    )
+    np.testing.assert_allclose(changed.statistic, audit.statistic[order])
+    np.testing.assert_array_equal(changed.adjusted_pvalue, audit.adjusted_pvalue[order])
+    assert changed.global_pvalue == audit.global_pvalue
+    np.testing.assert_allclose(
+        changed.simultaneous_ci_low, (audit.simultaneous_ci_low * scales)[order]
+    )
+
+
+@pytest.mark.parametrize(
+    "studentization", ["invalid", None, 1, ["resampled"], np.array(["resampled"])]
+)
+def test_invalid_studentization_is_rejected(returns, studentization):
+    with pytest.raises(ValueError):
+        audit_returns(returns, n_resamples=19, studentization=studentization)

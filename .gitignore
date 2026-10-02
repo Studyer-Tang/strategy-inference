@@ -9,3 +9,5 @@ dist/
 .DS_Store
 results/quick/
 results/smoke/
+results/calibration/quick/
+results/pilot/

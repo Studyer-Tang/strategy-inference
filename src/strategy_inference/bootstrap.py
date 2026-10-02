@@ -4,6 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ._validation import as_returns, positive_integer
+from .inference import default_lags
 
 
 def default_block_length(n_obs: int) -> int:
@@ -88,3 +89,75 @@ def stationary_bootstrap_means(
         counts = counts.reshape(last - first, n_obs)
         output[first:last] = counts @ values / n_obs
     return output
+
+
+def stationary_bootstrap_statistics(
+    returns: ArrayLike,
+    *,
+    n_resamples: int = 999,
+    block_length: float | None = None,
+    lags: int | None = None,
+    seed: int | np.random.Generator | np.random.SeedSequence = 0,
+    batch_size: int = 32,
+    column_batch_size: int = 8,
+) -> NDArray[np.float64]:
+    """Centered stationary-bootstrap t statistics with a new HAC scale per draw.
+
+    The original and resampled statistics must use the same Bartlett lag count.
+    All columns share row indices. Time-series arrays are materialized only for
+    a bounded batch of draws and columns, not for the entire B x T x K tensor.
+    Degenerate draws raise an error rather than being discarded or regularized.
+    This construction is asymptotic, not a finite-sample calibration guarantee.
+    """
+    data = as_returns(returns)
+    n_obs, n_strategies = data.shape
+    n_resamples = positive_integer(n_resamples, "n_resamples")
+    batch_size = positive_integer(batch_size, "batch_size")
+    column_batch_size = positive_integer(column_batch_size, "column_batch_size")
+    lags = default_lags(n_obs) if lags is None else positive_integer(lags, "lags", 0)
+    if lags > n_obs - 2:
+        raise ValueError("lags must be <= T - 2.")
+    block_length = default_block_length(n_obs) if block_length is None else block_length
+    block_length = _block_length(block_length, n_obs)
+    rng = np.random.default_rng(seed)
+    values = data - data.mean(axis=0)
+    output = np.empty((n_resamples, n_strategies), dtype=np.float64)
+    for first in range(0, n_resamples, batch_size):
+        last = min(first + batch_size, n_resamples)
+        indices = _indices(n_obs, last - first, block_length, rng)
+        for column in range(0, n_strategies, column_batch_size):
+            end = min(column + column_batch_size, n_strategies)
+            sample = values[:, column:end][indices]
+            if np.any(sample.max(axis=1) == sample.min(axis=1)):
+                raise ValueError("A resampled HAC variance is undefined for a constant column.")
+            mean = sample.mean(axis=1)
+            sample -= mean[:, None, :]
+            variance = np.einsum("btk,btk->bk", sample, sample) / n_obs
+            for lag in range(1, lags + 1):
+                covariance = np.einsum("btk,btk->bk", sample[:, lag:], sample[:, :-lag]) / n_obs
+                variance += 2 * (1 - lag / (lags + 1)) * covariance
+            if not np.isfinite(variance).all() or np.any(variance <= 0):
+                raise ValueError("A resampled HAC variance is not positive and finite.")
+            output[first:last, column:end] = mean / np.sqrt(variance / n_obs)
+    return output
+
+
+def stationary_mean_variance(
+    returns: ArrayLike, *, block_length: float | None = None
+) -> NDArray[np.float64]:
+    """Exact conditional variance of each stationary-bootstrap sample mean.
+
+    Uses circular sample autocovariances and geometric survival probabilities,
+    including the finite-T pair-count factor. This diagnoses the bootstrap
+    distribution; it is not the unknown population variance of the mean.
+    """
+    data = as_returns(returns)
+    n_obs = len(data)
+    block_length = default_block_length(n_obs) if block_length is None else block_length
+    block_length = _block_length(block_length, n_obs)
+    centered = data - data.mean(axis=0)
+    spectrum = np.fft.rfft(centered, axis=0)
+    circular = np.fft.irfft(spectrum * spectrum.conj(), n=n_obs, axis=0) / n_obs
+    lag = np.arange(1, n_obs)
+    weights = (1 - lag / n_obs) * (1 - 1 / block_length) ** lag
+    return (circular[0] + 2 * weights @ circular[1:]) / n_obs

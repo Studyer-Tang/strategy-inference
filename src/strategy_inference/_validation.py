@@ -42,6 +42,8 @@ def as_returns(values: ArrayLike) -> NDArray[np.float64]:
         raise ValueError("Returns must have shape (T, K), with T >= 8 and K >= 1.")
     if not np.isfinite(data).all():
         raise ValueError("Returns contain missing or non-finite values; no rows are dropped.")
+    if np.any(data.max(axis=0) == data.min(axis=0)):
+        raise ValueError("Each candidate must have positive, finite sample variance.")
     centered = data - data.mean(axis=0)
     variance = np.mean(centered * centered, axis=0)
     if not np.isfinite(variance).all() or np.any(variance <= 0):

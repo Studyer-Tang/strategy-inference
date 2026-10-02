@@ -121,6 +121,12 @@ def test_constant_strategy_invalidates_multistrategy_input(returns):
         infer_mean(np.column_stack([returns, np.zeros(len(returns))]))
 
 
+@pytest.mark.parametrize("method", ["iid", "hac"])
+def test_constant_nonexact_decimal_is_not_mistaken_for_positive_variance(method):
+    with pytest.raises(ValueError):
+        infer_mean(np.full(67, 0.12345), method=method)
+
+
 @pytest.mark.parametrize("imaginary", [0, 1])
 def test_complex_returns_are_not_silently_cast_to_real(returns, imaginary):
     with pytest.raises(ValueError):
