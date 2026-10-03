@@ -10,12 +10,15 @@ from .bootstrap import (
 )
 from .inference import MeanInference, default_lags, infer_mean, long_run_variance
 from .uncertainty import UncertaintyResult, uncertainty_test
+from .wilks import WilksResult, WilksScale, wilks_uncertainty_test
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     "AuditResult",
     "MeanInference",
     "UncertaintyResult",
+    "WilksResult",
+    "WilksScale",
     "audit_returns",
     "default_block_length",
     "default_lags",
@@ -26,4 +29,5 @@ __all__ = [
     "stationary_indices",
     "stationary_mean_variance",
     "uncertainty_test",
+    "wilks_uncertainty_test",
 ]
