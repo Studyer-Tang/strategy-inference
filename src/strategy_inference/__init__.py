@@ -9,11 +9,13 @@ from .bootstrap import (
     stationary_mean_variance,
 )
 from .inference import MeanInference, default_lags, infer_mean, long_run_variance
+from .uncertainty import UncertaintyResult, uncertainty_test
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "AuditResult",
     "MeanInference",
+    "UncertaintyResult",
     "audit_returns",
     "default_block_length",
     "default_lags",
@@ -23,4 +25,5 @@ __all__ = [
     "stationary_bootstrap_statistics",
     "stationary_indices",
     "stationary_mean_variance",
+    "uncertainty_test",
 ]
