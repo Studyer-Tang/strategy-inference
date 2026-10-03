@@ -89,10 +89,14 @@ def test_all_five_sensitivity_points_are_raw_path_means(report):
     assert plotter.statistics(shuffled)[0] == computed
 
 
-def test_current_shared_source_inventory_is_distinct_from_frozen_v08(report):
-    report["package_version"] = "0.8.1"
-    report["source_sha256"] = dict.fromkeys(plotter.CURRENT_SOURCES, "0" * 64)
-    assert len(report["source_sha256"]) == 30
+@pytest.mark.parametrize("version", ["0.8.1", "0.9.0"])
+def test_current_shared_source_inventory_is_distinct_from_frozen_v08(report, version):
+    report["package_version"] = version
+    sources = plotter.CURRENT_SOURCES
+    if version == "0.9.0":
+        sources = sources | {"src/strategy_inference/sequential.py"}
+    report["source_sha256"] = dict.fromkeys(sources, "0" * 64)
+    assert len(report["source_sha256"]) == (31 if version == "0.9.0" else 30)
     assert "scripts/_scale_study.py" in report["source_sha256"]
     plotter.statistics(report)
     report["source_sha256"].pop("scripts/_scale_study.py")

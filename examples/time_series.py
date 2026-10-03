@@ -16,6 +16,7 @@ from strategy_inference import (
     drift_forecast,
     evaluate_forecasts,
     naive_forecast,
+    sequential_compare_forecasts,
 )
 
 
@@ -29,6 +30,7 @@ def run():
     comparison = compare_forecasts(
         rolling, baseline="naive", lead_time=1, n_resamples=999, seed=17, search_complete=True
     )
+    sequential = sequential_compare_forecasts(rolling, lead_time=1, loss="absolute")
     # Adjacent one-step forecasts have immediate feedback before the next origin.
     # Scale is fixed from training data, with no use of evaluation labels.
     scale = float(y[:128].std())
@@ -39,6 +41,7 @@ def run():
         data="Simulated seasonal series, seed 17; an API demonstration.",
         evaluation=scores.to_dict(),
         comparison=comparison.to_dict(),
+        sequential=sequential.to_dict(),
         online=dict(
             model="seasonal",
             lead_time=1,

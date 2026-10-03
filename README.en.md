@@ -1,6 +1,6 @@
 # strategy-inference
 
-A Python time-series toolbox for forecast evaluation, online uncertainty and strategy mean inference. Version 0.8 adds fixed, configurable blending of own-lead and shared short-lead residual scales. It supports rolling forecasts, losses by lead, fixed-family comparisons, and one-step or multi-step online intervals. Existing return-mean interfaces remain available.
+A Python time-series toolbox for forecast evaluation, continuous model comparison, online intervals and strategy mean inference. Version 0.9 adds streaming model confidence sets: register predictions from a fixed family, then update comparison evidence when their common label arrives. Rolling backtests, fixed-sample bootstrap comparisons and one-step or multi-step intervals remain available.
 
 [中文](README.md) · [Online docs](https://studyer-tang.github.io/strategy-inference/library/) · [Time-series API](docs/time-series.md) · [Multi-step API](docs/multistep-api.md) · [Mean API](docs/api.md) · [Roadmap](docs/toolbox-roadmap.md) · [Research and reproduction](docs/research.md)
 
@@ -9,13 +9,13 @@ A Python time-series toolbox for forecast evaluation, online uncertainty and str
 Requires Python 3.10+, NumPy and SciPy. The GitHub release wheel can be installed without cloning. The package has not been published to PyPI.
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.1/strategy_inference-0.8.1-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.9.0/strategy_inference-0.9.0-py3-none-any.whl
 ```
 
 Source installation from the corresponding tag:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.1'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.9.0'
 ```
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
@@ -28,7 +28,7 @@ This example generates its own data and fixes models and comparison lead in adva
 import numpy as np
 from strategy_inference import (
     backtest, evaluate_forecasts, compare_forecasts, adaptive_intervals,
-    naive_forecast, drift_forecast, SeasonalNaive,
+    sequential_compare_forecasts, naive_forecast, drift_forecast, SeasonalNaive,
 )
 
 rng = np.random.default_rng(17)
@@ -50,6 +50,7 @@ comparison = compare_forecasts(
     run, baseline="naive", lead_time=1, loss="squared",
     n_resamples=1999, seed=17, search_complete=True,
 )
+sequential = sequential_compare_forecasts(run, lead_time=1, loss="absolute")
 # Consecutive one-step forecasts: issue naive's forecast before its feedback.
 intervals = adaptive_intervals(
     run.actuals[:, 0], run.forecasts[:, 0, 0], alpha=0.1, scale=1.0,
@@ -58,10 +59,11 @@ intervals = adaptive_intervals(
 print(run.forecasts.shape)        # (262, 3, 3): origin × lead × model
 print(scores.mean_loss)           # (3, 3): mean loss for each lead and model
 print(comparison.records())       # Improvement over naive, adjusted p values, decisions
+print(sequential.to_dict())       # Continuous comparison snapshot for the fixed family
 print(intervals.coverage)         # Realized average coverage of evaluated one-step forecasts
 ```
 
-A positive `mean_improvement` means lower candidate loss than baseline loss. Rejection tests positive expected improvement; choosing the smallest observed loss and then interpreting an unadjusted p value requires separate treatment. This example demonstrates the interfaces. Realized average coverage is not coverage probability at every time.
+A positive `mean_improvement` means lower candidate loss than baseline loss. This example uses squared loss for bootstrap and absolute loss for sequential comparison; their targets and assumptions are described below. It demonstrates the interfaces, without establishing model superiority or coverage validity.
 
 ## Multi-step intervals and mature feedback
 
@@ -87,7 +89,7 @@ print(multi.summary())
 
 Here `sqrt(leads)` uses this simulation's unit-innovation random-walk scale; decreasing the learning rate by lead is an example, not an optimal-rate claim. `blended` combines own-lead RMS with shortest-lead shared RMS using prespecified scalar or per-lead weights. Issued scales remain frozen. Fixed, `horizon` and `shortest` scales are alternatives. Choose weights with training or independent validation data; the default one-half is a compromise, not an optimum.
 
-The [240-path independent study](docs/blended-scales-results.md) measures its benefits and costs: at lead 24 under deliberate lead-specific forecast bias, half blending lowers mean interval score by 1.31% and worst 200-point local coverage error by 35.0% versus `shortest`. In the stationary Gaussian case it raises mean score by 0.63%. Fixed scales score better in several settings; blending has no general efficiency guarantee.
+The [independent-path study](docs/blended-scales-results.md) records benefits and costs; blending has no general efficiency advantage.
 
 With forecasts issued at every time, all leads receive the current label at the same calendar time once the pipeline is full. Shared scales change forecast vintage and residual information; they do not provide long-lead labels earlier or remove the lead's threshold-feedback delay.
 
@@ -102,6 +104,7 @@ Streaming `MultiStepConformal` calls `observe(t, y[t])` before `predict(path)` o
 | `forecast_loss(...)`, `evaluate_forecasts(run, ...)` | Squared, absolute and pinball losses; retains origin × lead × model losses and summarizes each lead separately. Pinball forecasts must represent the specified quantile |
 | `interval_score(actual, lower, upper, alpha=...)` | Central interval score: width plus missed-distance penalties. Whole-line intervals score infinity; empty intervals are unsupported |
 | `compare_forecasts(run, baseline=..., lead_time=...)` | Shared-index max bootstrap against one prespecified baseline at one lead, for a fixed candidate family; returns family/candidate decisions and diagnostics |
+| `SequentialModelConfidenceSet`, `sequential_compare_forecasts(run, ...)` | Fixed model family, absolute or pinball loss and nonoverlapping feedback; returns a continuously updated, shrinking model confidence set and log e-value snapshot |
 | `AdaptiveConformal`, `adaptive_intervals(...)` | One-step decaying quantile tracker with ordered complete feedback; returns intervals, empty/whole-line states and realized coverage |
 | `MultiStepConformal`, `multistep_intervals(...)` | Univariate integer clock, mature multi-step feedback, pooled/interlaced states, frozen issued scales and summaries by lead |
 | `test_returns(...)`, `infer_mean(...)` | Existing simultaneous or marginal inference on aligned return means |
@@ -112,7 +115,9 @@ Streaming `MultiStepConformal` calls `observe(t, y[t])` before `predict(path)` o
 
 Backtests follow input order and use each fold's training history. Callbacks receive separate read-only training and lead arrays. Callers must also prevent access to future information through captured variables, external state or data sources. Missing/nonfinite inputs and invalid predictions raise errors; dates are not automatically sorted, filled or resampled.
 
-Comparisons use baseline loss minus candidate loss. Bootstrap approximation requires stationary, weakly dependent loss differences, suitable moments and nondegenerate variance; asymptotic discussion keeps the family fixed. Overlapping forecasts retain origin order. Multi-step backtests require a `lead_time`; leads are not flattened into independent observations. Default HAC lags and block lengths account for overlap and sample size but remain heuristics. Rolling/expanding splits do not establish statistical assumptions. Constant loss differences raise errors. Prespecify candidates, baseline, loss and lead; joint inference across leads, hidden search and repeated monitoring require separate methods.
+Fixed-sample comparisons use baseline loss minus candidate loss. Bootstrap approximation requires stationary, weakly dependent loss differences, suitable moments, nondegenerate variance and a fixed family. Multi-step backtests require a `lead_time`; default lags and block lengths account for overlap and sample size but remain heuristics. Backtest splits do not establish these conditions or handle hidden search and repeated monitoring.
+
+Sequential comparison implements the strong conditional-superiority construction of [Arnold et al., JRSSB 2026](https://doi.org/10.1093/jrsssb/qkag066): a target model must have no larger expected loss than every other fixed model, conditional on information at every forecast issue. The target set may be empty. Exclusions are permanent; continue supplying all original models afterward. Each label must arrive before the next forecast; backtests require origin spacing at least the selected physical lead. Fix `bet_fraction` in `(0, .5]` beforehand; `.25` is the default, without optimality or floating-point certification claims. See the [time-series API](docs/time-series.md#连续模型置信集) for fields and a short streaming example.
 
 One-step intervals implement the decaying update of [Angelopoulos–Barber–Bates, ICML 2024](https://proceedings.mlr.press/v235/angelopoulos24a.html), with a fixed-scale bounded residual transform. The multi-step module additionally maintains a mature-feedback queue. Its ideal recursion controls retrospective average miscoverage of matured forecasts separately at each lead, without conditional coverage at each time or simultaneous coverage of an entire path. This independent engineering implementation does not reproduce full AcMCP PID and scorecasting. Empty and whole-line sets remain explicit and thresholds are not clipped. Ordinary floating-point feedback uses the returned closed intervals, without a rounding certificate. See the [time-series API](docs/time-series.md) and [multi-step methods](docs/multistep-methods.md).
 
@@ -141,22 +146,13 @@ strategy-inference test examples/demo_returns.csv \
 
 ## Documentation, research and performance
 
-Start with `src/strategy_inference/` and `examples/`. Reproduction and release tools live in `scripts/`; saved research evidence lives in `results/`. v0.8.1 removes superseded scale-learning prototypes and their dedicated tests from the active tree, sharing data generation, path metrics and validation in `scripts/_scale_study.py`. Historical source and tests remain available at the [v0.8.0 tag](https://github.com/Studyer-Tang/strategy-inference/tree/v0.8.0); saved results and source ZIPs are unchanged.
+Runnable examples cover the [time-series workflow](examples/time_series.py) and [multi-step intervals](examples/multistep.py). The [roadmap](docs/toolbox-roadmap.md) separates implemented and planned capabilities. The [research index](docs/research.md) preserves historical evaluations, failed settings and frozen evidence; reproduce formal studies at the commit/tag in their metadata. Implementing established algorithms is not a claim of foundational novelty.
 
-The [roadmap](docs/toolbox-roadmap.md) distinguishes implemented functionality from proposed extensions. The [research index](docs/research.md) retains historical evaluations, failed settings, frozen protocols and raw evidence. Implementations of established forecasting, bootstrap and conformal algorithms are not claims of foundational algorithmic novelty.
-
-The historical v0.6 [archived page](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/), [performance notes](docs/time-series-performance.md) and [raw record](benchmarks/results/time-series-0.6.json) retain that release's conditions, five warmed samples and source hashes. They bind v0.6 release source; v0.7 [performance notes](docs/multistep-performance.md) and [raw measurements](benchmarks/results/multistep-0.7.json) are reported separately. The [blending measurements](docs/blended-scales-performance.md) distinguish frozen v0.8.0 measurements from the v0.8.1 refactor comparison. Local engineering measurements do not guarantee universal speed or statistical calibration.
-
-Historical evidence remains in the [v0.5 page and full benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/) and [v0.5 performance notes](docs/performance.md). Older timings do not measure current interfaces. Reproduce historical formal studies at the frozen commit/tag specified in their metadata.
+Measurements are versioned: [forecast evaluation](docs/time-series-performance.md), [multi-step intervals](docs/multistep-performance.md), and [scale blending and refactoring](docs/blended-scales-performance.md). Older measurements do not cover newly added interfaces; local timings guarantee neither universal speed nor statistical calibration.
 
 ```bash
 python -m pytest
 ruff check .
-python scripts/sync_protocols.py --check
-python scripts/build_library_site.py --check
-python scripts/build_toolbox_site.py --check
-python scripts/build_multistep_site.py --check
-python scripts/build_blended_site.py --check
 ```
 
 BSD-3-Clause license.

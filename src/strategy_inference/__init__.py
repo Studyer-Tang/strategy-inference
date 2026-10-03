@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 _EXPORTS = {
     "AuditResult": "audit",
     "audit_returns": "audit",
@@ -32,6 +32,8 @@ _EXPORTS = {
     "interval_score": "evaluation",
     "evaluate_forecasts": "evaluation",
     "compare_forecasts": "evaluation",
+    "SequentialModelConfidenceSet": "sequential",
+    "sequential_compare_forecasts": "sequential",
     "AdaptiveConformal": "conformal",
     "ConformalInterval": "conformal",
     "ConformalUpdate": "conformal",

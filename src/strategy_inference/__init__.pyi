@@ -36,6 +36,8 @@ from .multistep import MultiStepInterval as MultiStepInterval
 from .multistep import MultiStepResult as MultiStepResult
 from .multistep import MultiStepUpdate as MultiStepUpdate
 from .multistep import multistep_intervals as multistep_intervals
+from .sequential import SequentialModelConfidenceSet as SequentialModelConfidenceSet
+from .sequential import sequential_compare_forecasts as sequential_compare_forecasts
 from .testing import TestResult as TestResult
 from .testing import test_returns as test_returns
 from .uncertainty import UncertaintyResult as UncertaintyResult

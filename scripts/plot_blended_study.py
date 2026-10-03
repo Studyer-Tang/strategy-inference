@@ -137,7 +137,11 @@ def statistics(report):
     if parameters["fixed"] != {"scale_source": "horizon", "scale_decay": None}:
         raise ValueError("The fixed-scale reference must disable scale adaptation.")
     source = report.get("source_sha256")
-    required = {"0.8.0": REQUIRED_SOURCES, "0.8.1": CURRENT_SOURCES}.get(
+    required = {
+        "0.8.0": REQUIRED_SOURCES,
+        "0.8.1": CURRENT_SOURCES,
+        "0.9.0": CURRENT_SOURCES | {"src/strategy_inference/sequential.py"},
+    }.get(
         report.get("package_version")
     )
     if (

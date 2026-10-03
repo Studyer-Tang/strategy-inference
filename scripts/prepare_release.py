@@ -63,7 +63,7 @@ def prepare(tag: str, dist: Path, notes: Path, *, root: Path = ROOT):
     api = next(
         (
             name
-            for name in ("multistep-api.md", "time-series.md")
+            for name in ("time-series.md", "multistep-api.md")
             if (root / "docs" / name).is_file()
         ),
         "api.md",

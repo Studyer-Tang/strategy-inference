@@ -1,6 +1,6 @@
 # 时间序列评估与在线区间
 
-`v0.6.0` 增加与模型无关的时序评估流程。原有均值检验见 [API](api.md)，后续范围见[路线图](toolbox-roadmap.md)。核心依赖仍为 NumPy 与 SciPy；滚动评估、评分和在线区间本身只用 NumPy 与标准库。
+预测评估、固定样本比较、v0.9 连续模型置信集与单步在线区间的公共接口。多步成熟反馈见[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)，后续范围见[路线图](toolbox-roadmap.md)。核心依赖为 NumPy 与 SciPy。
 
 ## 滚动切分
 
@@ -75,7 +75,7 @@ interval_score(actual, lower, upper, *, alpha=0.1)
 
 中央区间 score 为 `upper-lower + 2/alpha * ((lower-y)_+ + (y-upper)_+)`。要求边界同形、顺序正确、没有 NaN；允许向外无穷边界，对全实数区间评分为正无穷。空集合没有该区间 score，明确报错。极大惩罚也可能为正无穷。评分描述区间宽度与漏覆盖代价，不证明覆盖有效；请分别保存空集、无界比例，不把这些状态删掉后报告平均宽度。
 
-## 比较候选模型
+## 固定样本比较
 
 ```python
 compare_forecasts(result, *, baseline, lead_time=None, loss="squared",
@@ -92,6 +92,42 @@ compare_forecasts(result, *, baseline, lead_time=None, loss="squared",
 `ForecastComparison` 保存 `baseline`、`lead_time`、`origin_step`、`loss`、`quantile`、基准/候选平均损失、`warnings` 与底层 `inference: TestResult`。表格包含平均改善、相对改善、调整 p 值及拒绝决定；基准损失为零时相对改善是 `None`，不做除零。`to_dict()` 保留方法诊断，另外输出 `comparison_warnings`。
 
 保证范围要求损失差平稳、弱依赖、合适矩条件及尺度估计。模型反复调参、损失非平稳、持续监测后停止和跨多个步长同时选择，需要额外方法；普通候选表不解决这些问题。比较可以评估电力需求、销售量或其他预测序列，不局限于收益，但适用条件始终针对对应的损失差。
+
+## 连续模型置信集
+
+```python
+SequentialModelConfidenceSet(names, *, alpha=.05, loss="absolute",
+                             quantile=None, bet_fraction=.25)
+sequential_compare_forecasts(result, *, lead_time=None, alpha=.05,
+                             loss="absolute", quantile=None, bet_fraction=.25)
+```
+
+这是 [Arnold 等，JRSSB 2026，Sequential model confidence sets](https://doi.org/10.1093/jrsssb/qkag066) 的 **strong conditional-superiority** 构造，采用 Proposition 3.2、Eq.6–7 与补充 H 的闭合调整；[原文 HTML v4](https://arxiv.org/html/2404.18678v4)提供完整公式。设 `L_i,t` 为模型 i 的损失，目标是对**每次**发行时的信息 \(\mathcal F_{t-1}\) 及**所有**其他固定模型 j 满足
+
+\[
+\mathbb E[L_{i,t}-L_{j,t}\mid\mathcal F_{t-1}]\le 0.
+\]
+
+在这些条件下，理想运算中的置信集以至少 `1-alpha` 的概率在全部评估时刻保留所有目标模型；不要求 IID、平稳或事先固定结束时点。目标集合可能为空。当前接口不实现原论文的累计平均风险或随时间变化的平均风险构造，不能把留下的模型解释为已证实的“目前平均损失最小者”。
+
+`names` 至少含两个不同的非空标签。模型族、`alpha`、损失、quantile 和 betting fraction 须事先固定；模型内部可用已经可用的历史重新拟合。支持 `absolute` 或 `pinball`；后者须给出 `0<quantile<1`，预测应对应该分位数。其他损失不能带 quantile。`bet_fraction` 在 `(0,.5]` 内，默认 `.25` 是保守固定选择，不声称最优。
+
+必须先 `predict(forecasts)` 登记 names 顺序的有限实数向量，再 `update(actual)` 反馈共同标签。只允许一个 pending 标签，标签须在下一次发行前成熟；即使某模型被排除，之后仍须提供全部原模型的预测。流式例子：
+
+```python
+from strategy_inference import SequentialModelConfidenceSet
+tracker = SequentialModelConfidenceSet(("a", "b"), loss="absolute")
+tracker.predict([1.0, 2.0])
+print(tracker.update(1.2))
+tracker.predict([1.5, 2.0])
+print(tracker.to_dict())  # 第二次预测仍 pending。
+```
+
+成对损失差的事前界为 `B_ij = |forecast_i-forecast_j|`，pinball 则再乘 `max(q,1-q)`。实现直接计算差值与界的比率，不截断原始损失或观测；相同预测的因子为 1。各 pair 的财富乘上 `1 + bet_fraction*(L_i-L_j)/B_ij`，再对模型平均并作闭合检验；调整后的 e-value 达到 `1/alpha` 时排除模型。`confidence_set` 是历次集合的交集，排除永久生效，不恢复模型。
+
+`sequential_compare_forecasts` 返回同一个 tracker，处理回测所选 lead 后仍可继续流式调用。多步回测必须指定物理 `lead_time`，相邻 origin 间隔须至少等于该 lead；重叠反馈明确报错，不展平多步数组。预测来源须只使用当时可用的信息，wrapper 不替调用者验证强条件 null。
+
+`names`、`n_updates`、`confidence_set`、`pending` 可读取；`log_evalues` 和 `log_adjusted_evalues` 为当前模型层面的只读向量。`to_dict()` 导出参数、这两个证据向量、计数、跑动集合与 pending 的严格 JSON 快照，未保存整段预测历史。e-value 不是 p 值或模型正确的概率；当前证据可能回落，跑动集合仍保留先前排除。非法输入不改变状态。内存为 `O(M²)`；更新为 `O(M²)` 加 `O(M log M)` 的闭合调整。普通 float64 未作舍入认证。
 
 ## 单步在线区间
 
@@ -120,8 +156,8 @@ feedback = tracker.update(actual_when_available)
 
 `adaptive_intervals` 回放已对齐的一维、单步预测与目标；预测本身须已在不读取未来资料的情况下构造。它不会训练、挑选模型或验证该来源。结果 `ConformalResult` 包含实际值、预测、lower/upper、empty/unbounded、misses、发出时的 quantiles、后续 step_sizes、参数及 next_quantile；数组只读。`coverage` 是已实现的平均覆盖，不是未来概率。严格 JSON 通过 kind 和 `None` 边界区分空集与无界区间。
 
-滚动结果接入此 wrapper 时，首例应使用 `gap=0,horizon=1,step=1`，或明确确认下一次发出预测前已收到上次标签。多步迟到反馈与未来路径同时覆盖尚未实现，不能靠展平多步数组套用此保证。
+滚动结果接入此 wrapper 时，首例应使用 `gap=0,horizon=1,step=1`，或确认下一次发行前已收到上次标签。多步成熟反馈使用[多步接口](multistep-api.md)，不能靠展平数组套用单步保证；整条未来路径同时覆盖尚未实现。
 
 ## 当前与后续
 
-0.6 提供一条能调用和核验的工作流程。经典模型接口、数据频率诊断、panel、成熟标签队列、序贯模型集合、跨步长联合推断及现代条件覆盖仍按[路线图](toolbox-roadmap.md)逐项扩展。未来方法上线前须核验原论文、独立参考、假设与复杂度；本页的基础算法和合理工程组织不作为研究创新宣称。
+当前已提供滚动评估、固定样本比较、strong 连续模型置信集及单步/多步区间。经典模型适配、数据频率诊断、panel、跨步长联合推断及现代条件覆盖仍见[路线图](toolbox-roadmap.md)。既有算法的实现和接口整合不作为基础算法创新宣称。

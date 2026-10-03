@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0
+
+- Add streaming `SequentialModelConfidenceSet` and a backtest adapter, based on Arnold et al. (JRSSB, 2026). Compare all prespecified models under strong conditional superiority with predictable absolute/pinball score-difference bounds and closed e-testing.
+- Keep evidence in the log domain, avoid overflowing raw losses, and use the paper's O(M log M) closure adjustment. State uses O(M²) memory without observation history or resampling. Reject overlapping feedback and invalid updates atomically.
+- Extend the existing example and API reference; keep historical studies in the documentation archive.
+
 ## 0.8.1
 
 - Remove superseded scale-learning prototypes and their dedicated tests from the active tree. Keep historical source at v0.8.0 and preserve all saved results and source ZIPs. Share the current study's generation, metrics and validation, and index path records once when aggregating.

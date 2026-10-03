@@ -1,10 +1,10 @@
 # 时序工具箱：范围与路线图
 
-`strategy-inference` 保留现有包名。v0.6 建立预测数据对齐、损失评估、统计比较和单步区间工作流；v0.7 增加多步成熟反馈与可选尺度更新；v0.8 提供自身步长与短步长共享尺度的固定比例融合。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
+`strategy-inference` 保留现有包名。当前提供滚动预测评估、固定样本比较、成熟反馈在线区间与尺度融合；v0.9 增加 strong 连续模型置信集。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
 
 安装与例子见[首页](../README.md)，详细接口见[时序 API](time-series.md)、[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)。本项目的增量主要是接口整合、实现、验证和计算效率；已知预测、MCS、bootstrap 与 conformal 基础算法不作为算法创新主张。
 
-## 保留的 v0.6 工作流
+## 已实现的评估工作流
 
 | 能力 | 公共接口与当前边界 |
 | --- | --- |
@@ -12,11 +12,12 @@
 | 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`；支持 `callback(train, lead_times)` 接入使用者预测器，外部状态的未来信息须由使用者约束 |
 | 逐预测损失 | `forecast_loss`、`evaluate_forecasts`；平方、绝对、pinball，保留 origin × lead × model 数组并按 lead 汇总。`interval_score` 单独评价中心区间，不能凭评分推断覆盖保证 |
 | 固定候选预测比较 | `compare_forecasts`；预先指定 baseline 与单个 lead，共享时间索引的 max bootstrap。正改善为 baseline 损失减去候选损失；依赖固定族、平稳弱依赖、适当矩和非退化方差等条件 |
+| 连续模型置信集（v0.9） | `SequentialModelConfidenceSet`、`sequential_compare_forecasts`；固定模型族、绝对/pinball 损失、事前注册预测与非重叠反馈。目标为每时每 pair 的强条件优劣；集合可空，排除不恢复。见[API](time-series.md#连续模型置信集) |
 | 单步在线区间 | `AdaptiveConformal`、`adaptive_intervals`；递减步长 quantile tracker，固定尺度有界残差映射，单个 pending prediction 与有序完整反馈。保留空集/全域，不截断阈值；理想递推为长期平均覆盖，普通浮点实现不提供舍入证书 |
 | 收益均值推断 | `test_returns` 与既有高级接口保留；bootstrap 近似和共同平稳 Gaussian AR(1) 模型内的保守决定各自沿用原条件 |
 | 结果保存 | 回测数组、逐预测损失、候选比较与在线区间结果可读取；JSON/记录表接口，部分 `to_frame()` 需可选 pandas。类型和导出范围见 API |
 
-上述回测功能并不自动保证损失平稳；多步预测、单个 lead 的统计比较与单步在线区间也是不同能力。当前比较不会把 lead 展平成独立样本；原单步 tracker 仍要求即时有序反馈。
+回测不自动保证损失平稳，strong 连续比较也不等同于累计平均风险排名。比较不会把 lead 展平成独立样本；原单步 tracker 仍要求即时有序反馈。
 
 ## v0.7 增加的能力
 
@@ -42,7 +43,7 @@ v0.8 的 `scale_source="blended"` 用预先指定的标量或逐步长共享权�
 | --- | --- | --- |
 | 数据、频率与变换 | 显式频率/日期对齐、缺失策略、差分和标准化、训练窗内拟合的变换与逆变换 | 未来数据扰动不改变过去结果；不静默删行；变换参数只用训练数据；日期/频率语义有往返测试 |
 | 经典模型接入 | 与 sktime、StatsForecast 等预测器连接；明确 refit/update、季节周期和预测时点可用的外生变量 | 对同一训练窗与底层库输出对照；固定种子、失败处理和重估语义；避免复制成熟模型库后误称新算法 |
-| 多模型集合与序贯比较 | 经典 MCS 消除法参考，Fast MCS 实验路径，随后独立实现具时间一致目标的 SMCS | 相同 loss 与 bootstrap 索引下核对 ranks/p 值、ties 和纳入集合；Fast MCS 记录有限样本差异/回退；序贯版本另验 e-process 条件与停止规则 |
+| 经典多模型集合 | 经典 MCS 消除法参考与 Fast MCS 实验路径 | 相同 loss 与 bootstrap 索引下核对 ranks/p 值、ties 和纳入集合；Fast MCS 记录有限样本差异/回退 |
 | 多 lead 联合比较 | 预声明加权风险、模型 × lead 同时置信带，以及单独的联合 Wald 比较 | 使用完整跨 lead 与时间协方差；不把同一目标的多次预测当独立重复；对参考实现、相关 DGP 和有限样本覆盖做评估 |
 | 条件在线 conformal | 核验 2025 条件分位数建模/在线优化方法，区别 adversarial 平均覆盖与结构化 stochastic 条件结论 | 明确条件分位数结构、设计变量、更新顺序和理论假设；独立复现，不能沿用当前 tracker 的平均覆盖说明代替新定理 |
 | 完整 PID、误差预测与联合区间 | 以现有成熟反馈为基础，核验 AcMCP 的饱和/scorecaster 与 O²CP 的可容许集优化；单独设计路径同时覆盖目标 | 不能把额外阈值修正当作当前证明已包含；核验各算法的额外假设，并分别报告逐 horizon 和整条轨迹指标 |
@@ -52,7 +53,7 @@ v0.8 的 `scale_source="blended"` 用预先指定的标量或逐步长共享权�
 ## 近期主源与可继承的范围
 
 - **2024，Angelopoulos–Barber–Bates：[Online conformal prediction with decaying step sizes](https://proceedings.mlr.press/v235/angelopoulos24a.html)。** 当前 tracker 的来源。Theorem 1 对有界 score、正递减步长和初始阈值给出任意序列的回顾平均覆盖界。IID 量化收敛还需要固定/稳定 score、分位数与连续性等额外条件，不能解释成任意依赖序列的逐时条件覆盖。当前固定尺度有界映射是实现选择。
-- **2024 首稿、2026 修订，Arnold 等：[Sequential model confidence sets](https://arxiv.org/abs/2404.18678)。** 采用 e-process 和 confidence sequence，§3 区分逐时与累计条件风险目标；相应构造要求有界、条件有界损失差或合适的尾部条件。普通固定样本 MCS 反复运行不能继承时间一致保证。缩放损失差可能改变 superiority 的目标。
+- **2026，Arnold 等：[Sequential model confidence sets，JRSSB](https://doi.org/10.1093/jrsssb/qkag066)，[HTML v4](https://arxiv.org/html/2404.18678v4)。** v0.9 实现 Proposition 3.2、Eq.6–7 与补充 H 的 strong 构造，使用预测事前确定的绝对/pinball 损失差界和闭合 e-testing。原论文的 uniformly weak/weak 平均风险构造未实现；其时间变化归一化可能改变风险目标。普通固定样本 MCS 反复运行不能继承时间一致保证。
 - **2025，Areces–Mohri–Hashimoto–Duchi：[Online Conformal Prediction via Online Optimization](https://proceedings.mlr.press/v267/areces25a.html)。** 分别提供 adversarial 平均保证和 stochastic 条件结论；后者使用条件误差分位数由过去数据线性表达等结构假设。它不支持任意非平稳序列逐时条件覆盖，也不是当前 `AdaptiveConformal` 的已实现能力。
 - **2025 首稿，Bauer–Kazak：[Conditional Method Confidence Set](https://arxiv.org/abs/2505.21278)。** 按预测时点已知的离散状态比较方法。§2 使用有限训练窗、混合/矩条件、状态内稳定排名和一致方差估计；不能把事后挑选 regime 或 expanding-window 搜索直接当作已获保证。
 - **2026（online 2025），Barde：[Large-scale model comparison with fast model confidence sets](https://doi.org/10.1016/j.jeconom.2025.106123)。** R-rule 两遍更新算法减少论文所比较实现的模型维度时间与工作内存阶数。**Proposition 1 的 ranking/output 等价结论是样本量增大时的渐近结果**；有限样本实验一致不等于任意输入严格相等。未来实现须保留经典消除法参考、共享抽样索引及差异记录/回退；一遍版本不能冒充两遍算法。添加模型的计算能力也不自动处理自适应搜索。[作者说明](https://sylvain-barde.github.io/projects/fast_mcs/)明确此渐近限制。

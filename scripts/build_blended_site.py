@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.8.0"
-CURRENT_VERSION = "0.8.1"
+CURRENT_VERSION = "0.9.0"
 RELEASE_COMMIT = "7488a96283890a7884d0cb58346f973bfd4a245b"
 GITHUB = "https://github.com/Studyer-Tang/strategy-inference/blob/main"
 STUDY = "results/research/blended-scales/full"
@@ -650,7 +650,7 @@ def render(study, performance, *, archive=False):
     maintenance = (
         "本页保存 v0.8.0 的完整研究与计时记录，源码绑定不可变提交。"
         if archive
-        else f'v0.8.1 精简共享研究代码与文件组织，减少重复校验和无用对象分配。下面的研究与该组计时属于 v0.8.0；<a href="{github}/docs/blended-scales-performance.md">v0.8.1 重构性能对照</a>另行记录。'
+        else f'v0.9 新增连续模型比较，依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a> 的 sequential model confidence sets。<a href="{github}/docs/time-series.md#连续模型置信集">查看接口与例子</a>。'
     )
     names = [r["name"] for r in study["protocol"]["scenarios"]]
     group = {(r["scenario"], r["method"]): r for r in study["aggregate"] if r["lead_time"] == 24}
@@ -708,6 +708,34 @@ def render(study, performance, *, archive=False):
         f'<figure><img src="research/blended/{stem}.svg" alt="{html.escape(caption)}" loading="lazy"><figcaption>{html.escape(caption)}</figcaption></figure>'
         for stem, caption in zip(FIGURES, figure_captions, strict=True)
     )
+    quickstart = '''import numpy as np
+from strategy_inference import MultiStepConformal
+
+tracker = MultiStepConformal(
+    [1, 6, 12, 24], scale=[1.0, 1.3, 1.3, 1.3],
+    step_size=0.1 / np.sqrt([1, 6, 12, 24]), decay=0.2,
+    scale_decay=0.97, scale_source="blended", scale_share_weight=0.5,
+)
+for t, value in enumerate(observations):
+    updates = tracker.observe(t, float(value))
+    intervals = tracker.predict([value] * 4)  # naive 基线；只用当前标签'''
+    note = "示例尺度须在使用前由训练数据确定；上面只示范接口。允许跳过发行，观测时钟连续。每个区间保持发行时的阈值和尺度，未成熟标签留在 pending。"
+    sequential_tool = ""
+    if not archive:
+        quickstart = '''from strategy_inference import (
+    backtest, naive_forecast, drift_forecast, sequential_compare_forecasts,
+)
+
+run = backtest(
+    observations, {"naive": naive_forecast, "drift": drift_forecast},
+    initial_train_size=64,
+)
+comparison = sequential_compare_forecasts(run, loss="absolute")
+print(comparison.confidence_set)'''
+        note = "连续检验比较事先固定的模型族；保留集合针对每次发行时的条件风险优势，可为空。新数据到来后可继续 predict / update。"
+        sequential_tool = f'<li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
+    history_open = "" if archive else '<details><summary>历史研究与复现 · v0.8.0</summary>'
+    history_close = "" if archive else "</details>"
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>strategy-inference · 时间序列工具库</title><meta name="description" content="时间序列评价、预测比较与在线区间。Python API、完整研究记录和本机性能证据。">
@@ -719,24 +747,16 @@ def render(study, performance, *, archive=False):
 <p class="small">{maintenance}</p>
 <h2 id="start">开始使用</h2>
 <pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v{page_version}/strategy_inference-{page_version}-py3-none-any.whl</code></pre>
-<pre><code>import numpy as np
-from strategy_inference import MultiStepConformal
-
-tracker = MultiStepConformal(
-    [1, 6, 12, 24], scale=[1.0, 1.3, 1.3, 1.3],
-    step_size=0.1 / np.sqrt([1, 6, 12, 24]), decay=0.2,
-    scale_decay=0.97, scale_source="blended", scale_share_weight=0.5,
-)
-for t, value in enumerate(observations):
-    updates = tracker.observe(t, float(value))
-    intervals = tracker.predict([value] * 4)  # naive 基线；只用当前标签</code></pre>
-<p class="small">示例尺度须在使用前由训练数据确定；上面只示范接口。允许跳过发行，观测时钟连续。每个区间保持发行时的阈值和尺度，未成熟标签留在 pending。</p>
+<pre><code>{quickstart}</code></pre>
+<p class="small">{note}</p>
 <h2 id="tools">可用功能</h2>
 <ul><li><a href="{github}/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线。</li>
 <li><a href="{github}/docs/time-series.md">预测器比较</a>：时间依赖下的路径损失差与重采样。</li>
+{sequential_tool}
 <li><a href="{github}/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>
 <li><a href="{github}/docs/api.md">金融策略推断</a>：HAC、筛选重放及有模型条件的参数不确定性检验。</li></ul>
 <p><a href="{github}/examples/multistep.py">完整例子</a> · <a href="{github}/docs/multistep-methods.md">递推与证明</a> · <a href="{github}/docs/toolbox-roadmap.md">发展路线</a></p>
+{history_open}
 <h2 id="research">v0.8.0 研究 · 固定尺度融合</h2>
 <p>v0.8 可按预先固定的权重，融合自身步长成熟残差 RMS 与最短步长共享 RMS。权重为 0、1 时，在两来源均可表示的范围内复现两个原模式；默认半权重不表示最优。融合保持每步长阈值独立，既不提前获得长步长标签，也不改变理想平均覆盖账本。</p>
 <p>六个情形，每个 40 条独立路径；每条 3,000 个观测。滚动 AR(1) 点预测只用起点已有标签；训练前缀为 600，评价排除前 128 个发行起点。表中是本次模拟的 interval score 观测均值，越低越好。</p>
@@ -755,6 +775,7 @@ for t, value in enumerate(observations):
 <p class="small">{html.escape(performance["platform"])} · Python {html.escape(performance["python"].split()[0])} · NumPy {html.escape(performance["numpy"])}。串行进程，BLAS 线程环境设为 1，一次预热后五次热调用中位数。导入、输入生成、一致性检查和调用后指纹不计时；API 内部输出构造计时。tracemalloc 单独一次，排除已有输入，包含新增分配，不是 RSS。</p>
 <p class="small">工程负载统一学习率 0.1；统计实验采用 0.1/√h。这些 v0.8.0 source-bound 本机测量不构成当前版本性能、通用性能或统计保证。</p>
 <p><a href="research/blended/benchmark.json" download>全部计时、设置与源码哈希</a> · <a href="{prefix}v0.7.0/">v0.7 页面与计时归档</a> · <a href="{prefix}v0.6.0/">v0.6 归档</a> · <a href="{prefix}v0.5.0/">v0.5 归档</a></p>
+{history_close}
 </main><footer>BSD-3-Clause · <a href="{github}/docs/multistep-api.md">参数、数值边界与失败处理</a> · <a href="research/blended/site-manifest.json" download>本页证据索引</a></footer></body></html>'''.encode()
 
 
