@@ -77,3 +77,7 @@ python scripts/joint_report.py --output results/research/joint/reproduced
 ## 多步成熟反馈与尺度共享（v0.7）
 
 [方法与独立证明](multistep-methods.md)、[固定协议模拟结果](multistep-results.md)和[运行成本](multistep-performance.md)记录每步长反馈时钟、可选尺度共享及其适用范围。四个预设过程各40条独立路径，三张图可由一个命令重现；原始记录与源码、runner和协议哈希绑定。
+
+## 固定成熟尺度融合（v0.8）
+
+[结果与复现](blended-scales-results.md)记录六个过程、每个40条独立路径与预先指定的共享权重。预测器由可用历史滚动拟合，初始尺度仅用共同训练目标；不是已知参数 oracle 评价。[方法](multistep-methods.md)保留完整成熟前缀的平均覆盖范围，[性能说明](blended-scales-performance.md)测量当前公共接口。有限模拟显示折中收益与代价，不建立一般效率保证。

@@ -78,6 +78,30 @@ def _scales(values, h, name):
     return tuple(float(value) for value in result)
 
 
+def _share_weights(values, h):
+    if values is None:
+        return (0.5,) * h
+    if np.isscalar(values):
+        result = np.full(h, _finite(values, "scale_share_weight"))
+    else:
+        result = _array(values, "scale_share_weight")
+        if result.shape != (h,):
+            raise ValueError(f"scale_share_weight must be a scalar or a vector with {h} entries.")
+    if np.any((result < 0) | (result > 1)):
+        raise ValueError("scale_share_weight must lie in [0, 1].")
+    return tuple(float(value) for value in result)
+
+
+def _blend_scale(own, shared, weight):
+    if weight == 0 or own == shared:
+        return own
+    if weight == 1:
+        return shared
+    largest = max(own, shared)
+    fraction = (1 - weight) * (own / largest) + weight * (shared / largest)
+    return max(min(own, shared), largest * min(1.0, fraction))
+
+
 @dataclass(frozen=True, slots=True)
 class MultiStepInterval:
     origin: int
@@ -150,6 +174,11 @@ class MultiStepConformal:
     mature residuals; ``shortest`` shares the shortest lead's residual source
     using the original scale ratios, followed by per-lead floors. Floors apply
     to adaptive updates, not to the supplied initial or override scales.
+    ``blended`` combines own-lead and shared RMS with fixed weights in [0,1],
+    defaulting to 1/2. Both sources must remain positive and finite, including
+    an unused endpoint source. Initial scales are preserved exactly.
+    On this common representable domain, weights 0 and 1 reproduce ``horizon``
+    and ``shortest`` respectively, including their floating-point updates.
     """
 
     __slots__ = (
@@ -157,6 +186,7 @@ class MultiStepConformal:
         "_step_size", "_decay", "_initial_quantile", "_strategy", "_initial_scales",
         "_scales", "_floors", "_scale_decay", "_scale_source", "_source_scale",
         "_ratios", "_states", "_pending", "_issued", "_evaluated", "_misses",
+        "_scale_share_weights", "_own_scales", "_shared_scales",
     )
 
     def __init__(
@@ -164,7 +194,7 @@ class MultiStepConformal:
         step_size: ArrayLike = 0.1, decay: float = 0.6, scale: ArrayLike = 1.0,
         initial_quantile: float = 0.5, strategy: str = "pooled",
         scale_decay: float | None = None, scale_source: str = "horizon",
-        scale_floor: ArrayLike = 1e-8,
+        scale_floor: ArrayLike = 1e-8, scale_share_weight: ArrayLike | None = None,
     ):
         leads = _leads(lead_times)
         start = _time(start_time, "start_time")
@@ -174,18 +204,20 @@ class MultiStepConformal:
             initial_quantile=initial_quantile)
         if not isinstance(strategy, str) or strategy not in ("pooled", "interlaced"):
             raise ValueError("strategy must be 'pooled' or 'interlaced'.")
-        if not isinstance(scale_source, str) or scale_source not in ("horizon", "shortest"):
-            raise ValueError("scale_source must be 'horizon' or 'shortest'.")
+        if not isinstance(scale_source, str) or scale_source not in ("horizon", "shortest", "blended"):
+            raise ValueError("scale_source must be 'horizon', 'shortest' or 'blended'.")
+        if scale_source != "blended" and scale_share_weight is not None:
+            raise ValueError("scale_share_weight requires scale_source='blended'.")
         if scale_decay is not None:
             scale_decay = _finite(scale_decay, "scale_decay")
             if not 0 <= scale_decay < 1:
                 raise ValueError("scale_decay must lie in [0, 1).")
-        if scale_source == "shortest" and scale_decay is None:
-            raise ValueError("scale_source='shortest' requires scale_decay.")
+        if scale_source in ("shortest", "blended") and scale_decay is None:
+            raise ValueError(f"scale_source='{scale_source}' requires scale_decay.")
         initial = _scales(scale, len(leads), "scale")
         floors = _scales(scale_floor, len(leads), "scale_floor")
         rates = _scales(step_size, len(leads), "step_size")
-        ratios = tuple(value / initial[0] for value in initial) if scale_source == "shortest" else ()
+        ratios = tuple(value / initial[0] for value in initial) if scale_source in ("shortest", "blended") else ()
         if any(not isfinite(value) or value <= 0 for value in ratios):
             raise ValueError("Initial scale ratios exceed the supported float range.")
         self._leads, self._lead_index = leads, {lead: i for i, lead in enumerate(leads)}
@@ -195,6 +227,9 @@ class MultiStepConformal:
         self._initial_scales, self._scales, self._floors = initial, list(initial), floors
         self._scale_decay, self._scale_source = scale_decay, scale_source
         self._source_scale, self._ratios = initial[0], ratios
+        self._scale_share_weights = _share_weights(scale_share_weight, len(leads)) if scale_source == "blended" else None
+        self._own_scales = list(initial) if scale_source == "blended" else None
+        self._shared_scales = list(initial) if scale_source == "blended" else None
         self._states: dict[tuple[int, int], _Lane] = {}
         self._pending: dict[int, list[MultiStepInterval]] = {}
         self._issued, self._evaluated, self._misses = ([0] * len(leads) for _ in range(3))
@@ -214,6 +249,11 @@ class MultiStepConformal:
     @property
     def current_scales(self):
         return tuple(self._scales)
+
+    @property
+    def current_scale_weights(self):
+        """Fixed shared-source weights, or None outside blended mode."""
+        return self._scale_share_weights
 
     @property
     def step_size(self):
@@ -314,12 +354,27 @@ class MultiStepConformal:
             states.append(((i, lane), _Lane(q, n, state.misses + int(miss))))
             residuals[i] = residual
         new_scales, source = list(self._scales), self._source_scale
+        own, shared = self._own_scales, self._shared_scales
         if self._scale_decay is not None and residuals:
             beta = self._scale_decay
             if self._scale_source == "horizon":
                 for i, residual in residuals.items():
                     new_scales[i] = max(self._floors[i],
                         hypot(sqrt(beta) * self._scales[i], sqrt(1 - beta) * residual))
+            elif self._scale_source == "blended":
+                own, shared = list(own), list(shared)
+                for i, residual in residuals.items():
+                    own[i] = max(self._floors[i],
+                        hypot(sqrt(beta) * own[i], sqrt(1 - beta) * residual))
+                if 0 in residuals:
+                    source = max(self._floors[0],
+                        hypot(sqrt(beta) * source, sqrt(1 - beta) * residuals[0]))
+                    shared = [max(floor, source * ratio)
+                        for floor, ratio in zip(self._floors, self._ratios, strict=True)]
+                if any(not isfinite(value) or value <= 0 for value in own + shared):
+                    raise ValueError("Adaptive scale update overflow.")
+                new_scales = [_blend_scale(left, right, weight)
+                    for left, right, weight in zip(own, shared, self._scale_share_weights, strict=True)]
             elif 0 in residuals:
                 source = max(self._floors[0],
                     hypot(sqrt(beta) * source, sqrt(1 - beta) * residuals[0]))
@@ -335,6 +390,7 @@ class MultiStepConformal:
             self._evaluated[i] += 1
             self._misses[i] += int(update.miss)
         self._scales, self._source_scale = new_scales, source
+        self._own_scales, self._shared_scales = own, shared
         self._pending.pop(time, None)
         self._last = time
         return tuple(updates)
@@ -379,7 +435,7 @@ class MultiStepConformal:
 
     def to_dict(self):
         """Strict JSON with active lanes; unused lanes retain the stated default."""
-        return dict(schema_version=1, method="multistep_conformal", lead_times=list(self._leads),
+        record = dict(schema_version=1, method="multistep_conformal", lead_times=list(self._leads),
             start_time=self._start, last_time=self.last_time, next_time=self.next_time,
             alpha=self._alpha, step_size=list(self._step_size), decay=self._decay,
             initial_quantile=self._initial_quantile, strategy=self._strategy,
@@ -391,6 +447,10 @@ class MultiStepConformal:
                 for (i, lane), state in sorted(self._states.items())],
             summary=self.summary(), pending=[interval.to_dict() for interval in self.pending],
             coverage_bound_arithmetic="ordinary binary64; not a rounding certificate")
+        if self._scale_source == "blended":
+            record.update(scale_share_weight=list(self._scale_share_weights),
+                own_scales=list(self._own_scales), shared_scales=list(self._shared_scales))
+        return record
 
 
 def _mean_nonnegative(values):
@@ -508,6 +568,7 @@ def multistep_intervals(
     alpha: float = 0.1, step_size: ArrayLike = 0.1, decay: float = 0.6,
     scale: ArrayLike = 1.0, initial_quantile: float = 0.5, strategy: str = "pooled",
     scale_decay: float | None = None, scale_source: str = "horizon", scale_floor: ArrayLike = 1e-8,
+    scale_share_weight: ArrayLike | None = None,
 ) -> MultiStepResult:
     """Replay available labels in integer time; future-tail forecasts stay pending.
 
@@ -531,7 +592,8 @@ def multistep_intervals(
         raise ValueError("A forecast target would exceed int64.")
     tracker = MultiStepConformal(leads, start_time=int(origin[0]), alpha=alpha,
         step_size=step_size, decay=decay, scale=scale, initial_quantile=initial_quantile,
-        strategy=strategy, scale_decay=scale_decay, scale_source=scale_source, scale_floor=scale_floor)
+        strategy=strategy, scale_decay=scale_decay, scale_source=scale_source, scale_floor=scale_floor,
+        scale_share_weight=scale_share_weight)
     shape = points.shape
     target = origin[:, None] + np.asarray(leads, dtype=np.int64)
     values, steps = (np.full(shape, np.nan) for _ in range(2))

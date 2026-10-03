@@ -1,7 +1,17 @@
-"""Keep the installable protocol resources identical to the research originals."""
+"""Sync protocols used by the installed CLI, excluding repository-only pilots."""
 
 import argparse
 from pathlib import Path
+
+PACKAGED_PROTOCOLS = (
+    "protocol.json",
+    "calibration-protocol.json",
+    "tail-diagnostic-protocol.json",
+    "parametric-replay-protocol.json",
+    "parameter-uncertainty-protocol.json",
+    "joint-uncertainty-protocol.json",
+    "multistep-protocol.json",
+)
 
 
 def main() -> None:
@@ -10,7 +20,8 @@ def main() -> None:
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     target = root / "src" / "strategy_inference" / "protocols"
-    for source in sorted((root / "experiments").glob("*.json")):
+    for name in PACKAGED_PROTOCOLS:
+        source = root / "experiments" / name
         destination = target / source.name
         if args.check:
             if not destination.is_file() or destination.read_bytes() != source.read_bytes():

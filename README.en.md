@@ -1,6 +1,6 @@
 # strategy-inference
 
-A Python time-series toolbox for forecast evaluation, online uncertainty and strategy mean inference. Version 0.7 adds mature multi-step feedback and optional dynamic scales to rolling forecasts, losses by lead, fixed-family comparisons and one-step online intervals. Existing return-mean interfaces remain available.
+A Python time-series toolbox for forecast evaluation, online uncertainty and strategy mean inference. Version 0.8 adds fixed, configurable blending of own-lead and shared short-lead residual scales. It supports rolling forecasts, losses by lead, fixed-family comparisons, and one-step or multi-step online intervals. Existing return-mean interfaces remain available.
 
 [中文](README.md) · [Online docs](https://studyer-tang.github.io/strategy-inference/library/) · [Time-series API](docs/time-series.md) · [Multi-step API](docs/multistep-api.md) · [Mean API](docs/api.md) · [Roadmap](docs/toolbox-roadmap.md) · [Research and reproduction](docs/research.md)
 
@@ -9,13 +9,13 @@ A Python time-series toolbox for forecast evaluation, online uncertainty and str
 Requires Python 3.10+, NumPy and SciPy. The GitHub release wheel can be installed without cloning. The package has not been published to PyPI.
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.7.0/strategy_inference-0.7.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.0/strategy_inference-0.8.0-py3-none-any.whl
 ```
 
 Source installation from the corresponding tag:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.7.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.0'
 ```
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
@@ -80,12 +80,14 @@ multi = multistep_intervals(
     walk, multi_run.forecasts[:, :, 0], origins=origins, lead_times=leads,
     scale=np.sqrt(leads), step_size=0.1 / np.sqrt(leads), decay=0.2,
     initial_quantile=0.65, strategy="pooled", scale_decay=0.97,
-    scale_source="shortest",
+    scale_source="blended", scale_share_weight=0.5,
 )
 print(multi.summary())
 ```
 
-Here `sqrt(leads)` uses this simulation's unit-innovation random-walk scale; decreasing the learning rate by lead is an example, not an optimal-rate claim. `shortest` updates a common RMS only from mature residuals at the shortest configured lead, then uses fixed initial scale ratios. Issued scales remain frozen. Fixed scales and `scale_source="horizon"` are alternatives. The [fixed-protocol simulation](docs/multistep-results.md) evaluates this option, without a general efficiency claim.
+Here `sqrt(leads)` uses this simulation's unit-innovation random-walk scale; decreasing the learning rate by lead is an example, not an optimal-rate claim. `blended` combines own-lead RMS with shortest-lead shared RMS using prespecified scalar or per-lead weights. Issued scales remain frozen. Fixed, `horizon` and `shortest` scales are alternatives. Choose weights with training or independent validation data; the default one-half is a compromise, not an optimum.
+
+The [240-path independent study](docs/blended-scales-results.md) measures its benefits and costs: at lead 24 under deliberate lead-specific forecast bias, half blending lowers mean interval score by 1.31% and worst 200-point local coverage error by 35.0% versus `shortest`. In the stationary Gaussian case it raises mean score by 0.63%. Fixed scales score better in several settings; blending has no general efficiency guarantee.
 
 With forecasts issued at every time, all leads receive the current label at the same calendar time once the pipeline is full. Shared scales change forecast vintage and residual information; they do not provide long-lead labels earlier or remove the lead's threshold-feedback delay.
 
@@ -141,7 +143,7 @@ strategy-inference test examples/demo_returns.csv \
 
 The [roadmap](docs/toolbox-roadmap.md) distinguishes implemented functionality from proposed extensions. The [research index](docs/research.md) retains historical evaluations, failed settings, frozen protocols and raw evidence. Implementations of established forecasting, bootstrap and conformal algorithms are not claims of foundational algorithmic novelty.
 
-The historical v0.6 [archived page](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/), [performance notes](docs/time-series-performance.md) and [raw record](benchmarks/results/time-series-0.6.json) retain that release's conditions, five warmed samples and source hashes. They bind v0.6 release source and do not measure the current v0.7 multi-step module; its [performance notes](docs/multistep-performance.md) and [raw measurements](benchmarks/results/multistep-0.7.json) are reported separately. Local engineering measurements do not guarantee universal speed or statistical calibration.
+The historical v0.6 [archived page](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/), [performance notes](docs/time-series-performance.md) and [raw record](benchmarks/results/time-series-0.6.json) retain that release's conditions, five warmed samples and source hashes. They bind v0.6 release source; v0.7 [performance notes](docs/multistep-performance.md) and [raw measurements](benchmarks/results/multistep-0.7.json) are reported separately. The v0.8 [blending measurements](docs/blended-scales-performance.md) cover the current implementation. Local engineering measurements do not guarantee universal speed or statistical calibration.
 
 Historical evidence remains in the [v0.5 page and full benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/) and [v0.5 performance notes](docs/performance.md). Older timings do not measure current interfaces. Reproduce historical formal studies at the frozen commit/tag specified in their metadata.
 
@@ -152,6 +154,7 @@ python scripts/sync_protocols.py --check
 python scripts/build_library_site.py --check
 python scripts/build_toolbox_site.py --check
 python scripts/build_multistep_site.py --check
+python scripts/build_blended_site.py --check
 ```
 
 BSD-3-Clause license.

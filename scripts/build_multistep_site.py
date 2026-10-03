@@ -1,4 +1,4 @@
-"""Build the v0.7 library page from saved source-bound studies and timings."""
+"""Render the frozen v0.7 overview from its release studies and timings."""
 
 from __future__ import annotations
 
@@ -10,12 +10,26 @@ import json
 import math
 import re
 import statistics
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.7.0"
+RELEASE_COMMIT = "93e3ff427ab1a05b0b17c5c164585ab756645539"
 FIGURES = ("01-efficiency.svg", "02-coverage.svg", "03-adaptation.svg")
+STUDY_PATH = "results/research/multistep/full/results.json"
+BENCHMARK_PATH = "benchmarks/results/multistep-0.7.json"
+RUNNER_PATH = "scripts/reproduce_multistep.py"
+PROTOCOL_PATH = "experiments/multistep-protocol.json"
+FIXED_PATHS = (
+    RUNNER_PATH,
+    PROTOCOL_PATH,
+    "benchmarks/multistep.py",
+    STUDY_PATH,
+    BENCHMARK_PATH,
+    *(f"results/research/multistep/full/{name}" for name in FIGURES),
+)
 THREADS = {
     key: "1"
     for key in (
@@ -28,8 +42,83 @@ THREADS = {
 }
 
 
-def _sha(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def _digest(contents):
+    return hashlib.sha256(contents).hexdigest()
+
+
+def _version(contents):
+    version = re.search(r'^__version__ = "([^"]+)"$', contents.decode(), re.MULTILINE)
+    if version is None or version[1] != VERSION:
+        raise ValueError(f"Frozen multistep source must have package version {VERSION}.")
+
+
+def _git_bytes(*arguments):
+    """Read release blobs using the same checks as the frozen v0.6 builder."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), *arguments], capture_output=True, check=False
+        )
+    except OSError as exc:
+        raise ValueError(
+            f"Cannot read frozen release {RELEASE_COMMIT}: Git is unavailable."
+        ) from exc
+    if result.returncode:
+        raise ValueError(
+            f"Cannot read frozen release {RELEASE_COMMIT}; fetch this commit and its Git objects."
+        )
+    return result.stdout
+
+
+def _release_inputs():
+    """Complete release source plus immutable runner, protocol and saved bytes.
+
+    A non-Git fixture must itself contain v0.7 source. Never reinterpret a
+    future checkout's source or data as the frozen release when Git is missing.
+    """
+    prefix = "src/strategy_inference/"
+    if not (ROOT / ".git").exists() and not (ROOT / ".git").is_symlink():
+        init = ROOT / prefix / "__init__.py"
+        if init.is_symlink() or not init.is_file():
+            raise ValueError("Frozen release __init__.py must be an ordinary file.")
+        _version(init.read_bytes())
+        paths = sorted((ROOT / prefix).glob("*.py")) + [ROOT / name for name in FIXED_PATHS]
+        inputs = {}
+        for path in paths:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError("Frozen release inputs must be ordinary files.")
+            inputs[path.relative_to(ROOT).as_posix()] = path.read_bytes()
+    else:
+        if _git_bytes("cat-file", "-t", RELEASE_COMMIT).strip() != b"commit":
+            raise ValueError(f"Frozen release {RELEASE_COMMIT} must identify a Git commit.")
+        tree = _git_bytes(
+            "ls-tree",
+            "-r",
+            "-z",
+            "--full-tree",
+            RELEASE_COMMIT,
+            "--",
+            "src/strategy_inference",
+            *FIXED_PATHS,
+        )
+        inputs = {}
+        for entry in tree.split(b"\0"):
+            if not entry:
+                continue
+            metadata, encoded_path = entry.split(b"\t", 1)
+            mode, kind, _ = metadata.split()
+            path = encoded_path.decode()
+            is_source = (
+                path.startswith(prefix) and path.endswith(".py") and "/" not in path[len(prefix) :]
+            )
+            if not is_source and path not in FIXED_PATHS:
+                continue
+            if kind != b"blob" or mode not in (b"100644", b"100755"):
+                raise ValueError("Frozen release inputs must be ordinary Git files.")
+            inputs[path] = _git_bytes("show", f"{RELEASE_COMMIT}:{path}")
+    if not set(FIXED_PATHS).issubset(inputs) or prefix + "__init__.py" not in inputs:
+        raise ValueError(f"Frozen release {RELEASE_COMMIT} lacks source or evidence objects.")
+    _version(inputs[prefix + "__init__.py"])
+    return inputs
 
 
 def _integer(value, name, *, minimum=0, maximum=None):
@@ -93,11 +182,11 @@ def _read_json(raw):
     return json.loads(raw, object_pairs_hook=pairs, parse_constant=nonfinite)
 
 
-def _aggregate(records, protocol):
+def _aggregate(records, protocol, *, runner_source=None):
     """Import the source-bound runner and invoke only its summary calculation."""
-    spec = importlib.util.spec_from_file_location(
-        "_multistep_summary_runner", ROOT / "scripts/reproduce_multistep.py"
-    )
+    spec = importlib.util.spec_from_file_location("_multistep_summary_runner", ROOT / RUNNER_PATH)
+    if runner_source is None:
+        runner_source = _release_inputs()[RUNNER_PATH]
     runner = importlib.util.module_from_spec(spec)
     previous_path = sys.path[:]
     previous_bytecode = sys.dont_write_bytecode
@@ -105,14 +194,14 @@ def _aggregate(records, protocol):
         sys.dont_write_bytecode = True
         # Execute the verified source directly so --check cannot create a
         # __pycache__ file in the evidence checkout.
-        exec(compile(spec.loader.get_source(spec.name), spec.origin, "exec"), runner.__dict__)
+        exec(compile(runner_source, spec.origin, "exec"), runner.__dict__)
     finally:
         sys.path[:] = previous_path  # The runner adds its checkout to sys.path.
         sys.dont_write_bytecode = previous_bytecode
     return runner.aggregate(records, protocol)
 
 
-def _study_records(study, protocol):
+def _study_records(study, protocol, *, runner_source):
     settings = protocol["profiles"]["full"]
     repetitions = settings["repetitions"]
     scenarios = [row["name"] for row in protocol["scenarios"]]
@@ -242,7 +331,7 @@ def _study_records(study, protocol):
         or len(set(predicted_hashes)) != len(seeds)
     ):
         raise ValueError("Input fingerprints must retain distinct independent paths.")
-    groups, paired = _aggregate(records, protocol)
+    groups, paired = _aggregate(records, protocol, runner_source=runner_source)
     _same(study["aggregate"], groups, "study aggregate")
     _same(study["paired_contrasts"], paired, "study paired contrasts")
 
@@ -498,25 +587,22 @@ def _performance(performance):
     _same(interlaced["settings"]["inputs"], long["settings"]["inputs"], "same-input long cases")
 
 
-def evidence():
+def evidence(*, _inputs=None):
     try:
-        return _evidence()
+        return _evidence(_release_inputs() if _inputs is None else _inputs)
     except (KeyError, TypeError, AttributeError, OverflowError) as exc:
         raise ValueError("Saved evidence is malformed or missing required fields.") from exc
 
 
-def _evidence():
-    version = re.search(
-        r'^__version__ = "([^"]+)"$',
-        (ROOT / "src/strategy_inference/__init__.py").read_text(),
-        re.MULTILINE,
-    )
-    if version is None or version[1] != VERSION:
-        raise ValueError("The current page must match the package version.")
-    source = {p.name: _sha(p) for p in sorted((ROOT / "src/strategy_inference").glob("*.py"))}
-    study_path = ROOT / "results/research/multistep/full/results.json"
-    benchmark_path = ROOT / "benchmarks/results/multistep-0.7.json"
-    study_raw, benchmark_raw = study_path.read_bytes(), benchmark_path.read_bytes()
+def _evidence(inputs):
+    prefix = "src/strategy_inference/"
+    _version(inputs[prefix + "__init__.py"])
+    source = {
+        name[len(prefix) :]: _digest(contents)
+        for name, contents in inputs.items()
+        if name.startswith(prefix)
+    }
+    study_raw, benchmark_raw = inputs[STUDY_PATH], inputs[BENCHMARK_PATH]
     study, performance = _read_json(study_raw), _read_json(benchmark_raw)
     for record in (study, performance):
         if (
@@ -527,12 +613,12 @@ def _evidence():
         ):
             raise ValueError("Saved evidence must match the complete v0.7 source.")
     if (
-        study["runner_sha256"] != _sha(ROOT / "scripts/reproduce_multistep.py")
-        or study["protocol_sha256"] != _sha(ROOT / "experiments/multistep-protocol.json")
-        or performance["benchmark_source_sha256"] != _sha(ROOT / "benchmarks/multistep.py")
+        study["runner_sha256"] != _digest(inputs[RUNNER_PATH])
+        or study["protocol_sha256"] != _digest(inputs[PROTOCOL_PATH])
+        or performance["benchmark_source_sha256"] != _digest(inputs["benchmarks/multistep.py"])
     ):
         raise ValueError("Evidence differs from the saved protocol or runner.")
-    protocol = _read_json((ROOT / "experiments/multistep-protocol.json").read_bytes())
+    protocol = _read_json(inputs[PROTOCOL_PATH])
     if (
         study["profile"] != "full"
         or study["protocol"] != protocol
@@ -547,10 +633,12 @@ def _evidence():
     _same(study["protocol"], protocol, "study protocol")
     _same(study["profile_settings"], protocol["profiles"]["full"], "study profile")
     _same(study["study"], protocol["study"], "study identity")
-    _study_records(study, protocol)
+    _study_records(study, protocol, runner_source=inputs[RUNNER_PATH])
     _performance(performance)
     for name in FIGURES:
-        if study["figure_sha256"][name] != _sha(study_path.parent / name):
+        if study["figure_sha256"][name] != _digest(
+            inputs[f"results/research/multistep/full/{name}"]
+        ):
             raise ValueError("A saved scientific figure differs from its generation record.")
     return study, performance, study_raw, benchmark_raw
 
@@ -601,7 +689,7 @@ print(intervals.summary())"""
             f"<tr><td>{names[row['scenario']]}</td><td>{html.escape(display)}</td></tr>"
         )
     figures = "".join(
-        f'<figure><img src="../research/multistep/{name}" alt="{caption}" loading="lazy"><figcaption>{caption}</figcaption></figure>'
+        f'<figure><img src="research/{name}" alt="{caption}" loading="lazy"><figcaption>{caption}</figcaption></figure>'
         for name, caption in zip(
             FIGURES,
             (
@@ -647,30 +735,28 @@ footer{{border-top:1px solid #d8cebd;margin-top:3rem;padding-top:1rem}}
 <div class="table-scroll" tabindex="0" role="region" aria-label="实验结果，可横向滚动"><table><thead><tr><th>过程</th><th>短步尺度减独立尺度，差值 [区间]</th></tr></thead><tbody>{"".join(contrasts)}</tbody></table></div>
 <p>共享方案在这四种设定中优于自身步长 EWMA；固定尺度或相位交织在部分情形的评分更低，局部覆盖也未同步改善。完整比较、开发选择与解释范围见<a href="{tag}/docs/multistep-results.md">结果说明</a>。</p>
 {figures}
-<p><a href="../research/multistep/results.json" download>完整原始记录</a> · <a href="../research/multistep/protocol.json" download>固定协议</a> · <a href="{tag}/scripts/reproduce_multistep.py">一键复现脚本</a></p>
+<p><a href="research/results.json" download>完整原始记录</a> · <a href="research/protocol.json" download>固定协议</a> · <a href="{tag}/scripts/reproduce_multistep.py">一键复现脚本</a></p>
 <h2 id="performance">本机工程计时</h2>
 <p>四个步长，串行进程，BLAS 线程环境设为 1；一次预热后五次热调用的中位数。耗时为毫秒，跟踪分配峰值为 KiB。输入生成、导入、独立一致性检查和调用后的指纹不计时；API 内部输出构造计时。</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="性能表，可横向滚动"><table><thead><tr><th>任务</th><th>耗时 / ms</th><th>峰值 / KiB</th></tr></thead><tbody>{rows}</tbody></table></div>
 <p class="small">{html.escape(performance["platform"])} · Python {html.escape(performance["python"].split()[0])} · NumPy {html.escape(performance["numpy"])}。峰值包含新输出与临时分配，排除已有输入及导入，不是 RSS。流式状态与 pending 队列空间取决于步长集合，批量结果另需 O(FH)。本机计时不能作为通用性能或统计有效性承诺。</p>
 <p class="small">计时负载使用统一学习率 0.1；正式模拟使用 0.1/√h。两者分别用于工程成本与统计效果，详细设置见<a href="{tag}/docs/multistep-performance.md">性能说明</a>。</p>
-<p><a href="multistep-benchmark.json" download>原始计时、任务设置与源码哈希</a> · <a href="v0.6.0/">v0.6 归档</a> · <a href="v0.5.0/">v0.5 归档</a></p>
+<p><a href="multistep-benchmark.json" download>原始计时、任务设置与源码哈希</a> · <a href="../v0.6.0/">v0.6 归档</a> · <a href="../v0.5.0/">v0.5 归档</a></p>
 </main><footer>BSD-3-Clause · <a href="{tag}/docs/multistep-api.md">参数、返回值、边界与失败处理</a></footer></body></html>'''.encode()
 
 
 def build(*, check=False):
-    study, performance, study_raw, benchmark_raw = evidence()
+    inputs = _release_inputs()
+    study, performance, study_raw, benchmark_raw = evidence(_inputs=inputs)
+    archive = ROOT / f"docs/library/v{VERSION}"
     outputs = {
-        ROOT / "docs/library/index.html": render(study, performance),
-        ROOT / "docs/library/multistep-benchmark.json": benchmark_raw,
-        ROOT / "docs/research/multistep/results.json": study_raw,
-        ROOT / "docs/research/multistep/protocol.json": (
-            ROOT / "experiments/multistep-protocol.json"
-        ).read_bytes(),
+        archive / "index.html": render(study, performance),
+        archive / "multistep-benchmark.json": benchmark_raw,
+        archive / "research/results.json": study_raw,
+        archive / "research/protocol.json": inputs[PROTOCOL_PATH],
     }
     for name in FIGURES:
-        outputs[ROOT / "docs/research/multistep" / name] = (
-            ROOT / "results/research/multistep/full" / name
-        ).read_bytes()
+        outputs[archive / "research" / name] = inputs[f"results/research/multistep/full/{name}"]
     for path in outputs:
         for parent in (
             ROOT,

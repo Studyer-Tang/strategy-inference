@@ -1,0 +1,56 @@
+<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>strategy-inference · 多步预测与成熟反馈</title>
+<meta name="description" content="Python 时间序列评估与不确定性：滚动回测、统计比较、多步成熟反馈和在线区间。">
+<style>
+:root{color-scheme:light;background:#fbf8f1;color:#29251f}*{box-sizing:border-box}
+body{margin:auto;max-width:62rem;padding:2.5rem clamp(1rem,4vw,3rem) 3rem;font:17px/1.8 Georgia,"Songti SC",serif}
+h1,h2{font-weight:normal;line-height:1.3}h1{font-size:clamp(2rem,6vw,3rem)}h2{margin-top:2.5rem;font-size:1.5rem}
+nav{display:flex;flex-wrap:wrap;gap:.4rem 1rem;border-bottom:1px solid #d8cebd;padding-bottom:1rem}
+a{color:#775126;text-underline-offset:.2em;overflow-wrap:anywhere}p{margin:.8rem 0 1rem}
+code{font:.84em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}pre{padding:1rem;background:#f0eade;border-left:2px solid #c8b89e;overflow-x:auto}
+pre code{white-space:pre}pre.install code{white-space:pre-wrap;overflow-wrap:anywhere}
+.table-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:590px;font-size:.9rem}
+th,td{padding:.65rem;border-bottom:1px solid #d8cebd;text-align:left}th{font-weight:normal;color:#665c4e}
+.small,figcaption,footer{font-size:.88rem;color:#665c4e}figure{margin:2rem 0}img{display:block;width:100%;height:auto;background:white}
+footer{border-top:1px solid #d8cebd;margin-top:3rem;padding-top:1rem}
+</style></head><body>
+<nav><a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/README.md">源码与安装</a><a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/multistep-api.md">多步 API</a><a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/time-series.md">评估与比较</a><a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/multistep-methods.md">方法推导</a><a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/toolbox-roadmap.md">路线图</a></nav>
+<main><p class="small">Python · v0.7.0</p><h1>strategy-inference</h1>
+<p>时间序列的预测评估、统计比较与在线不确定性。模型通过 callable 接入；输出保留预测起点、物理步长与目标位置。</p>
+<h2>一条实际工作流</h2>
+<p>滚动或扩展窗回测 → 点／分位数损失与区间评分 → 固定候选的时间依赖比较 → 单步或多步在线区间。NumPy、SciPy 为核心依赖；pandas 和 Matplotlib 可选。</p>
+<p>v0.7 新增明确的反馈时钟：先观察当期数据，处理目标已经成熟的预测，再发出下一条路径。尾部未成熟预测保留为 pending；已发出的边界、阈值和尺度不会回改。</p>
+<pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.7.0/strategy_inference-0.7.0-py3-none-any.whl</code></pre><pre><code>import numpy as np
+from strategy_inference import backtest, naive_forecast, multistep_intervals
+
+y = np.random.default_rng(17).normal(size=512).cumsum()
+run = backtest(y, {&quot;naive&quot;: naive_forecast}, initial_train_size=128, horizon=12)
+origins = np.array([split.origin for split in run.splits])
+leads = run.target_indices[0] - origins[0]
+intervals = multistep_intervals(
+    y, run.forecasts[:, :, 0], origins=origins, lead_times=leads,
+    scale=np.sqrt(leads), step_size=.1 / np.sqrt(leads),
+    decay=.2, initial_quantile=.65,
+    scale_decay=.97, scale_source=&quot;shortest&quot;,
+)
+print(intervals.summary())</code></pre>
+<p class="small">这是已知创新方差为 1 的模拟 random walk，初始尺度为 √h。实际应用须从训练数据或模型给出尺度；提供给库的点预测也须避免未来信息。尚未发布到 PyPI。</p>
+<h2>共享信息，但保持目标清楚</h2>
+<p>每个步长维护一个阈值状态，也可以按起点相位分路更新。可选 EWMA 尺度只使用成熟残差：各步长独立估计，或用最短步长的成熟误差更新共同尺度，按事先指定的比例传到其他步长。连续发行且队列填满后，各步长在同一时点收到当前标签；共享尺度利用不同预测起点的残差信息，并不提前获得标签或消除长步长阈值的反馈延迟。</p>
+<p>这里的保证是各步长已成熟预测的历史平均覆盖，在理想运算中有显式延迟与步长代价。它不是条件覆盖，也不是整条预测路径同时覆盖。普通浮点运算没有舍入认证；空集和无界区间完整保留。</p>
+<p>基于 <a href="https://proceedings.mlr.press/v235/angelopoulos24a.html">ICML 2024 的分位数跟踪</a>，并对照 <a href="https://arxiv.org/html/2410.13115v2">2026 AcMCP 修订预印本</a>与 <a href="https://arxiv.org/html/2609.07251v1">2026 年 9 月的延迟反馈预印本</a>。短步尺度转移是本项目检验的实用扩展，未作首创性主张；完整 AcMCP、条件覆盖与序贯模型集合仍在路线图。</p>
+<h2>尺度转移在什么情形有用</h2>
+<p>四种预设过程，各 40 条独立路径，T=2400，步长 1、6、12、24。预测器使用已知条件均值以隔离校准问题；初始尺度仅估计于训练前缀。方法与参数在正式路径生成前固定，正式种子与工程试运行分开。</p>
+<p>下表只展示 h=24 的评分差及逐点 95% Monte Carlo 区间。负值是短步共享尺度评分更低；含空集或无界区间的路径不会从比较中删除。区间不表示同时显著性，也不代表真实数据验证。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="实验结果，可横向滚动"><table><thead><tr><th>过程</th><th>短步尺度减独立尺度，差值 [区间]</th></tr></thead><tbody><tr><td>恒定方差</td><td>-0.107 [-0.126, -0.088]</td></tr><tr><td>持续波动</td><td>-0.181 [-0.251, -0.112]</td></tr><tr><td>快速波动</td><td>-0.100 [-0.129, -0.072]</td></tr><tr><td>方差突变</td><td>-0.246 [-0.295, -0.197]</td></tr></tbody></table></div>
+<p>共享方案在这四种设定中优于自身步长 EWMA；固定尺度或相位交织在部分情形的评分更低，局部覆盖也未同步改善。完整比较、开发选择与解释范围见<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/multistep-results.md">结果说明</a>。</p>
+<figure><img src="research/01-efficiency.svg" alt="区间评分的配对差：短步尺度减各自步长尺度，负值表示评分更低。" loading="lazy"><figcaption>区间评分的配对差：短步尺度减各自步长尺度，负值表示评分更低。</figcaption></figure><figure><img src="research/02-coverage.svg" alt="四种方法的实际覆盖，阴影为独立路径间的 Monte Carlo 区间。" loading="lazy"><figcaption>四种方法的实际覆盖，阴影为独立路径间的 Monte Carlo 区间。</figcaption></figure><figure><img src="research/03-adaptation.svg" alt="事先指定的第一条方差突变路径；发行尺度与成熟目标覆盖采用各自时间轴。" loading="lazy"><figcaption>事先指定的第一条方差突变路径；发行尺度与成熟目标覆盖采用各自时间轴。</figcaption></figure>
+<p><a href="research/results.json" download>完整原始记录</a> · <a href="research/protocol.json" download>固定协议</a> · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/scripts/reproduce_multistep.py">一键复现脚本</a></p>
+<h2 id="performance">本机工程计时</h2>
+<p>四个步长，串行进程，BLAS 线程环境设为 1；一次预热后五次热调用的中位数。耗时为毫秒，跟踪分配峰值为 KiB。输入生成、导入、独立一致性检查和调用后的指纹不计时；API 内部输出构造计时。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="性能表，可横向滚动"><table><thead><tr><th>任务</th><th>耗时 / ms</th><th>峰值 / KiB</th></tr></thead><tbody><tr><td>批量 pooled · 12,000 × 4</td><td>183.00</td><td>4866.76</td></tr><tr><td>流式 pooled · 50,000 × 4</td><td>666.79</td><td>19.16</td></tr><tr><td>流式 pooled · 1,000 × 4</td><td>13.53</td><td>18.91</td></tr><tr><td>流式 interlaced · 50,000 × 4</td><td>678.16</td><td>24.98</td></tr></tbody></table></div>
+<p class="small">macOS-26.7.1-arm64-arm-64bit-Mach-O · Python 3.13.15 · NumPy 2.5.3。峰值包含新输出与临时分配，排除已有输入及导入，不是 RSS。流式状态与 pending 队列空间取决于步长集合，批量结果另需 O(FH)。本机计时不能作为通用性能或统计有效性承诺。</p>
+<p class="small">计时负载使用统一学习率 0.1；正式模拟使用 0.1/√h。两者分别用于工程成本与统计效果，详细设置见<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/multistep-performance.md">性能说明</a>。</p>
+<p><a href="multistep-benchmark.json" download>原始计时、任务设置与源码哈希</a> · <a href="../v0.6.0/">v0.6 归档</a> · <a href="../v0.5.0/">v0.5 归档</a></p>
+</main><footer>BSD-3-Clause · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.7.0/docs/multistep-api.md">参数、返回值、边界与失败处理</a></footer></body></html>

@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 _EXPORTS = {
     "AuditResult": "audit",
     "audit_returns": "audit",

@@ -71,7 +71,11 @@ def prepare(tag: str, dist: Path, notes: Path, *, root: Path = ROOT):
     performance = next(
         (
             name
-            for name in ("multistep-performance.md", "time-series-performance.md")
+            for name in (
+                "blended-scales-performance.md",
+                "multistep-performance.md",
+                "time-series-performance.md",
+            )
             if (root / "docs" / name).is_file()
         ),
         "performance.md",

@@ -12,29 +12,35 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+ARCHIVE = "docs/library/v0.7.0"
 
 
-@pytest.fixture
-def builder(monkeypatch, tmp_path):
+def _builder_module():
     spec = importlib.util.spec_from_file_location(
         "multistep_site", ROOT / "scripts/build_multistep_site.py"
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.fixture(scope="session")
+def released_inputs():
+    # A pinned Git object is immutable; avoid reading every blob again for
+    # each isolated filesystem fixture.
+    return _builder_module()._release_inputs()
+
+
+@pytest.fixture
+def builder(monkeypatch, tmp_path, released_inputs):
+    mod = _builder_module()
     root = tmp_path / "repository"
-    paths = [
-        "experiments/multistep-protocol.json",
-        "scripts/reproduce_multistep.py",
-        "benchmarks/multistep.py",
-        "benchmarks/results/multistep-0.7.json",
-        "results/research/multistep/full/results.json",
-    ]
-    paths += ["results/research/multistep/full/" + name for name in mod.FIGURES]
-    paths += [str(p.relative_to(ROOT)) for p in (ROOT / "src/strategy_inference").glob("*.py")]
-    for name in paths:
+    # Keep this fixture at the released version when the real checkout moves
+    # ahead: the builder's Git input layer supplies all frozen bytes.
+    for name, contents in released_inputs.items():
         dest = root / name
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / name, dest)
+        dest.write_bytes(contents)
     old = root / "docs/library/v0.6.0/index.html"
     old.parent.mkdir(parents=True)
     old.write_text("Archived v0.6.\n")
@@ -42,8 +48,34 @@ def builder(monkeypatch, tmp_path):
     older = root / "docs/library/v0.5.0/index.html"
     older.parent.mkdir(parents=True)
     older.write_text("Archived v0.5.\n")
+    archive = root / ARCHIVE
+    archive.mkdir()
+    (archive / "index.html").write_text("Old v0.7 archive.\n")
+    (root / "docs/library/multistep-benchmark.json").write_text("Current root benchmark.\n")
+    old_research = root / "docs/research/multistep"
+    old_research.mkdir(parents=True)
+    (old_research / "results.json").write_text("Current root scientific evidence.\n")
     monkeypatch.setattr(mod, "ROOT", root)
     return mod
+
+
+def _git(root, *arguments):
+    return subprocess.run(
+        ["git", "-C", str(root), *arguments], capture_output=True, check=True
+    ).stdout
+
+
+@pytest.fixture
+def frozen_repository(builder, monkeypatch):
+    _git(builder.ROOT, "init", "-q")
+    _git(builder.ROOT, "config", "user.name", "Frozen fixture")
+    _git(builder.ROOT, "config", "user.email", "fixture@example.invalid")
+    _git(builder.ROOT, "add", "src", "scripts", "benchmarks", "experiments", "results")
+    _git(builder.ROOT, "commit", "-qm", "Frozen v0.7 fixture")
+    monkeypatch.setattr(
+        builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip()
+    )
+    return builder
 
 
 def snapshot(root):
@@ -59,6 +91,11 @@ def test_build_and_readonly_check_preserve_archives_and_raw_evidence(builder):
     older = builder.ROOT / "docs/library/v0.5.0/index.html"
     before = (archive.read_bytes(), archive.stat().st_mtime_ns)
     older_before = (older.read_bytes(), older.stat().st_mtime_ns)
+    current = builder.ROOT / "docs/library/index.html"
+    current_before = (current.read_bytes(), current.stat().st_mtime_ns)
+    root_benchmark = builder.ROOT / "docs/library/multistep-benchmark.json"
+    root_benchmark_before = (root_benchmark.read_bytes(), root_benchmark.stat().st_mtime_ns)
+    old_research = snapshot(builder.ROOT / "docs/research")
     source_before = snapshot(builder.ROOT / "src")
     raw_before = snapshot(builder.ROOT / "results")
     builder.build()
@@ -66,10 +103,13 @@ def test_build_and_readonly_check_preserve_archives_and_raw_evidence(builder):
     assert raw_before == snapshot(builder.ROOT / "results")
     assert before == (archive.read_bytes(), archive.stat().st_mtime_ns)
     assert older_before == (older.read_bytes(), older.stat().st_mtime_ns)
+    assert current_before == (current.read_bytes(), current.stat().st_mtime_ns)
+    assert root_benchmark_before == (root_benchmark.read_bytes(), root_benchmark.stat().st_mtime_ns)
+    assert snapshot(builder.ROOT / "docs/research") == old_research
     prior = snapshot(builder.ROOT)
     builder.build(check=True)
     assert snapshot(builder.ROOT) == prior
-    assert (builder.ROOT / "docs/research/multistep/results.json").read_bytes() == (
+    assert (builder.ROOT / ARCHIVE / "research/results.json").read_bytes() == (
         builder.ROOT / "results/research/multistep/full/results.json"
     ).read_bytes()
 
@@ -125,13 +165,13 @@ def test_invalid_performance_records_are_rejected(builder, change):
 def test_all_targets_preflight_before_writing_any_page(builder, tmp_path):
     external = tmp_path / "external.svg"
     external.write_text("External file.\n")
-    bad = builder.ROOT / "docs/research/multistep/03-adaptation.svg"
+    bad = builder.ROOT / ARCHIVE / "research/03-adaptation.svg"
     bad.parent.mkdir(parents=True)
     bad.symlink_to(external)
-    prior = (builder.ROOT / "docs/library/index.html").read_bytes()
+    prior = (builder.ROOT / ARCHIVE / "index.html").read_bytes()
     with pytest.raises(ValueError):
         builder.build()
-    assert (builder.ROOT / "docs/library/index.html").read_bytes() == prior
+    assert (builder.ROOT / ARCHIVE / "index.html").read_bytes() == prior
     assert external.read_text() == "External file.\n"
 
 
@@ -412,7 +452,7 @@ def test_summary_validation_preserves_process_import_settings_on_failure(builder
 
 @pytest.mark.parametrize("kind", ["broken_symlink", "hardlink", "directory"])
 def test_unsafe_output_targets_reject_before_any_write(builder, tmp_path, kind):
-    target = builder.ROOT / "docs/research/multistep/03-adaptation.svg"
+    target = builder.ROOT / ARCHIVE / "research/03-adaptation.svg"
     target.parent.mkdir(parents=True)
     external = tmp_path / "external.svg"
     external.write_text("External unchanged.\n")
@@ -422,16 +462,14 @@ def test_unsafe_output_targets_reject_before_any_write(builder, tmp_path, kind):
         target.hardlink_to(external)
     else:
         target.mkdir()
-    before = (builder.ROOT / "docs/library/index.html").read_bytes()
+    before = (builder.ROOT / ARCHIVE / "index.html").read_bytes()
     with pytest.raises(ValueError, match="ordinary files"):
         builder.build()
-    assert (builder.ROOT / "docs/library/index.html").read_bytes() == before
+    assert (builder.ROOT / ARCHIVE / "index.html").read_bytes() == before
     assert external.read_text() == "External unchanged.\n"
 
 
-@pytest.mark.parametrize(
-    "directory", ["docs", "docs/library", "docs/research", "docs/research/multistep"]
-)
+@pytest.mark.parametrize("directory", ["docs", "docs/library", ARCHIVE, ARCHIVE + "/research"])
 def test_managed_parent_symlinks_reject_without_external_writes(builder, tmp_path, directory):
     parent = builder.ROOT / directory
     external = tmp_path / "external"
@@ -444,3 +482,163 @@ def test_managed_parent_symlinks_reject_without_external_writes(builder, tmp_pat
     with pytest.raises(ValueError, match="ordinary directories"):
         builder.build()
     assert list(external.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "source",
+        "new_module",
+        "remove_module",
+        "version",
+        "runner",
+        "protocol",
+        "study",
+        "benchmark",
+        "figure",
+    ],
+)
+def test_frozen_release_survives_future_checkout_changes(frozen_repository, change):
+    builder = frozen_repository
+    builder.build()
+    archive = builder.ROOT / ARCHIVE
+    expected = snapshot(archive)
+    package = builder.ROOT / "src/strategy_inference"
+    if change == "source":
+        (package / "multistep.py").write_text("# Future implementation.\n")
+    elif change == "new_module":
+        (package / "adaptive_transfer.py").write_text("# New v0.8 feature.\n")
+    elif change == "remove_module":
+        (package / "conformal.py").unlink()
+    elif change == "version":
+        (package / "__init__.py").write_text('__version__ = "0.8.0"\n')
+    elif change == "runner":
+        (builder.ROOT / builder.RUNNER_PATH).write_text(
+            "raise RuntimeError('future runner must not execute')\n"
+        )
+    elif change == "protocol":
+        (builder.ROOT / builder.PROTOCOL_PATH).write_text('{"protocol_version": 3}\n')
+    elif change == "study":
+        (builder.ROOT / STUDY).write_text("Future study is independent.\n")
+    elif change == "benchmark":
+        (builder.ROOT / BENCHMARK).write_text("Future benchmark is independent.\n")
+    else:
+        (builder.ROOT / "results/research/multistep/full/01-efficiency.svg").write_text(
+            "Future figure.\n"
+        )
+    before = snapshot(builder.ROOT)
+    builder.build(check=True)
+    assert snapshot(builder.ROOT) == before
+    builder.build()
+    assert {name: contents[0] for name, contents in snapshot(archive).items()} == {
+        name: contents[0] for name, contents in expected.items()
+    }
+
+
+@pytest.mark.parametrize(
+    "change", ["add_source", "remove_source", "source", "runner", "protocol", "study", "figure"]
+)
+def test_changed_purported_release_blobs_do_not_replace_old_evidence(
+    frozen_repository, monkeypatch, change
+):
+    builder = frozen_repository
+    package = builder.ROOT / "src/strategy_inference"
+    if change == "add_source":
+        (package / "unexpected.py").write_text(
+            "# Not part of the complete released source dictionary.\n"
+        )
+    elif change == "remove_source":
+        (package / "conformal.py").unlink()
+    elif change == "source":
+        (package / "multistep.py").write_text("# Altered release source.\n")
+    elif change == "runner":
+        (builder.ROOT / builder.RUNNER_PATH).write_text("raise RuntimeError('wrong runner')\n")
+    elif change == "protocol":
+        (builder.ROOT / builder.PROTOCOL_PATH).write_text("{}\n")
+    elif change == "study":
+        _mutate(builder, STUDY, ("records", 0, "seed"), lambda seed: seed + 1)
+    else:
+        (builder.ROOT / "results/research/multistep/full/01-efficiency.svg").write_text(
+            "Changed release figure.\n"
+        )
+    _git(builder.ROOT, "add", "-A", "src", "scripts", "experiments", "results")
+    _git(builder.ROOT, "commit", "-qm", "Altered purported release")
+    monkeypatch.setattr(
+        builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip()
+    )
+    before = snapshot(builder.ROOT)
+    with pytest.raises(ValueError):
+        builder.build()
+    assert snapshot(builder.ROOT) == before
+
+
+@pytest.mark.parametrize("kind", ["missing", "tree"])
+def test_frozen_object_must_be_an_available_commit(frozen_repository, monkeypatch, kind):
+    builder = frozen_repository
+    revision = (
+        "0" * 40
+        if kind == "missing"
+        else _git(builder.ROOT, "rev-parse", "HEAD^{tree}").decode().strip()
+    )
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", revision)
+    before = snapshot(builder.ROOT)
+    with pytest.raises(
+        ValueError, match="fetch.*Git objects" if kind == "missing" else "Git commit"
+    ):
+        builder.build(check=True)
+    assert snapshot(builder.ROOT) == before
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "src/strategy_inference/multistep.py",
+        "scripts/reproduce_multistep.py",
+        "experiments/multistep-protocol.json",
+        "results/research/multistep/full/01-efficiency.svg",
+    ],
+)
+def test_frozen_git_symlink_mode_is_rejected_before_import_or_output(
+    frozen_repository, monkeypatch, name
+):
+    builder = frozen_repository
+    path = builder.ROOT / name
+    path.unlink()
+    path.symlink_to("missing-target")
+    _git(builder.ROOT, "add", name)
+    _git(builder.ROOT, "commit", "-qm", "Nonregular release blob")
+    monkeypatch.setattr(
+        builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip()
+    )
+    before = snapshot(builder.ROOT)
+    with pytest.raises(ValueError, match="ordinary Git files"):
+        builder.build()
+    assert snapshot(builder.ROOT) == before
+
+
+def test_non_git_fallback_cannot_reinterpret_future_package_version(builder):
+    (builder.ROOT / "src/strategy_inference/__init__.py").write_text('__version__ = "0.8.0"\n')
+    before = snapshot(builder.ROOT)
+    with pytest.raises(ValueError, match="package version 0.7.0"):
+        builder.build()
+    assert snapshot(builder.ROOT) == before
+
+
+def test_archive_links_resolve_to_its_own_exact_release_assets(builder):
+    builder.build()
+    archive = builder.ROOT / ARCHIVE
+    page = (archive / "index.html").read_text()
+    for name in builder.FIGURES:
+        assert f'src="research/{name}"' in page
+        assert (archive / "research" / name).read_bytes() == (
+            builder.ROOT / "results/research/multistep/full" / name
+        ).read_bytes()
+    assert 'href="research/results.json"' in page
+    assert 'href="research/protocol.json"' in page
+    assert 'href="../v0.6.0/"' in page and 'href="../v0.5.0/"' in page
+    assert (archive / "multistep-benchmark.json").read_bytes() == (
+        builder.ROOT / BENCHMARK
+    ).read_bytes()
+    assert (archive / "research/protocol.json").read_bytes() == (
+        builder.ROOT / builder.PROTOCOL_PATH
+    ).read_bytes()

@@ -1,6 +1,6 @@
 # strategy-inference
 
-面向预测评估、在线不确定性与策略均值推断的 Python 时序工具箱。v0.7 在滚动预测、损失评估、固定候选比较和单步在线区间之上，增加多步成熟反馈与可选动态尺度；原有收益均值接口继续可用。
+面向预测评估、在线不确定性与策略均值推断的 Python 时序工具箱。v0.8 提供可调的成熟尺度融合：既保留自身步长的误差信息，也能利用短步长的共同波动信息。支持滚动预测、损失评估、固定候选比较、单步与多步在线区间；原有收益均值接口继续可用。
 
 [English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [多步 API](docs/multistep-api.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
 
@@ -9,13 +9,13 @@
 需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone。尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.7.0/strategy_inference-0.7.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.0/strategy_inference-0.8.0-py3-none-any.whl
 ```
 
 对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.7.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.0'
 ```
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
@@ -80,12 +80,14 @@ multi = multistep_intervals(
     walk, multi_run.forecasts[:, :, 0], origins=origins, lead_times=leads,
     scale=np.sqrt(leads), step_size=0.1 / np.sqrt(leads), decay=0.2,
     initial_quantile=0.65, strategy="pooled", scale_decay=0.97,
-    scale_source="shortest",
+    scale_source="blended", scale_share_weight=0.5,
 )
 print(multi.summary())
 ```
 
-这里 `sqrt(leads)` 来自单位创新随机游走的已知模拟尺度，按步长降低学习率只是示例。`shortest` 只用最短配置步长已成熟残差更新共同 RMS，再按固定初始尺度比率发行；发行尺度冻结。也可用固定尺度或 `scale_source="horizon"`。共享短成熟信息的效果见[固定协议的模拟结果](docs/multistep-results.md)，尚未确立一般效率收益。
+这里 `sqrt(leads)` 来自单位创新随机游走的已知模拟尺度，按步长降低学习率只是示例。`blended` 按预先固定的权重融合自身步长 RMS 与短步长共享 RMS；权重可用标量或逐步长向量，发行尺度冻结。也可用固定尺度、`horizon` 或 `shortest`。权重应由训练/独立验证数据确定，`0.5` 是折中默认值，不是最优参数。
+
+[240 条独立路径的验证](docs/blended-scales-results.md)量化了这种折中：24 步预测含步长特有偏差时，半权重融合相对 `shortest` 的平均区间评分降低 1.31%，最坏 200 点窗口覆盖误差降低 35.0%；稳定 Gaussian 情形的评分增加 0.63%。固定尺度在多种情形得分更低，融合没有一般效率优势。
 
 每时发行且队列填满后，各步长都在同一日历时点收到当前标签；共享尺度改变的是预测起点新旧与残差信息，不会提前取得长步长标签或消除其阈值反馈延迟。
 
@@ -141,7 +143,7 @@ strategy-inference test examples/demo_returns.csv \
 
 [路线图](docs/toolbox-roadmap.md)区分已实现功能与待核验扩展；[研究索引](docs/research.md)保留历史评价、失败边界、冻结协议和原始证据。基础预测、bootstrap 与 conformal 算法的实现不作为算法创新主张。
 
-历史 v0.6 的[归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)、[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存当时运行条件、五次热调用与源码哈希。它们绑定 v0.6 发布源码，不是当前 v0.7 多步模块的性能测量；v0.7 的[多步性能说明](docs/multistep-performance.md)和[原始记录](benchmarks/results/multistep-0.7.json)另行报告。本机工程测量不提供通用速度或统计校准保证。
+历史 v0.6 的[归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)、[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存当时运行条件、五次热调用与源码哈希。它们绑定 v0.6 发布源码；v0.7 的[多步性能说明](docs/multistep-performance.md)和[原始记录](benchmarks/results/multistep-0.7.json)另行报告。v0.8 的[融合性能说明](docs/blended-scales-performance.md)测量当前实现；本机工程测量不提供通用速度或统计校准保证。
 
 历史证据保留在 [v0.5 页面与完整 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)和[v0.5 性能说明](docs/performance.md)。旧版本计时不代表当前接口。历史正式研究应在 metadata 指定的冻结 commit/tag 下复核。
 
@@ -152,6 +154,7 @@ python scripts/sync_protocols.py --check
 python scripts/build_library_site.py --check
 python scripts/build_toolbox_site.py --check
 python scripts/build_multistep_site.py --check
+python scripts/build_blended_site.py --check
 ```
 
 BSD-3-Clause 许可证。

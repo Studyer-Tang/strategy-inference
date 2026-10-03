@@ -1,0 +1,3184 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-03T12:01:49.323234+00:00",
+  "package_version": "0.7.0",
+  "git_head_at_run": "ffcd83b7043056182fdf7a6e36f1011e11889a34",
+  "candidate_source_sha256": {
+    "__init__.py": "caea1e7e50fc28c0b8555d88cc56d041f9d7e75fe51e71fc47874f5e75fa5945",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "audit.py": "b25a62e3d71dc288a1ae93bad664f520d8d664b758e22e48aea73aaad1964ea3",
+    "bootstrap.py": "1327414db04305731bb46fea31e5183d4133c689e4a78164725759a02ed1764f",
+    "calibration.py": "9a125e62a19fc3c05a22b83c60dc9c78605aafe81fc798d58416980c04a18cde",
+    "calibration_plotting.py": "b0c1c55d26deb8888bd54e8d97787c4d23dd6fe727f06d49927403cb9eef71dd",
+    "calibration_report.py": "30ffd021af48ed89c893205cf4d39cf23d9341dbf7656eabe01dcfbf67612f7f",
+    "cli.py": "072114bfb0d890351e448688689c677fb7b8848b2d3d77d613cc80da7a57c3f7",
+    "conformal.py": "61548a9c1aa13280c3928d7b6450a28d7ed3aebd26ebc5d5eaf761ca3175f174",
+    "evaluation.py": "350b4fe399d08c2b79424332c5c30b6edb598f7485a754f531487893062e6c8f",
+    "experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9",
+    "inference.py": "a9f441571d948cfcca594457e1caa86f7683bfa97236786e1417e1ffd13267b7",
+    "io.py": "fe039fc9e0367bed25f1b8532493afcfc134cbeb5350b8222b10fe5ac5668614",
+    "model_selection.py": "f9e06b04915be8849b3a82a1eda6a70b0d71cfea72d046a3509fcfca5532ef17",
+    "multistep.py": "a5e2195c56b3e23ed906252e23ac85c55fbf572ba7234218121b418eb0635068",
+    "parametric.py": "9f60708f9fa1dd1e6cc6ed9093d3fd6b19af0ea102f7d26e8eaa9b194f0729ca",
+    "plotting.py": "994546ec43c5b5f8b0cd358546d62a3e9f31b3d54fd7e5ed956ee7f1f929bae6",
+    "quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "report.py": "b19d6180f9c2472960175faa5ab94a597aef90577dd2dd983871ac6c8b5eb3af",
+    "simulations.py": "83807e027a03da778ae12b75caa8d4db7e73052592278a133165c23b0b16303e",
+    "tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "testing.py": "eeb84ad292032a9d9b1f822aca76886b22b27ddfc5dc67aedd91d8c9c26c4773",
+    "uncertainty.py": "1b4a3618f8eee4fa9c079bef189318986bbab9980d1fe877e6c7b5f5da565c93",
+    "wilks.py": "efc21f375f1bcf375a6ec91014403bba1196c82f2de0e2863a06364036b2f999"
+  },
+  "benchmark_source_sha256": "6523212e4a71bd757808306eff301f00947c2da05873817a5d3266aca9cbeef7",
+  "python": "3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]",
+  "platform": "macOS-26.7.1-arm64-arm-64bit-Mach-O",
+  "processor": "arm",
+  "numpy": "2.5.3",
+  "repeats": 5,
+  "warmup_calls": 1,
+  "scope": "Serial local engineering measurements, not calibration or universal performance.",
+  "statistical_study_scope": "These performance tasks use scalar step_size=0.1. The separate statistical study uses per-lead 0.1/sqrt(lead); runtime measurements do not establish scale-sharing efficiency or statistical validity.",
+  "timing_scope": "Imports, input generation, known-DGP forecasts/scales, same-input wrapper/stream checks, post-call state export and fingerprints are excluded. API-internal output construction is included.",
+  "memory_scope": "One separate warmed tracemalloc call; includes newly allocated output, excludes imports, fingerprints and pre-existing input.",
+  "blas_thread_environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1"
+  },
+  "cases": [
+    {
+      "case": "batch_12000x4",
+      "settings": {
+        "n_obs": 12000,
+        "n_origins": 12000,
+        "n_leads": 4,
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "seed": 20261230,
+        "dgp": {
+          "model": "Stationary Gaussian AR(1)",
+          "phi": 0.65,
+          "innovation_variance": 1.0,
+          "initial_variance": 1.7316017316017318
+        },
+        "forecast": "phi**lead * current_observation; supplied points, no model fitting.",
+        "initial_scale_formula": "sqrt(sum(phi**(2*i) for i in range(lead)))",
+        "initial_scale_scope": "Known-DGP formula for this engineering input, not an estimated calibration claim.",
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.2,
+          "scale": [
+            1.0,
+            1.312155617775076,
+            1.3158821027419998,
+            1.31590338923083
+          ],
+          "initial_quantile": 0.65,
+          "strategy": "pooled",
+          "scale_decay": 0.97,
+          "scale_source": "shortest",
+          "scale_floor": 1e-08
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              12000
+            ],
+            "dtype": "float64",
+            "sha256": "870e1a2b120749615cd570baa03073a0f51ccca9e7399cd76738120da814d0f8"
+          },
+          "predicted": {
+            "shape": [
+              12000,
+              4
+            ],
+            "dtype": "float64",
+            "sha256": "c687f126aa7dac1fca454e5c092ad686b9f2fbb20be2998a74a0b6eba6167e36"
+          },
+          "origins": {
+            "shape": [
+              12000
+            ],
+            "dtype": "int64",
+            "sha256": "828bc9469ffcf3bd4cc6dd8c1fe586e4d1dc74859e04d85e3fbe04bd9cb7647f"
+          }
+        },
+        "feedback_order": "At each t: observe(t, actual[t]), then predict(predicted[t]).",
+        "future_pending_flushed": false,
+        "consistency_check_excluded_from_timing": {
+          "same_input_batch_stream_terminal_state": true,
+          "fields_checked": [
+            "lane_quantiles",
+            "lane_updates",
+            "lane_misses",
+            "per_lead_evaluated_counts",
+            "array_miss_counts",
+            "current_scales",
+            "pending_intervals",
+            "complete_terminal_record"
+          ],
+          "batch_result_sha256": "100b29a1bf18da835d066d3f85a4e9f225013783e792665fc6c0589604302d31",
+          "terminal_state_sha256": "3e0ab518b2492451f1d8c704c674e5652f6011c63ed2bfb7c7dec803073bf10c",
+          "n_evaluated": [
+            11999,
+            11994,
+            11988,
+            11976
+          ],
+          "misses": [
+            1198,
+            1198,
+            1197,
+            1198
+          ],
+          "n_pending": 43
+        },
+        "retained_output": "Arrays for every origin and lead plus terminal pending forecasts.",
+        "purpose": "Local timing and incremental allocation."
+      },
+      "warm_seconds": [
+        0.1807785830001194,
+        0.18302587500011214,
+        0.18440887499991732,
+        0.18300475000023653,
+        0.1822085829999196
+      ],
+      "warm_median_seconds": 0.18300475000023653,
+      "traced_current_bytes": 3391923,
+      "traced_peak_bytes": 4983560,
+      "result_sha256": "100b29a1bf18da835d066d3f85a4e9f225013783e792665fc6c0589604302d31",
+      "terminal_state": {
+        "schema_version": 1,
+        "method": "multistep_conformal",
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "start_time": 0,
+        "last_time": 11999,
+        "next_time": 12000,
+        "alpha": 0.1,
+        "step_size": [
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "decay": 0.2,
+        "initial_quantile": 0.65,
+        "strategy": "pooled",
+        "initial_scale": [
+          1.0,
+          1.312155617775076,
+          1.3158821027419998,
+          1.31590338923083
+        ],
+        "current_scales": [
+          1.0454450420992052,
+          1.3717865850655728,
+          1.3756824202987006,
+          1.375704674152912
+        ],
+        "scale_decay": 0.97,
+        "scale_source": "shortest",
+        "scale_floor": [
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-08
+        ],
+        "default_lane_state": {
+          "quantile": 0.65,
+          "n_updates": 0,
+          "misses": 0
+        },
+        "lane_counts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "states": [
+          {
+            "lead_time": 1,
+            "lane": 0,
+            "quantile": 0.6067774067275911,
+            "n_updates": 11999,
+            "misses": 1198
+          },
+          {
+            "lead_time": 6,
+            "lane": 0,
+            "quantile": 0.6205729113693208,
+            "n_updates": 11994,
+            "misses": 1198
+          },
+          {
+            "lead_time": 12,
+            "lane": 0,
+            "quantile": 0.6167906044743477,
+            "n_updates": 11988,
+            "misses": 1197
+          },
+          {
+            "lead_time": 24,
+            "lane": 0,
+            "quantile": 0.6516933463039496,
+            "n_updates": 11976,
+            "misses": 1198
+          }
+        ],
+        "summary": [
+          {
+            "lead_time": 1,
+            "n_issued": 12000,
+            "n_evaluated": 11999,
+            "n_pending": 1,
+            "coverage": 0.9001583465288774,
+            "coverage_bound": 0.005998969342417042
+          },
+          {
+            "lead_time": 6,
+            "n_issued": 12000,
+            "n_evaluated": 11994,
+            "n_pending": 6,
+            "coverage": 0.9001167250291813,
+            "coverage_bound": 0.008103904637121356
+          },
+          {
+            "lead_time": 12,
+            "n_issued": 12000,
+            "n_evaluated": 11988,
+            "n_pending": 12,
+            "coverage": 0.9001501501501501,
+            "coverage_bound": 0.01020294001743768
+          },
+          {
+            "lead_time": 24,
+            "n_issued": 12000,
+            "n_evaluated": 11976,
+            "n_pending": 24,
+            "coverage": 0.8999665998663995,
+            "coverage_bound": 0.01388375348051333
+          }
+        ],
+        "pending": [
+          {
+            "origin": 11976,
+            "target": 12000,
+            "lead_time": 24,
+            "prediction": -0.00011454586474766491,
+            "lower": -3.26820344319031,
+            "upper": 3.267974351460815,
+            "quantile": 0.6868611552548359,
+            "scale": 1.4899162283436156,
+            "kind": "finite"
+          },
+          {
+            "origin": 11988,
+            "target": 12000,
+            "lead_time": 12,
+            "prediction": 0.011998170652220592,
+            "lower": -2.619080710223807,
+            "upper": 2.6430770515282482,
+            "quantile": 0.6336049348710092,
+            "scale": 1.5214753939919055,
+            "kind": "finite"
+          },
+          {
+            "origin": 11994,
+            "target": 12000,
+            "lead_time": 6,
+            "prediction": -0.10213913921627096,
+            "lower": -2.501249391919089,
+            "upper": 2.2969711134865465,
+            "quantile": 0.6282146412302809,
+            "scale": 1.4198237473142084,
+            "kind": "finite"
+          },
+          {
+            "origin": 11999,
+            "target": 12000,
+            "lead_time": 1,
+            "prediction": -1.2227366480679618,
+            "lower": -2.835951255708065,
+            "upper": 0.39047795957214126,
+            "quantile": 0.6067774067275911,
+            "scale": 1.0454450420992052,
+            "kind": "finite"
+          },
+          {
+            "origin": 11977,
+            "target": 12001,
+            "lead_time": 24,
+            "prediction": -2.268746535722721e-05,
+            "lower": -3.2931618757183414,
+            "upper": 3.2931165007876273,
+            "quantile": 0.6853318388411606,
+            "scale": 1.5120354754856948,
+            "kind": "finite"
+          },
+          {
+            "origin": 11989,
+            "target": 12001,
+            "lead_time": 12,
+            "prediction": 0.009746094016014497,
+            "lower": -2.5680608456648146,
+            "upper": 2.5875530336968433,
+            "quantile": 0.6320762317992298,
+            "scale": 1.5005095829053794,
+            "kind": "finite"
+          },
+          {
+            "origin": 11995,
+            "target": 12001,
+            "lead_time": 6,
+            "prediction": -0.04049041437704287,
+            "lower": -2.3915946623478948,
+            "upper": 2.3106138335938087,
+            "quantile": 0.6266862442766861,
+            "scale": 1.4005406452156401,
+            "kind": "finite"
+          },
+          {
+            "origin": 11978,
+            "target": 12002,
+            "lead_time": 24,
+            "prediction": -4.0580690487240573e-05,
+            "lower": -3.2444776053693403,
+            "upper": 3.244396443988366,
+            "quantile": 0.6838025480128902,
+            "scale": 1.5002616227700198,
+            "kind": "finite"
+          },
+          {
+            "origin": 11990,
+            "target": 12002,
+            "lead_time": 12,
+            "prediction": 0.007117159728847549,
+            "lower": -2.5156756873857944,
+            "upper": 2.5299100068434894,
+            "quantile": 0.6305475542513524,
+            "scale": 1.4781628779613956,
+            "kind": "finite"
+          },
+          {
+            "origin": 11996,
+            "target": 12002,
+            "lead_time": 6,
+            "prediction": -0.05612236619281094,
+            "lower": -2.361497085593856,
+            "upper": 2.249252353208234,
+            "quantile": 0.6251578728163435,
+            "scale": 1.3822933395730908,
+            "kind": "finite"
+          },
+          {
+            "origin": 11979,
+            "target": 12003,
+            "lead_time": 24,
+            "prediction": -8.041841626502015e-05,
+            "lower": -3.2766128372004175,
+            "upper": 3.276452000367888,
+            "quantile": 0.6822732827674568,
+            "scale": 1.525842965891305,
+            "kind": "finite"
+          },
+          {
+            "origin": 11991,
+            "target": 12003,
+            "lead_time": 12,
+            "prediction": 0.004058736324658018,
+            "lower": -2.4646680543322708,
+            "upper": 2.4727855269815864,
+            "quantile": 0.6290189022248206,
+            "scale": 1.4559991308139804,
+            "kind": "finite"
+          },
+          {
+            "origin": 11997,
+            "target": 12003,
+            "lead_time": 6,
+            "prediction": -0.11551642416964028,
+            "lower": -2.4055598972935024,
+            "upper": 2.174527048954222,
+            "quantile": 0.6236295268467021,
+            "scale": 1.38207815444428,
+            "kind": "finite"
+          },
+          {
+            "origin": 11980,
+            "target": 12004,
+            "lead_time": 24,
+            "prediction": -3.734259103695314e-05,
+            "lower": -3.2122296811063524,
+            "upper": 3.212154995924278,
+            "quantile": 0.6807440431022928,
+            "scale": 1.5064568675455767,
+            "kind": "finite"
+          },
+          {
+            "origin": 11992,
+            "target": 12004,
+            "lead_time": 12,
+            "prediction": -0.0004876099626159802,
+            "lower": -2.4252359361091265,
+            "upper": 2.4242607161838943,
+            "quantile": 0.6274902757170779,
+            "scale": 1.439452315649217,
+            "kind": "finite"
+          },
+          {
+            "origin": 11998,
+            "target": 12004,
+            "lead_time": 6,
+            "prediction": -0.07001779016390396,
+            "lower": -2.310963523524887,
+            "upper": 2.170927943197079,
+            "quantile": 0.6221012063652113,
+            "scale": 1.3612747902967246,
+            "kind": "finite"
+          },
+          {
+            "origin": 11981,
+            "target": 12005,
+            "lead_time": 24,
+            "prediction": -6.184200146785898e-06,
+            "lower": -3.1530596912482003,
+            "upper": 3.153047322847907,
+            "quantile": 0.6792148290148311,
+            "scale": 1.4891500673665512,
+            "kind": "finite"
+          },
+          {
+            "origin": 11993,
+            "target": 12005,
+            "lead_time": 12,
+            "prediction": -0.0012320286807165752,
+            "lower": -2.374572254745002,
+            "upper": 2.3721081973835694,
+            "quantile": 0.6259616747255686,
+            "scale": 1.4181702160163658,
+            "kind": "finite"
+          },
+          {
+            "origin": 11999,
+            "target": 12005,
+            "lead_time": 6,
+            "prediction": -0.14187298695971806,
+            "lower": -2.385501922215155,
+            "upper": 2.1017559482957187,
+            "quantile": 0.6205729113693208,
+            "scale": 1.3717865850655728,
+            "kind": "finite"
+          },
+          {
+            "origin": 11982,
+            "target": 12006,
+            "lead_time": 24,
+            "prediction": -4.398965630438167e-05,
+            "lower": -3.140067207451132,
+            "upper": 3.1399792281385235,
+            "quantile": 0.6776856405025051,
+            "scale": 1.4934277956669522,
+            "kind": "finite"
+          },
+          {
+            "origin": 11994,
+            "target": 12006,
+            "lead_time": 12,
+            "prediction": -0.0077032205690835895,
+            "lower": -2.375065246846056,
+            "upper": 2.3596588057078884,
+            "quantile": 0.6244330992477374,
+            "scale": 1.423856006734032,
+            "kind": "finite"
+          },
+          {
+            "origin": 11983,
+            "target": 12007,
+            "lead_time": 24,
+            "prediction": -5.5452895452678644e-05,
+            "lower": -3.0963793427625386,
+            "upper": 3.096268436971633,
+            "quantile": 0.6761564775627487,
+            "scale": 1.4829768971755717,
+            "kind": "finite"
+          },
+          {
+            "origin": 11995,
+            "target": 12007,
+            "lead_time": 12,
+            "prediction": -0.0030537421332631244,
+            "lower": -2.3231049069348946,
+            "upper": 2.316997422668368,
+            "quantile": 0.6229045492810292,
+            "scale": 1.4045181411690633,
+            "kind": "finite"
+          },
+          {
+            "origin": 11984,
+            "target": 12008,
+            "lead_time": 24,
+            "prediction": -7.387768242971206e-05,
+            "lower": -3.0784112590362245,
+            "upper": 3.078263503671365,
+            "quantile": 0.6746273401929961,
+            "scale": 1.484681633667372,
+            "kind": "finite"
+          },
+          {
+            "origin": 11996,
+            "target": 12008,
+            "lead_time": 12,
+            "prediction": -0.004232686597511807,
+            "lower": -2.279216091595699,
+            "upper": 2.2707507184006754,
+            "quantile": 0.6213760248228899,
+            "scale": 1.3862190136928512,
+            "kind": "finite"
+          },
+          {
+            "origin": 11985,
+            "target": 12009,
+            "lead_time": 24,
+            "prediction": 1.302009053631279e-05,
+            "lower": -3.1382670526777976,
+            "upper": 3.1382930928588704,
+            "quantile": 0.6730982283906821,
+            "scale": 1.5241598808647068,
+            "kind": "finite"
+          },
+          {
+            "origin": 11997,
+            "target": 12009,
+            "lead_time": 12,
+            "prediction": -0.008712120559841208,
+            "lower": -2.2686228764996708,
+            "upper": 2.251198635379988,
+            "quantile": 0.6198475258707654,
+            "scale": 1.3860032174443404,
+            "kind": "finite"
+          },
+          {
+            "origin": 11986,
+            "target": 12010,
+            "lead_time": 24,
+            "prediction": 3.5865995009489403e-06,
+            "lower": -3.070268519103743,
+            "upper": 3.070275692302745,
+            "quantile": 0.671569142153242,
+            "scale": 1.5015164310050937,
+            "kind": "finite"
+          },
+          {
+            "origin": 11998,
+            "target": 12010,
+            "lead_time": 12,
+            "prediction": -0.005280664058175674,
+            "lower": -2.216794112989196,
+            "upper": 2.206232784872845,
+            "quantile": 0.6183190524221024,
+            "scale": 1.3651407723290194,
+            "kind": "finite"
+          },
+          {
+            "origin": 11987,
+            "target": 12011,
+            "lead_time": 24,
+            "prediction": 5.745262050740156e-05,
+            "lower": -3.104747272496593,
+            "upper": 3.1048621777376075,
+            "quantile": 0.6700400814781117,
+            "scale": 1.528954972165316,
+            "kind": "finite"
+          },
+          {
+            "origin": 11999,
+            "target": 12011,
+            "lead_time": 12,
+            "prediction": -0.010699903286157029,
+            "lower": -2.2249149029389246,
+            "upper": 2.20351509636661,
+            "quantile": 0.6167906044743477,
+            "scale": 1.3756824202987006,
+            "kind": "finite"
+          },
+          {
+            "origin": 11988,
+            "target": 12012,
+            "lead_time": 24,
+            "prediction": 6.824570341051974e-05,
+            "lower": -3.068328302894436,
+            "upper": 3.0684647943012573,
+            "quantile": 0.6685110463627272,
+            "scale": 1.5215000062796722,
+            "kind": "finite"
+          },
+          {
+            "origin": 11989,
+            "target": 12013,
+            "lead_time": 24,
+            "prediction": 5.5435871092970834e-05,
+            "lower": -3.005275321637463,
+            "upper": 3.0053861933796493,
+            "quantile": 0.6669820368045252,
+            "scale": 1.5005338560377595,
+            "kind": "finite"
+          },
+          {
+            "origin": 11990,
+            "target": 12014,
+            "lead_time": 24,
+            "prediction": 4.048246904125587e-05,
+            "lower": -2.94024613495513,
+            "upper": 2.9403270998932127,
+            "quantile": 0.6654530528009428,
+            "scale": 1.4781867896002312,
+            "kind": "finite"
+          },
+          {
+            "origin": 11991,
+            "target": 12015,
+            "lead_time": 24,
+            "prediction": 2.3086128999411185e-05,
+            "lower": -2.876376338881055,
+            "upper": 2.876422511139054,
+            "quantile": 0.6639240943494178,
+            "scale": 1.4560226839189054,
+            "kind": "finite"
+          },
+          {
+            "origin": 11992,
+            "target": 12016,
+            "lead_time": 24,
+            "prediction": -2.7735298866203343e-06,
+            "lower": -2.8243155922289946,
+            "upper": 2.8243100451692214,
+            "quantile": 0.6623951614473881,
+            "scale": 1.4394756010830525,
+            "kind": "finite"
+          },
+          {
+            "origin": 11993,
+            "target": 12017,
+            "lead_time": 24,
+            "prediction": -7.007790301922057e-06,
+            "lower": -2.7636246385135927,
+            "upper": 2.763610622932989,
+            "quantile": 0.6608662540922924,
+            "scale": 1.4181931571783435,
+            "kind": "finite"
+          },
+          {
+            "origin": 11994,
+            "target": 12018,
+            "lead_time": 24,
+            "prediction": -4.381598841204982e-05,
+            "lower": -2.7558984011660246,
+            "upper": 2.7558107691892,
+            "quantile": 0.6593373722815696,
+            "scale": 1.4238790398727303,
+            "kind": "finite"
+          },
+          {
+            "origin": 11995,
+            "target": 12019,
+            "lead_time": 24,
+            "prediction": -1.7369712930388433e-05,
+            "lower": -2.7000230186205374,
+            "upper": 2.699988279194677,
+            "quantile": 0.6578085160126593,
+            "scale": 1.4045408614869865,
+            "kind": "finite"
+          },
+          {
+            "origin": 11996,
+            "target": 12020,
+            "lead_time": 24,
+            "prediction": -2.4075559727933252e-05,
+            "lower": -2.6468332855463754,
+            "upper": 2.6467851344269193,
+            "quantile": 0.6562796852830015,
+            "scale": 1.3862414379932424,
+            "kind": "finite"
+          },
+          {
+            "origin": 11997,
+            "target": 12021,
+            "lead_time": 24,
+            "prediction": -4.955462070324643e-05,
+            "lower": -2.628590669253377,
+            "upper": 2.6284915600119705,
+            "quantile": 0.6547508800900366,
+            "scale": 1.3860256382538836,
+            "kind": "finite"
+          },
+          {
+            "origin": 11998,
+            "target": 12022,
+            "lead_time": 24,
+            "prediction": -3.003646502211984e-05,
+            "lower": -2.5715738087488718,
+            "upper": 2.571513735818827,
+            "quantile": 0.6532221004312054,
+            "scale": 1.365162855655285,
+            "kind": "finite"
+          },
+          {
+            "origin": 11999,
+            "target": 12023,
+            "lead_time": 24,
+            "prediction": -6.086114686601581e-05,
+            "lower": -2.574050112029965,
+            "upper": 2.5739283897362326,
+            "quantile": 0.6516933463039496,
+            "scale": 1.375704674152912,
+            "kind": "finite"
+          }
+        ],
+        "coverage_bound_arithmetic": "ordinary binary64; not a rounding certificate"
+      },
+      "terminal_state_sha256": "3e0ab518b2492451f1d8c704c674e5652f6011c63ed2bfb7c7dec803073bf10c",
+      "package_version": "0.7.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.6.0', version='Darwin Kernel Version 25.6.0: Tue Aug 18 17:49:54 PDT 2026; root:xnu-12377.161.15.700.19~2/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "pooled_stream_50000x4",
+      "settings": {
+        "n_obs": 50000,
+        "n_origins": 50000,
+        "n_leads": 4,
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "seed": 20261231,
+        "dgp": {
+          "model": "Stationary Gaussian AR(1)",
+          "phi": 0.65,
+          "innovation_variance": 1.0,
+          "initial_variance": 1.7316017316017318
+        },
+        "forecast": "phi**lead * current_observation; supplied points, no model fitting.",
+        "initial_scale_formula": "sqrt(sum(phi**(2*i) for i in range(lead)))",
+        "initial_scale_scope": "Known-DGP formula for this engineering input, not an estimated calibration claim.",
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.2,
+          "scale": [
+            1.0,
+            1.312155617775076,
+            1.3158821027419998,
+            1.31590338923083
+          ],
+          "initial_quantile": 0.65,
+          "strategy": "pooled",
+          "scale_decay": 0.97,
+          "scale_source": "shortest",
+          "scale_floor": 1e-08
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              50000
+            ],
+            "dtype": "float64",
+            "sha256": "a5a9bb6b46c625d5c5c3d54abd5a2fcdfd5d08029a6abe015cef299236afdbed"
+          },
+          "predicted": {
+            "shape": [
+              50000,
+              4
+            ],
+            "dtype": "float64",
+            "sha256": "ce1ad1538148bc50f325da0389e079b962d10413ff45f8fd4b5e31073264e233"
+          },
+          "origins": {
+            "shape": [
+              50000
+            ],
+            "dtype": "int64",
+            "sha256": "33236cc6bd19fa6b89e06d441d3fcd8eb37dc8540f6a4f2b627b20af10894a41"
+          }
+        },
+        "feedback_order": "At each t: observe(t, actual[t]), then predict(predicted[t]).",
+        "future_pending_flushed": false,
+        "consistency_check_excluded_from_timing": {
+          "same_input_batch_stream_terminal_state": true,
+          "fields_checked": [
+            "lane_quantiles",
+            "lane_updates",
+            "lane_misses",
+            "per_lead_evaluated_counts",
+            "array_miss_counts",
+            "current_scales",
+            "pending_intervals",
+            "complete_terminal_record"
+          ],
+          "batch_result_sha256": "6ba1ff0ad83ec01b0ecb7a1d77ca27b4dc5bf4785dca206149b139c31660a789",
+          "terminal_state_sha256": "b29d6bc3b3521be18e6d75543dd3bf5d95a4b46cd57da336ce7bfded18e3e4c7",
+          "n_evaluated": [
+            49999,
+            49994,
+            49988,
+            49976
+          ],
+          "misses": [
+            5001,
+            4999,
+            4999,
+            4996
+          ],
+          "n_pending": 43
+        },
+        "retained_output": "One tracker, active lanes and pending forecasts; no interval trajectory.",
+        "purpose": "Local timing and incremental allocation."
+      },
+      "warm_seconds": [
+        0.6691135420001046,
+        0.671481834000133,
+        0.6667911249996905,
+        0.6653994160001275,
+        0.6647957089999181
+      ],
+      "warm_median_seconds": 0.6667911249996905,
+      "traced_current_bytes": 16632,
+      "traced_peak_bytes": 19624,
+      "result_sha256": "b29d6bc3b3521be18e6d75543dd3bf5d95a4b46cd57da336ce7bfded18e3e4c7",
+      "terminal_state": {
+        "schema_version": 1,
+        "method": "multistep_conformal",
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "start_time": 0,
+        "last_time": 49999,
+        "next_time": 50000,
+        "alpha": 0.1,
+        "step_size": [
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "decay": 0.2,
+        "initial_quantile": 0.65,
+        "strategy": "pooled",
+        "initial_scale": [
+          1.0,
+          1.312155617775076,
+          1.3158821027419998,
+          1.31590338923083
+        ],
+        "current_scales": [
+          1.06312318508789,
+          1.3949830597000066,
+          1.3989447722672248,
+          1.3989674024270293
+        ],
+        "scale_decay": 0.97,
+        "scale_source": "shortest",
+        "scale_floor": [
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-08
+        ],
+        "default_lane_state": {
+          "quantile": 0.65,
+          "n_updates": 0,
+          "misses": 0
+        },
+        "lane_counts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "states": [
+          {
+            "lead_time": 1,
+            "lane": 0,
+            "quantile": 0.6419388455849774,
+            "n_updates": 49999,
+            "misses": 5001
+          },
+          {
+            "lead_time": 6,
+            "lane": 0,
+            "quantile": 0.6380644912849318,
+            "n_updates": 49994,
+            "misses": 4999
+          },
+          {
+            "lead_time": 12,
+            "lane": 0,
+            "quantile": 0.6428831759160462,
+            "n_updates": 49988,
+            "misses": 4999
+          },
+          {
+            "lead_time": 24,
+            "lane": 0,
+            "quantile": 0.6263002300132476,
+            "n_updates": 49976,
+            "misses": 4996
+          }
+        ],
+        "summary": [
+          {
+            "lead_time": 1,
+            "n_issued": 50000,
+            "n_evaluated": 49999,
+            "n_pending": 1,
+            "coverage": 0.8999779995599912,
+            "coverage_bound": 0.0019152418831828925
+          },
+          {
+            "lead_time": 6,
+            "n_issued": 50000,
+            "n_evaluated": 49994,
+            "n_pending": 6,
+            "coverage": 0.9000080009601152,
+            "coverage_bound": 0.002586611765718227
+          },
+          {
+            "lead_time": 12,
+            "n_issued": 50000,
+            "n_evaluated": 49988,
+            "n_pending": 12,
+            "coverage": 0.8999959990397696,
+            "coverage_bound": 0.0032555930445989415
+          },
+          {
+            "lead_time": 24,
+            "n_issued": 50000,
+            "n_evaluated": 49976,
+            "n_pending": 24,
+            "coverage": 0.9000320153673763,
+            "coverage_bound": 0.0044273833681466625
+          }
+        ],
+        "pending": [
+          {
+            "origin": 49976,
+            "target": 50000,
+            "lead_time": 24,
+            "prediction": 3.018516409931479e-05,
+            "lower": -2.636103372483235,
+            "upper": 2.6361637428114335,
+            "quantile": 0.6527239925970652,
+            "scale": 1.4025314639319368,
+            "kind": "finite"
+          },
+          {
+            "origin": 49988,
+            "target": 50000,
+            "lead_time": 12,
+            "prediction": -0.011683956649327263,
+            "lower": -2.5167344016914335,
+            "upper": 2.4933664883927786,
+            "quantile": 0.6555197172287786,
+            "scale": 1.31642186037115,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50000,
+            "lead_time": 6,
+            "prediction": -0.05540115654240391,
+            "lower": -2.3568337445229575,
+            "upper": 2.24603143143815,
+            "quantile": 0.6323209076124247,
+            "scale": 1.3382265791827057,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50000,
+            "lead_time": 1,
+            "prediction": 1.473102359409863,
+            "lower": -0.432885100371704,
+            "upper": 3.37908981919143,
+            "quantile": 0.6419388455849774,
+            "scale": 1.06312318508789,
+            "kind": "finite"
+          },
+          {
+            "origin": 49977,
+            "target": 50001,
+            "lead_time": 24,
+            "prediction": 4.357912660027819e-05,
+            "lower": -2.6023428784771867,
+            "upper": 2.602430036730387,
+            "quantile": 0.651575082764821,
+            "scale": 1.391606754293007,
+            "kind": "finite"
+          },
+          {
+            "origin": 49989,
+            "target": 50001,
+            "lead_time": 12,
+            "prediction": -0.005394072373630822,
+            "lower": -2.4657427721397123,
+            "upper": 2.4549546273924503,
+            "quantile": 0.6543709177616311,
+            "scale": 1.2995199511544917,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50001,
+            "lead_time": 6,
+            "prediction": -0.1374764620356438,
+            "lower": -2.4528590781091997,
+            "upper": 2.177906154037912,
+            "quantile": 0.6311721633039789,
+            "scale": 1.3530025737188593,
+            "kind": "finite"
+          },
+          {
+            "origin": 49978,
+            "target": 50002,
+            "lead_time": 24,
+            "prediction": 4.335390307046251e-05,
+            "lower": -2.5576777688885852,
+            "upper": 2.5577644766947265,
+            "quantile": 0.6504261775323928,
+            "scale": 1.3746561571253644,
+            "kind": "finite"
+          },
+          {
+            "origin": 49990,
+            "target": 50002,
+            "lead_time": 12,
+            "prediction": 0.00573785309529446,
+            "lower": -2.5040910417456628,
+            "upper": 2.5155667479362513,
+            "quantile": 0.6532221228916492,
+            "scale": 1.3323999686436094,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50002,
+            "lead_time": 6,
+            "prediction": -0.10723312224184316,
+            "lower": -2.3782555627238544,
+            "upper": 2.163789318240168,
+            "quantile": 0.6300234235913743,
+            "scale": 1.333641061608618,
+            "kind": "finite"
+          },
+          {
+            "origin": 49979,
+            "target": 50003,
+            "lead_time": 24,
+            "prediction": 1.7263100612095733e-05,
+            "lower": -2.5103993904176436,
+            "upper": 2.510433916618868,
+            "quantile": 0.6492772768996702,
+            "scale": 1.356061880130133,
+            "kind": "finite"
+          },
+          {
+            "origin": 49991,
+            "target": 50003,
+            "lead_time": 12,
+            "prediction": -0.00015179565040098286,
+            "lower": -2.476764835065472,
+            "upper": 2.4764612437646703,
+            "quantile": 0.6520733326187222,
+            "scale": 1.3214460369606016,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50003,
+            "lead_time": 6,
+            "prediction": -0.007927733092106587,
+            "lower": -2.255878167606666,
+            "upper": 2.2400227014224527,
+            "quantile": 0.6288746884745007,
+            "scale": 1.3266097691526428,
+            "kind": "finite"
+          },
+          {
+            "origin": 49980,
+            "target": 50004,
+            "lead_time": 24,
+            "prediction": 7.14099136933687e-06,
+            "lower": -2.460602512127358,
+            "upper": 2.4606167941100967,
+            "quantile": 0.6481283808665425,
+            "scale": 1.3358753115250241,
+            "kind": "finite"
+          },
+          {
+            "origin": 49992,
+            "target": 50004,
+            "lead_time": 12,
+            "prediction": -0.004960388244839123,
+            "lower": -2.4588674618309145,
+            "upper": 2.4489466853412365,
+            "quantile": 0.65092454694274,
+            "scale": 1.315972377283579,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50004,
+            "lead_time": 6,
+            "prediction": -0.011828966525529809,
+            "lower": -2.215201174513717,
+            "upper": 2.191543241462657,
+            "quantile": 0.6277259579532477,
+            "scale": 1.3067139690634424,
+            "kind": "finite"
+          },
+          {
+            "origin": 49981,
+            "target": 50005,
+            "lead_time": 24,
+            "prediction": 1.3036829280611185e-05,
+            "lower": -2.4136725371309247,
+            "upper": 2.4136986107894858,
+            "quantile": 0.6469794894328993,
+            "scale": 1.317013178292184,
+            "kind": "finite"
+          },
+          {
+            "origin": 49993,
+            "target": 50005,
+            "lead_time": 12,
+            "prediction": -0.012832488156721014,
+            "lower": -2.521319986852115,
+            "upper": 2.4956550105386723,
+            "quantile": 0.6497757658635922,
+            "scale": 1.3520558309892068,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50005,
+            "lead_time": 6,
+            "prediction": 0.1709226857288645,
+            "lower": -2.2883252601235564,
+            "upper": 2.630170631581285,
+            "quantile": 0.6380644912849318,
+            "scale": 1.3949830597000066,
+            "kind": "finite"
+          },
+          {
+            "origin": 49982,
+            "target": 50006,
+            "lead_time": 24,
+            "prediction": -4.687726297250222e-05,
+            "lower": -2.469897973667795,
+            "upper": 2.4698042191418494,
+            "quantile": 0.6458306025986301,
+            "scale": 1.354450642266087,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50006,
+            "lead_time": 12,
+            "prediction": -0.004178293765770065,
+            "lower": -2.4815313471930085,
+            "upper": 2.4731747596614686,
+            "quantile": 0.6486269893811684,
+            "scale": 1.3420271049451287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49983,
+            "target": 50007,
+            "lead_time": 24,
+            "prediction": -1.4720414101323356e-05,
+            "lower": -2.428714918152181,
+            "upper": 2.4286854773239783,
+            "quantile": 0.6446817203636245,
+            "scale": 1.3385854581483667,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50007,
+            "lead_time": 12,
+            "prediction": -0.010368322253778185,
+            "lower": -2.5024912670971724,
+            "upper": 2.4817546225896163,
+            "quantile": 0.647478217495358,
+            "scale": 1.3568450628892534,
+            "kind": "finite"
+          },
+          {
+            "origin": 49984,
+            "target": 50008,
+            "lead_time": 24,
+            "prediction": 4.405632704432154e-06,
+            "lower": -2.3866555621307466,
+            "upper": 2.3866643733961554,
+            "quantile": 0.6435328427277719,
+            "scale": 1.322024048497486,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50008,
+            "lead_time": 12,
+            "prediction": -0.008087403117734825,
+            "lower": -2.452224946860194,
+            "upper": 2.436050140624724,
+            "quantile": 0.646329450206051,
+            "scale": 1.3374285646303892,
+            "kind": "finite"
+          },
+          {
+            "origin": 49985,
+            "target": 50009,
+            "lead_time": 24,
+            "prediction": 2.3851669161846274e-05,
+            "lower": -2.3538606273112648,
+            "upper": 2.3539083306495887,
+            "quantile": 0.6423839696909619,
+            "scale": 1.3104106934424367,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50009,
+            "lead_time": 12,
+            "prediction": -0.0005979008349777799,
+            "lower": -2.419670688360032,
+            "upper": 2.4184748866900767,
+            "quantile": 0.645180687513137,
+            "scale": 1.3303773035020396,
+            "kind": "finite"
+          },
+          {
+            "origin": 49986,
+            "target": 50010,
+            "lead_time": 24,
+            "prediction": -1.1716374645168222e-05,
+            "lower": -2.3320849863288107,
+            "upper": 2.3320615535795204,
+            "quantile": 0.641235101253084,
+            "scale": 1.3047726628353715,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50010,
+            "lead_time": 12,
+            "prediction": -0.0008921275325957191,
+            "lower": -2.3717664018986677,
+            "upper": 2.369982146833476,
+            "quantile": 0.6440319294165054,
+            "scale": 1.3104249999014166,
+            "kind": "finite"
+          },
+          {
+            "origin": 49987,
+            "target": 50011,
+            "lead_time": 24,
+            "prediction": -3.3875167009315445e-05,
+            "lower": -2.30898521833252,
+            "upper": 2.3089174679985014,
+            "quantile": 0.6400862374140279,
+            "scale": 1.2982990681130686,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50011,
+            "lead_time": 12,
+            "prediction": 0.012890799340316481,
+            "lower": -2.50549533503815,
+            "upper": 2.5312769337187833,
+            "quantile": 0.6428831759160462,
+            "scale": 1.3989447722672248,
+            "kind": "finite"
+          },
+          {
+            "origin": 49988,
+            "target": 50012,
+            "lead_time": 24,
+            "prediction": -6.645845131430776e-05,
+            "lower": -2.329647776211977,
+            "upper": 2.3295148593093487,
+            "quantile": 0.638937378173683,
+            "scale": 1.3164431555914196,
+            "kind": "finite"
+          },
+          {
+            "origin": 49989,
+            "target": 50013,
+            "lead_time": 24,
+            "prediction": -3.068153254826027e-05,
+            "lower": -2.2882859474756683,
+            "upper": 2.2882245844105715,
+            "quantile": 0.6377885235319389,
+            "scale": 1.2995409729594598,
+            "kind": "finite"
+          },
+          {
+            "origin": 49990,
+            "target": 50014,
+            "lead_time": 24,
+            "prediction": 3.263696040880407e-05,
+            "lower": -2.3344886110613734,
+            "upper": 2.334553884982191,
+            "quantile": 0.6366396734886852,
+            "scale": 1.3324215223352287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49991,
+            "target": 50015,
+            "lead_time": 24,
+            "prediction": -8.634150352208172e-07,
+            "lower": -2.303867227881503,
+            "upper": 2.303865501051433,
+            "quantile": 0.6354908280438114,
+            "scale": 1.3214674134549296,
+            "kind": "finite"
+          },
+          {
+            "origin": 49992,
+            "target": 50016,
+            "lead_time": 24,
+            "prediction": -2.8214733293167986e-05,
+            "lower": -2.2830085064653245,
+            "upper": 2.282952076998738,
+            "quantile": 0.6343419871972071,
+            "scale": 1.3159936652327437,
+            "kind": "finite"
+          },
+          {
+            "origin": 49993,
+            "target": 50017,
+            "lead_time": 24,
+            "prediction": -7.299130893762588e-05,
+            "lower": -2.3340706881354985,
+            "upper": 2.3339247055176235,
+            "quantile": 0.6331931509487619,
+            "scale": 1.3520777026457058,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50018,
+            "lead_time": 24,
+            "prediction": -2.3766172808018237e-05,
+            "lower": -2.305285986141398,
+            "upper": 2.305238453795782,
+            "quantile": 0.6320443192983654,
+            "scale": 1.342048814371011,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50019,
+            "lead_time": 24,
+            "prediction": -5.8975110948690993e-05,
+            "lower": -2.3192971948468264,
+            "upper": 2.3191792446249293,
+            "quantile": 0.630895492245907,
+            "scale": 1.3568670120192061,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50020,
+            "lead_time": 24,
+            "prediction": -4.6001222230665106e-05,
+            "lower": -2.274852844357217,
+            "upper": 2.274760841912756,
+            "quantile": 0.6297466697912765,
+            "scale": 1.3374501996675576,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50021,
+            "lead_time": 24,
+            "prediction": -3.4008653681920864e-06,
+            "lower": -2.2517023951653603,
+            "upper": 2.2516955934346243,
+            "quantile": 0.6285978519343633,
+            "scale": 1.3303988244738287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50022,
+            "lead_time": 24,
+            "prediction": -5.07442949085059e-06,
+            "lower": -2.2070540223562913,
+            "upper": 2.2070438734973097,
+            "quantile": 0.6274490386750572,
+            "scale": 1.3104461981129167,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50023,
+            "lead_time": 24,
+            "prediction": 7.332298347839731e-05,
+            "lower": -2.34451898423722,
+            "upper": 2.3446656302041773,
+            "quantile": 0.6263002300132476,
+            "scale": 1.3989674024270293,
+            "kind": "finite"
+          }
+        ],
+        "coverage_bound_arithmetic": "ordinary binary64; not a rounding certificate"
+      },
+      "terminal_state_sha256": "b29d6bc3b3521be18e6d75543dd3bf5d95a4b46cd57da336ce7bfded18e3e4c7",
+      "package_version": "0.7.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.6.0', version='Darwin Kernel Version 25.6.0: Tue Aug 18 17:49:54 PDT 2026; root:xnu-12377.161.15.700.19~2/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "pooled_stream_1000x4",
+      "settings": {
+        "n_obs": 1000,
+        "n_origins": 1000,
+        "n_leads": 4,
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "seed": 20261232,
+        "dgp": {
+          "model": "Stationary Gaussian AR(1)",
+          "phi": 0.65,
+          "innovation_variance": 1.0,
+          "initial_variance": 1.7316017316017318
+        },
+        "forecast": "phi**lead * current_observation; supplied points, no model fitting.",
+        "initial_scale_formula": "sqrt(sum(phi**(2*i) for i in range(lead)))",
+        "initial_scale_scope": "Known-DGP formula for this engineering input, not an estimated calibration claim.",
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.2,
+          "scale": [
+            1.0,
+            1.312155617775076,
+            1.3158821027419998,
+            1.31590338923083
+          ],
+          "initial_quantile": 0.65,
+          "strategy": "pooled",
+          "scale_decay": 0.97,
+          "scale_source": "shortest",
+          "scale_floor": 1e-08
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              1000
+            ],
+            "dtype": "float64",
+            "sha256": "d63e0aad04090fd708ace18e6c081d9def6022fc671f88b11604fabc32b7ce19"
+          },
+          "predicted": {
+            "shape": [
+              1000,
+              4
+            ],
+            "dtype": "float64",
+            "sha256": "8f1ee85160141d84f0f9ec5029f069e844be4d68a5f0e7d627d700ba6ce9e683"
+          },
+          "origins": {
+            "shape": [
+              1000
+            ],
+            "dtype": "int64",
+            "sha256": "702746827e553786bb026ac120cb58745fef3d3f554c33891809001cc37639f0"
+          }
+        },
+        "feedback_order": "At each t: observe(t, actual[t]), then predict(predicted[t]).",
+        "future_pending_flushed": false,
+        "consistency_check_excluded_from_timing": {
+          "same_input_batch_stream_terminal_state": true,
+          "fields_checked": [
+            "lane_quantiles",
+            "lane_updates",
+            "lane_misses",
+            "per_lead_evaluated_counts",
+            "array_miss_counts",
+            "current_scales",
+            "pending_intervals",
+            "complete_terminal_record"
+          ],
+          "batch_result_sha256": "6d1ca3e538ad80bb3c5f3f37c5d2efd048d2b6c1239322bbd87a360e509b5d0c",
+          "terminal_state_sha256": "6ef4915d21920df39502a5e0df24173f66213374e46cf8cedc88b2554c8c948d",
+          "n_evaluated": [
+            999,
+            994,
+            988,
+            976
+          ],
+          "misses": [
+            100,
+            100,
+            98,
+            97
+          ],
+          "n_pending": 43
+        },
+        "retained_output": "One tracker, active lanes and pending forecasts; no interval trajectory.",
+        "purpose": "Memory-scaling probe."
+      },
+      "warm_seconds": [
+        0.013506583999969735,
+        0.013585917000000336,
+        0.013593459000276198,
+        0.013492833999862341,
+        0.013525750000098924
+      ],
+      "warm_median_seconds": 0.013525750000098924,
+      "traced_current_bytes": 16376,
+      "traced_peak_bytes": 19368,
+      "result_sha256": "6ef4915d21920df39502a5e0df24173f66213374e46cf8cedc88b2554c8c948d",
+      "terminal_state": {
+        "schema_version": 1,
+        "method": "multistep_conformal",
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "start_time": 0,
+        "last_time": 999,
+        "next_time": 1000,
+        "alpha": 0.1,
+        "step_size": [
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "decay": 0.2,
+        "initial_quantile": 0.65,
+        "strategy": "pooled",
+        "initial_scale": [
+          1.0,
+          1.312155617775076,
+          1.3158821027419998,
+          1.31590338923083
+        ],
+        "current_scales": [
+          1.212394431162145,
+          1.5908501638086263,
+          1.5953681334303342,
+          1.595393941050851
+        ],
+        "scale_decay": 0.97,
+        "scale_source": "shortest",
+        "scale_floor": [
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-08
+        ],
+        "default_lane_state": {
+          "quantile": 0.65,
+          "n_updates": 0,
+          "misses": 0
+        },
+        "lane_counts": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "states": [
+          {
+            "lead_time": 1,
+            "lane": 0,
+            "quantile": 0.6330667856363716,
+            "n_updates": 999,
+            "misses": 100
+          },
+          {
+            "lead_time": 6,
+            "lane": 0,
+            "quantile": 0.6583860456842151,
+            "n_updates": 994,
+            "misses": 100
+          },
+          {
+            "lead_time": 12,
+            "lane": 0,
+            "quantile": 0.6405877238080854,
+            "n_updates": 988,
+            "misses": 98
+          },
+          {
+            "lead_time": 24,
+            "lane": 0,
+            "quantile": 0.6628059047434953,
+            "n_updates": 976,
+            "misses": 97
+          }
+        ],
+        "summary": [
+          {
+            "lead_time": 1,
+            "n_issued": 1000,
+            "n_evaluated": 999,
+            "n_pending": 1,
+            "coverage": 0.8998998998998999,
+            "coverage_bound": 0.04382685375143739
+          },
+          {
+            "lead_time": 6,
+            "n_issued": 1000,
+            "n_evaluated": 994,
+            "n_pending": 6,
+            "coverage": 0.8993963782696177,
+            "coverage_bound": 0.05942325672809857
+          },
+          {
+            "lead_time": 12,
+            "n_issued": 1000,
+            "n_evaluated": 988,
+            "n_pending": 12,
+            "coverage": 0.9008097165991903,
+            "coverage_bound": 0.07514795475396728
+          },
+          {
+            "lead_time": 24,
+            "n_issued": 1000,
+            "n_evaluated": 976,
+            "n_pending": 24,
+            "coverage": 0.9006147540983607,
+            "coverage_bound": 0.10318022473881801
+          }
+        ],
+        "pending": [
+          {
+            "origin": 976,
+            "target": 1000,
+            "lead_time": 24,
+            "prediction": -2.7014166596069316e-05,
+            "lower": -4.095681151304319,
+            "upper": 4.095627122971127,
+            "quantile": 0.7209927532702982,
+            "scale": 1.5849218722057072,
+            "kind": "finite"
+          },
+          {
+            "origin": 988,
+            "target": 1000,
+            "lead_time": 12,
+            "prediction": -0.010414512421081337,
+            "lower": -2.7234239279812327,
+            "upper": 2.7025949031390697,
+            "quantile": 0.6431185172160198,
+            "scale": 1.5055122766847437,
+            "kind": "finite"
+          },
+          {
+            "origin": 994,
+            "target": 1000,
+            "lead_time": 6,
+            "prediction": -0.13820545802765308,
+            "lower": -2.911633489687427,
+            "upper": 2.6352225736321206,
+            "quantile": 0.6458013489778455,
+            "scale": 1.521124830531472,
+            "kind": "finite"
+          },
+          {
+            "origin": 999,
+            "target": 1000,
+            "lead_time": 1,
+            "prediction": -0.7881824970510436,
+            "lower": -2.8799164023350787,
+            "upper": 1.3035514082329918,
+            "quantile": 0.6330667856363716,
+            "scale": 1.212394431162145,
+            "kind": "finite"
+          },
+          {
+            "origin": 977,
+            "target": 1001,
+            "lead_time": 24,
+            "prediction": -6.615984003993456e-05,
+            "lower": -4.078121971098923,
+            "upper": 4.077989651418843,
+            "quantile": 0.7184570973260371,
+            "scale": 1.5980740877102324,
+            "kind": "finite"
+          },
+          {
+            "origin": 989,
+            "target": 1001,
+            "lead_time": 12,
+            "prediction": -0.013531529206725129,
+            "lower": -2.700132657343606,
+            "upper": 2.673069598930156,
+            "quantile": 0.6405954301979442,
+            "scale": 1.5073112875460102,
+            "kind": "finite"
+          },
+          {
+            "origin": 995,
+            "target": 1001,
+            "lead_time": 6,
+            "prediction": -0.14473214879723767,
+            "lower": -2.862820534995693,
+            "upper": 2.5733562374012178,
+            "quantile": 0.6432844084080064,
+            "scale": 1.5072408005063063,
+            "kind": "finite"
+          },
+          {
+            "origin": 978,
+            "target": 1002,
+            "lead_time": 24,
+            "prediction": -7.521475777188647e-05,
+            "lower": -4.007617748092374,
+            "upper": 4.007467318576829,
+            "quantile": 0.7159219726317586,
+            "scale": 1.5901939331167776,
+            "kind": "finite"
+          },
+          {
+            "origin": 990,
+            "target": 1002,
+            "lead_time": 12,
+            "prediction": -0.006893770076151394,
+            "lower": -2.6275456283476206,
+            "upper": 2.6137580881953175,
+            "quantile": 0.6380728588322759,
+            "scale": 1.4864839052955165,
+            "kind": "finite"
+          },
+          {
+            "origin": 996,
+            "target": 1002,
+            "lead_time": 6,
+            "prediction": -0.2312966915866615,
+            "lower": -3.303089460272377,
+            "upper": 2.8404960770990537,
+            "quantile": 0.6659323000524126,
+            "scale": 1.5409775811590787,
+            "kind": "finite"
+          },
+          {
+            "origin": 979,
+            "target": 1003,
+            "lead_time": 24,
+            "prediction": -6.661611854491412e-05,
+            "lower": -3.910656452646028,
+            "upper": 3.910523220408938,
+            "quantile": 0.7133873785203425,
+            "scale": 1.5711301297530404,
+            "kind": "finite"
+          },
+          {
+            "origin": 991,
+            "target": 1003,
+            "lead_time": 12,
+            "prediction": -0.011409886177489316,
+            "lower": -2.6099642962436707,
+            "upper": 2.5871445238886923,
+            "quantile": 0.635550802487346,
+            "scale": 1.490110728733513,
+            "kind": "finite"
+          },
+          {
+            "origin": 997,
+            "target": 1003,
+            "lead_time": 6,
+            "prediction": 0.016877156474899836,
+            "lower": -3.135107193975069,
+            "upper": 3.1688615069248685,
+            "quantile": 0.66341637519742,
+            "scale": 1.599156061952421,
+            "kind": "finite"
+          },
+          {
+            "origin": 980,
+            "target": 1004,
+            "lead_time": 24,
+            "prediction": 8.609384731512994e-06,
+            "lower": -3.90895061078444,
+            "upper": 3.9089678295539025,
+            "quantile": 0.7108533143262028,
+            "scale": 1.5900082058663396,
+            "kind": "finite"
+          },
+          {
+            "origin": 992,
+            "target": 1004,
+            "lead_time": 12,
+            "prediction": -0.017462885569125095,
+            "lower": -2.64258537317083,
+            "upper": 2.6076596020325797,
+            "quantile": 0.6330292605329023,
+            "scale": 1.5217987548568206,
+            "kind": "finite"
+          },
+          {
+            "origin": 998,
+            "target": 1004,
+            "lead_time": 6,
+            "prediction": -0.1057228197185862,
+            "lower": -3.2509369478772894,
+            "upper": 3.0394913084401174,
+            "quantile": 0.6609009572787682,
+            "scale": 1.6137654035233053,
+            "kind": "finite"
+          },
+          {
+            "origin": 981,
+            "target": 1005,
+            "lead_time": 24,
+            "prediction": -2.1167556014620216e-05,
+            "lower": -3.8303212040761347,
+            "upper": 3.8302788689641054,
+            "quantile": 0.7083197793852827,
+            "scale": 1.577285842056159,
+            "kind": "finite"
+          },
+          {
+            "origin": 993,
+            "target": 1005,
+            "lead_time": 12,
+            "prediction": -0.0049271371502843594,
+            "lower": -2.599948037925788,
+            "upper": 2.5900937636252195,
+            "quantile": 0.6305082323401058,
+            "scale": 1.5207396359968535,
+            "kind": "finite"
+          },
+          {
+            "origin": 999,
+            "target": 1005,
+            "lead_time": 6,
+            "prediction": -0.09145207621174162,
+            "lower": -3.1574671947213506,
+            "upper": 2.9745630422978673,
+            "quantile": 0.6583860456842151,
+            "scale": 1.5908501638086263,
+            "kind": "finite"
+          },
+          {
+            "origin": 982,
+            "target": 1006,
+            "lead_time": 24,
+            "prediction": 1.0660940886720897e-05,
+            "lower": -3.7493258961066296,
+            "upper": 3.7493472179884026,
+            "quantile": 0.7057867730350492,
+            "scale": 1.5629428739263551,
+            "kind": "finite"
+          },
+          {
+            "origin": 994,
+            "target": 1006,
+            "lead_time": 12,
+            "prediction": -0.010423302322765598,
+            "lower": -2.5855011454385797,
+            "upper": 2.564654540793048,
+            "quantile": 0.6279877172815249,
+            "scale": 1.5254447821721178,
+            "kind": "finite"
+          },
+          {
+            "origin": 983,
+            "target": 1007,
+            "lead_time": 24,
+            "prediction": -2.4325247975834042e-05,
+            "lower": -3.6851721368714254,
+            "upper": 3.6851234863754736,
+            "quantile": 0.7032542946144886,
+            "scale": 1.5549877123886453,
+            "kind": "finite"
+          },
+          {
+            "origin": 995,
+            "target": 1007,
+            "lead_time": 12,
+            "prediction": -0.010915538100060096,
+            "lower": -2.535151296021805,
+            "upper": 2.513320219821684,
+            "quantile": 0.6254677147311317,
+            "scale": 1.511521321893049,
+            "kind": "finite"
+          },
+          {
+            "origin": 984,
+            "target": 1008,
+            "lead_time": 24,
+            "prediction": -4.097911507242413e-05,
+            "lower": -3.609777564871445,
+            "upper": 3.6096956066413,
+            "quantile": 0.7007223434641009,
+            "scale": 1.5417140842925197,
+            "kind": "finite"
+          },
+          {
+            "origin": 996,
+            "target": 1008,
+            "lead_time": 12,
+            "prediction": -0.017444139884698784,
+            "lower": -2.8640860884392674,
+            "upper": 2.82919780866987,
+            "quantile": 0.6481431307326438,
+            "scale": 1.5453539140518897,
+            "kind": "finite"
+          },
+          {
+            "origin": 985,
+            "target": 1009,
+            "lead_time": 24,
+            "prediction": -6.112918155343398e-05,
+            "lower": -3.557378887060769,
+            "upper": 3.557256628697662,
+            "quantile": 0.6981909189258948,
+            "scale": 1.537732408845719,
+            "kind": "finite"
+          },
+          {
+            "origin": 997,
+            "target": 1009,
+            "lead_time": 12,
+            "prediction": 0.0012728564182414815,
+            "lower": -2.9204440687881434,
+            "upper": 2.922989781624626,
+            "quantile": 0.6456241513261327,
+            "scale": 1.6036976200907274,
+            "kind": "finite"
+          },
+          {
+            "origin": 986,
+            "target": 1010,
+            "lead_time": 24,
+            "prediction": -8.324028916449218e-05,
+            "lower": -3.5320817050730113,
+            "upper": 3.531915224494682,
+            "quantile": 0.695660020343383,
+            "scale": 1.545192061474117,
+            "kind": "finite"
+          },
+          {
+            "origin": 998,
+            "target": 1010,
+            "lead_time": 12,
+            "prediction": -0.007973497776922647,
+            "lower": -2.9241563419270267,
+            "upper": 2.9082093463731815,
+            "quantile": 0.6431056825580999,
+            "scale": 1.6183484517798592,
+            "kind": "finite"
+          },
+          {
+            "origin": 987,
+            "target": 1011,
+            "lead_time": 24,
+            "prediction": -6.656421064599902e-05,
+            "lower": -3.4431603868088887,
+            "upper": 3.4430272583875965,
+            "quantile": 0.6931296470615771,
+            "scale": 1.5243662149210597,
+            "kind": "finite"
+          },
+          {
+            "origin": 999,
+            "target": 1011,
+            "lead_time": 12,
+            "prediction": -0.006897214133242506,
+            "lower": -2.850353904200197,
+            "upper": 2.836559475933712,
+            "quantile": 0.6405877238080854,
+            "scale": 1.5953681334303342,
+            "kind": "finite"
+          },
+          {
+            "origin": 988,
+            "target": 1012,
+            "lead_time": 24,
+            "prediction": -5.9237841038937694e-05,
+            "lower": -3.360507254455015,
+            "upper": 3.3603887787729367,
+            "quantile": 0.6905997984269823,
+            "scale": 1.5055366307436633,
+            "kind": "finite"
+          },
+          {
+            "origin": 989,
+            "target": 1013,
+            "lead_time": 24,
+            "prediction": -7.696746076553222e-05,
+            "lower": -3.3250368764945746,
+            "upper": 3.324882941573043,
+            "quantile": 0.6880704737875929,
+            "scale": 1.507335670706796,
+            "kind": "finite"
+          },
+          {
+            "origin": 990,
+            "target": 1014,
+            "lead_time": 24,
+            "prediction": -3.9211826672116104e-05,
+            "lower": -3.2407329958060735,
+            "upper": 3.240654572152729,
+            "quantile": 0.6855416724928871,
+            "scale": 1.4865079515402222,
+            "kind": "finite"
+          },
+          {
+            "origin": 991,
+            "target": 1015,
+            "lead_time": 24,
+            "prediction": -6.489953598656385e-05,
+            "lower": -3.2108694902773327,
+            "upper": 3.2107396912053594,
+            "quantile": 0.6830133938938223,
+            "scale": 1.4901348336478644,
+            "kind": "finite"
+          },
+          {
+            "origin": 992,
+            "target": 1016,
+            "lead_time": 24,
+            "prediction": -9.932905138516154e-05,
+            "lower": -3.241202291879005,
+            "upper": 3.2410036337762342,
+            "quantile": 0.6804856373428299,
+            "scale": 1.5218233723754644,
+            "kind": "finite"
+          },
+          {
+            "origin": 993,
+            "target": 1017,
+            "lead_time": 24,
+            "prediction": -2.80256007659823e-05,
+            "lower": -3.201524039888637,
+            "upper": 3.201467988687105,
+            "quantile": 0.6779584021938106,
+            "scale": 1.5207642363825626,
+            "kind": "finite"
+          },
+          {
+            "origin": 994,
+            "target": 1018,
+            "lead_time": 24,
+            "prediction": -5.928783807938157e-05,
+            "lower": -3.1745848728639285,
+            "upper": 3.1744662971877697,
+            "quantile": 0.6754316878021299,
+            "scale": 1.5254694586710604,
+            "kind": "finite"
+          },
+          {
+            "origin": 995,
+            "target": 1019,
+            "lead_time": 24,
+            "prediction": -6.208767964181756e-05,
+            "lower": -3.1096448973449493,
+            "upper": 3.1095207219856653,
+            "quantile": 0.6729054935246126,
+            "scale": 1.5115457731578457,
+            "kind": "finite"
+          },
+          {
+            "origin": 996,
+            "target": 1020,
+            "lead_time": 24,
+            "prediction": -9.922242576225058e-05,
+            "lower": -3.1430828566979816,
+            "upper": 3.142884411846457,
+            "quantile": 0.6703798187195384,
+            "scale": 1.54537891261275,
+            "kind": "finite"
+          },
+          {
+            "origin": 997,
+            "target": 1021,
+            "lead_time": 24,
+            "prediction": 7.240018842989826e-06,
+            "lower": -3.224648170767537,
+            "upper": 3.2246626508052234,
+            "quantile": 0.6678546627466373,
+            "scale": 1.6037235624539572,
+            "kind": "finite"
+          },
+          {
+            "origin": 998,
+            "target": 1022,
+            "lead_time": 24,
+            "prediction": -4.535332761978929e-05,
+            "lower": -3.2174036886219155,
+            "upper": 3.217312981966676,
+            "quantile": 0.6653300249670844,
+            "scale": 1.6183746311436265,
+            "kind": "finite"
+          },
+          {
+            "origin": 999,
+            "target": 1023,
+            "lead_time": 24,
+            "prediction": -3.9231416500064205e-05,
+            "lower": -3.136026899635021,
+            "upper": 3.135948436802021,
+            "quantile": 0.6628059047434953,
+            "scale": 1.595393941050851,
+            "kind": "finite"
+          }
+        ],
+        "coverage_bound_arithmetic": "ordinary binary64; not a rounding certificate"
+      },
+      "terminal_state_sha256": "6ef4915d21920df39502a5e0df24173f66213374e46cf8cedc88b2554c8c948d",
+      "package_version": "0.7.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.6.0', version='Darwin Kernel Version 25.6.0: Tue Aug 18 17:49:54 PDT 2026; root:xnu-12377.161.15.700.19~2/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "interlaced_stream_50000x4",
+      "settings": {
+        "n_obs": 50000,
+        "n_origins": 50000,
+        "n_leads": 4,
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "seed": 20261231,
+        "dgp": {
+          "model": "Stationary Gaussian AR(1)",
+          "phi": 0.65,
+          "innovation_variance": 1.0,
+          "initial_variance": 1.7316017316017318
+        },
+        "forecast": "phi**lead * current_observation; supplied points, no model fitting.",
+        "initial_scale_formula": "sqrt(sum(phi**(2*i) for i in range(lead)))",
+        "initial_scale_scope": "Known-DGP formula for this engineering input, not an estimated calibration claim.",
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.2,
+          "scale": [
+            1.0,
+            1.312155617775076,
+            1.3158821027419998,
+            1.31590338923083
+          ],
+          "initial_quantile": 0.65,
+          "strategy": "interlaced",
+          "scale_decay": 0.97,
+          "scale_source": "shortest",
+          "scale_floor": 1e-08
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              50000
+            ],
+            "dtype": "float64",
+            "sha256": "a5a9bb6b46c625d5c5c3d54abd5a2fcdfd5d08029a6abe015cef299236afdbed"
+          },
+          "predicted": {
+            "shape": [
+              50000,
+              4
+            ],
+            "dtype": "float64",
+            "sha256": "ce1ad1538148bc50f325da0389e079b962d10413ff45f8fd4b5e31073264e233"
+          },
+          "origins": {
+            "shape": [
+              50000
+            ],
+            "dtype": "int64",
+            "sha256": "33236cc6bd19fa6b89e06d441d3fcd8eb37dc8540f6a4f2b627b20af10894a41"
+          }
+        },
+        "feedback_order": "At each t: observe(t, actual[t]), then predict(predicted[t]).",
+        "future_pending_flushed": false,
+        "consistency_check_excluded_from_timing": {
+          "same_input_batch_stream_terminal_state": true,
+          "fields_checked": [
+            "lane_quantiles",
+            "lane_updates",
+            "lane_misses",
+            "per_lead_evaluated_counts",
+            "array_miss_counts",
+            "current_scales",
+            "pending_intervals",
+            "complete_terminal_record"
+          ],
+          "batch_result_sha256": "8a4547f3e3ee6d5113cd4b5287fbf6eb600550a610135b39a7926fa8311e4e28",
+          "terminal_state_sha256": "504879700b3e13c2c3f86fdfaf60fb0bbfab4641a1f5551e9aee989391ed05f3",
+          "n_evaluated": [
+            49999,
+            49994,
+            49988,
+            49976
+          ],
+          "misses": [
+            5001,
+            5000,
+            4994,
+            4987
+          ],
+          "n_pending": 43
+        },
+        "retained_output": "One tracker, active lanes and pending forecasts; no interval trajectory.",
+        "purpose": "Local timing and incremental allocation."
+      },
+      "warm_seconds": [
+        0.6748463750000155,
+        0.6756485409996458,
+        0.6781600829999661,
+        0.6785954160000074,
+        0.6818907919996491
+      ],
+      "warm_median_seconds": 0.6781600829999661,
+      "traced_current_bytes": 22584,
+      "traced_peak_bytes": 25576,
+      "result_sha256": "504879700b3e13c2c3f86fdfaf60fb0bbfab4641a1f5551e9aee989391ed05f3",
+      "terminal_state": {
+        "schema_version": 1,
+        "method": "multistep_conformal",
+        "lead_times": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "start_time": 0,
+        "last_time": 49999,
+        "next_time": 50000,
+        "alpha": 0.1,
+        "step_size": [
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "decay": 0.2,
+        "initial_quantile": 0.65,
+        "strategy": "interlaced",
+        "initial_scale": [
+          1.0,
+          1.312155617775076,
+          1.3158821027419998,
+          1.31590338923083
+        ],
+        "current_scales": [
+          1.06312318508789,
+          1.3949830597000066,
+          1.3989447722672248,
+          1.3989674024270293
+        ],
+        "scale_decay": 0.97,
+        "scale_source": "shortest",
+        "scale_floor": [
+          1e-08,
+          1e-08,
+          1e-08,
+          1e-08
+        ],
+        "default_lane_state": {
+          "quantile": 0.65,
+          "n_updates": 0,
+          "misses": 0
+        },
+        "lane_counts": [
+          1,
+          6,
+          12,
+          24
+        ],
+        "states": [
+          {
+            "lead_time": 1,
+            "lane": 0,
+            "quantile": 0.6419388455849774,
+            "n_updates": 49999,
+            "misses": 5001
+          },
+          {
+            "lead_time": 6,
+            "lane": 0,
+            "quantile": 0.6244764779805227,
+            "n_updates": 8333,
+            "misses": 833
+          },
+          {
+            "lead_time": 6,
+            "lane": 1,
+            "quantile": 0.6456387622522292,
+            "n_updates": 8333,
+            "misses": 834
+          },
+          {
+            "lead_time": 6,
+            "lane": 2,
+            "quantile": 0.6003584787958781,
+            "n_updates": 8332,
+            "misses": 831
+          },
+          {
+            "lead_time": 6,
+            "lane": 3,
+            "quantile": 0.6358560307169647,
+            "n_updates": 8332,
+            "misses": 833
+          },
+          {
+            "lead_time": 6,
+            "lane": 4,
+            "quantile": 0.6866113588023388,
+            "n_updates": 8332,
+            "misses": 836
+          },
+          {
+            "lead_time": 6,
+            "lane": 5,
+            "quantile": 0.6276532468292767,
+            "n_updates": 8332,
+            "misses": 833
+          },
+          {
+            "lead_time": 12,
+            "lane": 0,
+            "quantile": 0.6629325841863504,
+            "n_updates": 4166,
+            "misses": 418
+          },
+          {
+            "lead_time": 12,
+            "lane": 1,
+            "quantile": 0.6478594903557156,
+            "n_updates": 4166,
+            "misses": 417
+          },
+          {
+            "lead_time": 12,
+            "lane": 2,
+            "quantile": 0.6085729291941147,
+            "n_updates": 4166,
+            "misses": 415
+          },
+          {
+            "lead_time": 12,
+            "lane": 3,
+            "quantile": 0.6039419936550905,
+            "n_updates": 4166,
+            "misses": 415
+          },
+          {
+            "lead_time": 12,
+            "lane": 4,
+            "quantile": 0.6561653374987714,
+            "n_updates": 4166,
+            "misses": 418
+          },
+          {
+            "lead_time": 12,
+            "lane": 5,
+            "quantile": 0.6384290017789204,
+            "n_updates": 4166,
+            "misses": 417
+          },
+          {
+            "lead_time": 12,
+            "lane": 6,
+            "quantile": 0.6037034234371463,
+            "n_updates": 4166,
+            "misses": 415
+          },
+          {
+            "lead_time": 12,
+            "lane": 7,
+            "quantile": 0.6382730609383304,
+            "n_updates": 4166,
+            "misses": 417
+          },
+          {
+            "lead_time": 12,
+            "lane": 8,
+            "quantile": 0.5980371727069095,
+            "n_updates": 4165,
+            "misses": 414
+          },
+          {
+            "lead_time": 12,
+            "lane": 9,
+            "quantile": 0.6370139139026726,
+            "n_updates": 4165,
+            "misses": 416
+          },
+          {
+            "lead_time": 12,
+            "lane": 10,
+            "quantile": 0.6607043413539507,
+            "n_updates": 4165,
+            "misses": 417
+          },
+          {
+            "lead_time": 12,
+            "lane": 11,
+            "quantile": 0.6085998338894821,
+            "n_updates": 4165,
+            "misses": 415
+          },
+          {
+            "lead_time": 24,
+            "lane": 0,
+            "quantile": 0.6498437477773821,
+            "n_updates": 2083,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 1,
+            "quantile": 0.6532603763074877,
+            "n_updates": 2083,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 2,
+            "quantile": 0.6546753972248303,
+            "n_updates": 2083,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 3,
+            "quantile": 0.6325462530134588,
+            "n_updates": 2083,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 4,
+            "quantile": 0.6501580203379728,
+            "n_updates": 2083,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 5,
+            "quantile": 0.627679763105917,
+            "n_updates": 2083,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 6,
+            "quantile": 0.5877197313551099,
+            "n_updates": 2083,
+            "misses": 206
+          },
+          {
+            "lead_time": 24,
+            "lane": 7,
+            "quantile": 0.6305731391162225,
+            "n_updates": 2083,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 8,
+            "quantile": 0.619591579891554,
+            "n_updates": 2082,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 9,
+            "quantile": 0.6094755658998741,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 10,
+            "quantile": 0.6106087882549266,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 11,
+            "quantile": 0.635484488745895,
+            "n_updates": 2082,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 12,
+            "quantile": 0.6344324379638875,
+            "n_updates": 2082,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 13,
+            "quantile": 0.6185442249724263,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 14,
+            "quantile": 0.5853659353027186,
+            "n_updates": 2082,
+            "misses": 206
+          },
+          {
+            "lead_time": 24,
+            "lane": 15,
+            "quantile": 0.6080118432538963,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 16,
+            "quantile": 0.6459580522994385,
+            "n_updates": 2082,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 17,
+            "quantile": 0.6687383806664341,
+            "n_updates": 2082,
+            "misses": 210
+          },
+          {
+            "lead_time": 24,
+            "lane": 18,
+            "quantile": 0.5946140214969319,
+            "n_updates": 2082,
+            "misses": 206
+          },
+          {
+            "lead_time": 24,
+            "lane": 19,
+            "quantile": 0.6110973787437304,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 20,
+            "quantile": 0.6301710410512648,
+            "n_updates": 2082,
+            "misses": 208
+          },
+          {
+            "lead_time": 24,
+            "lane": 21,
+            "quantile": 0.6197742661350618,
+            "n_updates": 2082,
+            "misses": 207
+          },
+          {
+            "lead_time": 24,
+            "lane": 22,
+            "quantile": 0.6556277675851916,
+            "n_updates": 2082,
+            "misses": 209
+          },
+          {
+            "lead_time": 24,
+            "lane": 23,
+            "quantile": 0.6080714816044063,
+            "n_updates": 2082,
+            "misses": 207
+          }
+        ],
+        "summary": [
+          {
+            "lead_time": 1,
+            "n_issued": 50000,
+            "n_evaluated": 49999,
+            "n_pending": 1,
+            "coverage": 0.8999779995599912,
+            "coverage_bound": 0.0019152418831828925
+          },
+          {
+            "lead_time": 6,
+            "n_issued": 50000,
+            "n_evaluated": 49994,
+            "n_pending": 6,
+            "coverage": 0.8999879985598271,
+            "coverage_bound": 0.008031180313496547
+          },
+          {
+            "lead_time": 12,
+            "n_issued": 50000,
+            "n_evaluated": 49988,
+            "n_pending": 12,
+            "coverage": 0.9000960230455309,
+            "coverage_bound": 0.013984439764400693
+          },
+          {
+            "lead_time": 24,
+            "n_issued": 50000,
+            "n_evaluated": 49976,
+            "n_pending": 24,
+            "coverage": 0.9002121018088682,
+            "coverage_bound": 0.024353000764574133
+          }
+        ],
+        "pending": [
+          {
+            "origin": 49976,
+            "target": 50000,
+            "lead_time": 24,
+            "prediction": 3.018516409931479e-05,
+            "lower": -2.2843479717060116,
+            "upper": 2.2844083420342103,
+            "quantile": 0.619591579891554,
+            "scale": 1.4025314639319368,
+            "kind": "finite"
+          },
+          {
+            "origin": 49988,
+            "target": 50000,
+            "lead_time": 12,
+            "prediction": -0.011683956649327263,
+            "lower": -1.9702461768615371,
+            "upper": 1.9468782635628827,
+            "quantile": 0.5980371727069095,
+            "scale": 1.31642186037115,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50000,
+            "lead_time": 6,
+            "prediction": -0.05540115654240391,
+            "lower": -2.0657420013616448,
+            "upper": 1.954939688276837,
+            "quantile": 0.6003584787958781,
+            "scale": 1.3382265791827057,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50000,
+            "lead_time": 1,
+            "prediction": 1.473102359409863,
+            "lower": -0.432885100371704,
+            "upper": 3.37908981919143,
+            "quantile": 0.6419388455849774,
+            "scale": 1.06312318508789,
+            "kind": "finite"
+          },
+          {
+            "origin": 49977,
+            "target": 50001,
+            "lead_time": 24,
+            "prediction": 4.357912660027819e-05,
+            "lower": -2.171780358182689,
+            "upper": 2.1718675164358894,
+            "quantile": 0.6094755658998741,
+            "scale": 1.391606754293007,
+            "kind": "finite"
+          },
+          {
+            "origin": 49989,
+            "target": 50001,
+            "lead_time": 12,
+            "prediction": -0.005394072373630822,
+            "lower": -2.2859561158938653,
+            "upper": 2.2751679711466033,
+            "quantile": 0.6370139139026726,
+            "scale": 1.2995199511544917,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50001,
+            "lead_time": 6,
+            "prediction": -0.1374764620356438,
+            "lower": -2.5000443435485225,
+            "upper": 2.2250914194772347,
+            "quantile": 0.6358560307169647,
+            "scale": 1.3530025737188593,
+            "kind": "finite"
+          },
+          {
+            "origin": 49978,
+            "target": 50002,
+            "lead_time": 24,
+            "prediction": 4.335390307046251e-05,
+            "lower": -2.1555706020662697,
+            "upper": 2.155657309872411,
+            "quantile": 0.6106087882549266,
+            "scale": 1.3746561571253644,
+            "kind": "finite"
+          },
+          {
+            "origin": 49990,
+            "target": 50002,
+            "lead_time": 12,
+            "prediction": 0.00573785309529446,
+            "lower": -2.5888206721024787,
+            "upper": 2.6002963782930673,
+            "quantile": 0.6607043413539507,
+            "scale": 1.3323999686436094,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50002,
+            "lead_time": 6,
+            "prediction": -0.10723312224184316,
+            "lower": -3.029142154956717,
+            "upper": 2.8146759104730306,
+            "quantile": 0.6866113588023388,
+            "scale": 1.333641061608618,
+            "kind": "finite"
+          },
+          {
+            "origin": 49979,
+            "target": 50003,
+            "lead_time": 24,
+            "prediction": 1.7263100612095733e-05,
+            "lower": -2.364096921334084,
+            "upper": 2.3641314475353084,
+            "quantile": 0.635484488745895,
+            "scale": 1.356061880130133,
+            "kind": "finite"
+          },
+          {
+            "origin": 49991,
+            "target": 50003,
+            "lead_time": 12,
+            "prediction": -0.00015179565040098286,
+            "lower": -2.054907792767299,
+            "upper": 2.054604201466497,
+            "quantile": 0.6085998338894821,
+            "scale": 1.3214460369606016,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50003,
+            "lead_time": 6,
+            "prediction": -0.007927733092106587,
+            "lower": -2.2441522248961694,
+            "upper": 2.228296758711956,
+            "quantile": 0.6276532468292767,
+            "scale": 1.3266097691526428,
+            "kind": "finite"
+          },
+          {
+            "origin": 49980,
+            "target": 50004,
+            "lead_time": 24,
+            "prediction": 7.14099136933687e-06,
+            "lower": -2.318367678661985,
+            "upper": 2.318381960644724,
+            "quantile": 0.6344324379638875,
+            "scale": 1.3358753115250241,
+            "kind": "finite"
+          },
+          {
+            "origin": 49992,
+            "target": 50004,
+            "lead_time": 12,
+            "prediction": -0.004960388244839123,
+            "lower": -2.59316953532173,
+            "upper": 2.583248758832052,
+            "quantile": 0.6629325841863504,
+            "scale": 1.315972377283579,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50004,
+            "lead_time": 6,
+            "prediction": -0.011828966525529809,
+            "lower": -2.184827698376911,
+            "upper": 2.1611697653258513,
+            "quantile": 0.6244764779805227,
+            "scale": 1.3067139690634424,
+            "kind": "finite"
+          },
+          {
+            "origin": 49981,
+            "target": 50005,
+            "lead_time": 24,
+            "prediction": 1.3036829280611185e-05,
+            "lower": -2.135571083207505,
+            "upper": 2.135597156866066,
+            "quantile": 0.6185442249724263,
+            "scale": 1.317013178292184,
+            "kind": "finite"
+          },
+          {
+            "origin": 49993,
+            "target": 50005,
+            "lead_time": 12,
+            "prediction": -0.012832488156721014,
+            "lower": -2.500311711952859,
+            "upper": 2.4746467356394164,
+            "quantile": 0.6478594903557156,
+            "scale": 1.3520558309892068,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50005,
+            "lead_time": 6,
+            "prediction": 0.1709226857288645,
+            "lower": -2.3707072672306433,
+            "upper": 2.712552638688372,
+            "quantile": 0.6456387622522292,
+            "scale": 1.3949830597000066,
+            "kind": "finite"
+          },
+          {
+            "origin": 49982,
+            "target": 50006,
+            "lead_time": 24,
+            "prediction": -4.687726297250222e-05,
+            "lower": -1.912213133092204,
+            "upper": 1.9121193785662591,
+            "quantile": 0.5853659353027186,
+            "scale": 1.354450642266087,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50006,
+            "lead_time": 12,
+            "prediction": -0.004178293765770065,
+            "lower": -2.0907007323719107,
+            "upper": 2.082344144840371,
+            "quantile": 0.6085729291941147,
+            "scale": 1.3420271049451287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49983,
+            "target": 50007,
+            "lead_time": 24,
+            "prediction": -1.4720414101323356e-05,
+            "lower": -2.076291255189127,
+            "upper": 2.076261814360924,
+            "quantile": 0.6080118432538963,
+            "scale": 1.3385854581483667,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50007,
+            "lead_time": 12,
+            "prediction": -0.010368322253778185,
+            "lower": -2.0793978563992748,
+            "upper": 2.0586612118917187,
+            "quantile": 0.6039419936550905,
+            "scale": 1.3568450628892534,
+            "kind": "finite"
+          },
+          {
+            "origin": 49984,
+            "target": 50008,
+            "lead_time": 24,
+            "prediction": 4.405632704432154e-06,
+            "lower": -2.412060280506463,
+            "upper": 2.4120690917718717,
+            "quantile": 0.6459580522994385,
+            "scale": 1.322024048497486,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50008,
+            "lead_time": 12,
+            "prediction": -0.008087403117734825,
+            "lower": -2.560402108991989,
+            "upper": 2.544227302756519,
+            "quantile": 0.6561653374987714,
+            "scale": 1.3374285646303892,
+            "kind": "finite"
+          },
+          {
+            "origin": 49985,
+            "target": 50009,
+            "lead_time": 24,
+            "prediction": 2.3851669161846274e-05,
+            "lower": -2.6453835061275663,
+            "upper": 2.6454312094658903,
+            "quantile": 0.6687383806664341,
+            "scale": 1.3104106934424367,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50009,
+            "lead_time": 12,
+            "prediction": -0.0005979008349777799,
+            "lower": -2.3496564758947227,
+            "upper": 2.3484606742247673,
+            "quantile": 0.6384290017789204,
+            "scale": 1.3303773035020396,
+            "kind": "finite"
+          },
+          {
+            "origin": 49986,
+            "target": 50010,
+            "lead_time": 24,
+            "prediction": -1.1716374645168222e-05,
+            "lower": -1.9138325225422883,
+            "upper": 1.913809089792998,
+            "quantile": 0.5946140214969319,
+            "scale": 1.3047726628353715,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50010,
+            "lead_time": 12,
+            "prediction": -0.0008921275325957191,
+            "lower": -1.9971446953935637,
+            "upper": 1.9953604403283722,
+            "quantile": 0.6037034234371463,
+            "scale": 1.3104249999014166,
+            "kind": "finite"
+          },
+          {
+            "origin": 49987,
+            "target": 50011,
+            "lead_time": 24,
+            "prediction": -3.3875167009315445e-05,
+            "lower": -2.0401002413603013,
+            "upper": 2.040032491026283,
+            "quantile": 0.6110973787437304,
+            "scale": 1.2982990681130686,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50011,
+            "lead_time": 12,
+            "prediction": 0.012890799340316481,
+            "lower": -2.4555699799284563,
+            "upper": 2.4813515786090896,
+            "quantile": 0.6382730609383304,
+            "scale": 1.3989447722672248,
+            "kind": "finite"
+          },
+          {
+            "origin": 49988,
+            "target": 50012,
+            "lead_time": 24,
+            "prediction": -6.645845131430776e-05,
+            "lower": -2.243223284790735,
+            "upper": 2.2430903678881067,
+            "quantile": 0.6301710410512648,
+            "scale": 1.3164431555914196,
+            "kind": "finite"
+          },
+          {
+            "origin": 49989,
+            "target": 50013,
+            "lead_time": 24,
+            "prediction": -3.068153254826027e-05,
+            "lower": -2.118304067821787,
+            "upper": 2.1182427047566903,
+            "quantile": 0.6197742661350618,
+            "scale": 1.2995409729594598,
+            "kind": "finite"
+          },
+          {
+            "origin": 49990,
+            "target": 50014,
+            "lead_time": 24,
+            "prediction": 3.263696040880407e-05,
+            "lower": -2.53667754447739,
+            "upper": 2.5367428183982077,
+            "quantile": 0.6556277675851916,
+            "scale": 1.3324215223352287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49991,
+            "target": 50015,
+            "lead_time": 24,
+            "prediction": -8.634150352208172e-07,
+            "lower": -2.0502386243233146,
+            "upper": 2.0502368974932446,
+            "quantile": 0.6080714816044063,
+            "scale": 1.3214674134549296,
+            "kind": "finite"
+          },
+          {
+            "origin": 49992,
+            "target": 50016,
+            "lead_time": 24,
+            "prediction": -2.8214733293167986e-05,
+            "lower": -2.4423386119854253,
+            "upper": 2.4422821825188388,
+            "quantile": 0.6498437477773821,
+            "scale": 1.3159936652327437,
+            "kind": "finite"
+          },
+          {
+            "origin": 49993,
+            "target": 50017,
+            "lead_time": 24,
+            "prediction": -7.299130893762588e-05,
+            "lower": -2.547398789904625,
+            "upper": 2.54725280728675,
+            "quantile": 0.6532603763074877,
+            "scale": 1.3520777026457058,
+            "kind": "finite"
+          },
+          {
+            "origin": 49994,
+            "target": 50018,
+            "lead_time": 24,
+            "prediction": -2.3766172808018237e-05,
+            "lower": -2.544314944914821,
+            "upper": 2.544267412569205,
+            "quantile": 0.6546753972248303,
+            "scale": 1.342048814371011,
+            "kind": "finite"
+          },
+          {
+            "origin": 49995,
+            "target": 50019,
+            "lead_time": 24,
+            "prediction": -5.8975110948690993e-05,
+            "lower": -2.3358118455851553,
+            "upper": 2.335693895363258,
+            "quantile": 0.6325462530134588,
+            "scale": 1.3568670120192061,
+            "kind": "finite"
+          },
+          {
+            "origin": 49996,
+            "target": 50020,
+            "lead_time": 24,
+            "prediction": -4.6001222230665106e-05,
+            "lower": -2.485608125460545,
+            "upper": 2.485516123016084,
+            "quantile": 0.6501580203379728,
+            "scale": 1.3374501996675576,
+            "kind": "finite"
+          },
+          {
+            "origin": 49997,
+            "target": 50021,
+            "lead_time": 24,
+            "prediction": -3.4008653681920864e-06,
+            "lower": -2.24286945066239,
+            "upper": 2.242862648931654,
+            "quantile": 0.627679763105917,
+            "scale": 1.3303988244738287,
+            "kind": "finite"
+          },
+          {
+            "origin": 49998,
+            "target": 50022,
+            "lead_time": 24,
+            "prediction": -5.07442949085059e-06,
+            "lower": -1.8680912917052064,
+            "upper": 1.8680811428462247,
+            "quantile": 0.5877197313551099,
+            "scale": 1.3104461981129167,
+            "kind": "finite"
+          },
+          {
+            "origin": 49999,
+            "target": 50023,
+            "lead_time": 24,
+            "prediction": 7.332298347839731e-05,
+            "lower": -2.387818191887191,
+            "upper": 2.387964837854148,
+            "quantile": 0.6305731391162225,
+            "scale": 1.3989674024270293,
+            "kind": "finite"
+          }
+        ],
+        "coverage_bound_arithmetic": "ordinary binary64; not a rounding certificate"
+      },
+      "terminal_state_sha256": "504879700b3e13c2c3f86fdfaf60fb0bbfab4641a1f5551e9aee989391ed05f3",
+      "package_version": "0.7.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.6.0', version='Darwin Kernel Version 25.6.0: Tue Aug 18 17:49:54 PDT 2026; root:xnu-12377.161.15.700.19~2/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    }
+  ],
+  "streaming_memory_comparison": {
+    "short_case": "pooled_stream_1000x4",
+    "long_case": "pooled_stream_50000x4",
+    "short_n_obs": 1000,
+    "long_n_obs": 50000,
+    "short_peak_bytes": 19368,
+    "long_peak_bytes": 19624,
+    "scope": "Different seeded inputs with independent fingerprints. Two measured lengths supplement implementation inspection; they do not prove an asymptotic memory law."
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "protocol_version": 1,
+  "study": "fixed-cross-lead-scale-blending",
+  "seed": 7309351,
+  "burn_in": 1024,
+  "lead_times": [
+    1,
+    6,
+    12,
+    24
+  ],
+  "alpha": 0.1,
+  "step_size": 0.1,
+  "step_size_rule": "base / sqrt(lead_time)",
+  "decay": 0.2,
+  "initial_quantile": 0.65,
+  "scale_decay": 0.97,
+  "scale_floor": 1e-08,
+  "forecaster": {
+    "method": "Rolling OLS AR(1) with intercept",
+    "window": 256,
+    "first_origin": 128,
+    "coefficient_clip": 0.995
+  },
+  "evaluation_warmup": 128,
+  "local_window": 200,
+  "methods": [
+    "fixed",
+    "horizon",
+    "shortest",
+    "blend_25",
+    "blend_50",
+    "blend_75"
+  ],
+  "scenarios": [
+    {
+      "name": "constant",
+      "phi": 0.65,
+      "rho": 0.0,
+      "log_scale_sd": 0.0,
+      "innovation": "gaussian"
+    },
+    {
+      "name": "persistent_scale",
+      "phi": 0.65,
+      "rho": 0.985,
+      "log_scale_sd": 0.1,
+      "innovation": "gaussian"
+    },
+    {
+      "name": "heavy_tail",
+      "phi": 0.65,
+      "rho": 0.0,
+      "log_scale_sd": 0.0,
+      "innovation": "student",
+      "degrees_of_freedom": 3.5
+    },
+    {
+      "name": "persistence_shift",
+      "phi": 0.65,
+      "rho": 0.0,
+      "log_scale_sd": 0.0,
+      "innovation": "gaussian",
+      "phi_middle": 0.95,
+      "phi_last": 0.35
+    },
+    {
+      "name": "scale_shift",
+      "phi": 0.65,
+      "rho": 0.0,
+      "log_scale_sd": 0.0,
+      "innovation": "gaussian",
+      "middle_scale": 3.0
+    },
+    {
+      "name": "lead_bias",
+      "phi": 0.65,
+      "rho": 0.0,
+      "log_scale_sd": 0.0,
+      "innovation": "gaussian",
+      "middle_bias": 2.5
+    }
+  ],
+  "change_fractions": [
+    0.45,
+    0.75
+  ],
+  "profiles": {
+    "smoke": {
+      "n_obs": 1800,
+      "initial_train_size": 384,
+      "repetitions": 2,
+      "seed_offset": 1000000
+    },
+    "full": {
+      "n_obs": 3000,
+      "initial_train_size": 600,
+      "repetitions": 40,
+      "seed_offset": 0
+    }
+  },
+  "initial_scale": "RMS of rolling causal forecast residuals at common target times wholly inside the training prefix. All methods receive identical initial scales.",
+  "comparison": "Primary prespecified candidate blend_50 against horizon and shortest, per scenario and lead, path-paired proper interval-score differences with pointwise 95% Monte Carlo t intervals. Every configured method and stress scenario reported. Any invalid score invalidates the entire score group, without dropping paths. Secondary fixed weight sensitivity is descriptive, not a tuned or optimal choice.",
+  "scope": "Fixed half blending selected during three disjoint engineering pilots; no claim of an independent discovery study. Full seeds exactly equal the untouched full profile prespecified for pilot-03 and are disjoint from all pilot seeds. Forecaster, initial scales, q rates and DGPs unchanged. No parameter tuning after full results.",
+  "method_parameters": {
+    "fixed": {
+      "scale_source": "horizon",
+      "scale_decay": null
+    },
+    "horizon": {
+      "scale_source": "horizon",
+      "scale_decay": 0.97
+    },
+    "shortest": {
+      "scale_source": "shortest",
+      "scale_decay": 0.97
+    },
+    "blend_25": {
+      "scale_source": "blended",
+      "scale_decay": 0.97,
+      "scale_share_weight": 0.25
+    },
+    "blend_50": {
+      "scale_source": "blended",
+      "scale_decay": 0.97,
+      "scale_share_weight": 0.5
+    },
+    "blend_75": {
+      "scale_source": "blended",
+      "scale_decay": 0.97,
+      "scale_share_weight": 0.75
+    }
+  },
+  "blended_rule": "Own-lead mature EWMA RMS and shortest-lead EWMA RMS times fixed initial training ratios, linearly blended with constant short-source weights. Default candidate weight 0.5; 0.25 and 0.75 prespecified secondary sensitivity cases. The q controller and mature-label clock are identical; no weight learning or q clipping.",
+  "selection_history": {
+    "pilot_results": [
+      "results/research/scale-transfer/pilot-01/results.json",
+      "results/research/scale-mixture/pilot-02/results.json",
+      "results/research/interval-scale-mixture/pilot-03/results.json"
+    ],
+    "pilot_03_protocol_sha256": "8126b065be021461dd63ce4205db79ca9796a9f7892b20606560ea4aad5cf225",
+    "retained": "constant half-weight ablation; learned weights are excluded from public API"
+  }
+}

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+- Add optional `scale_source="blended"` with fixed scalar or per-lead `scale_share_weight`: combine own-lead mature RMS with shortest-lead shared RMS, retaining the existing threshold recursion and feedback queue.
+- Preserve initial scales and old-mode results at endpoint weights on the common finite-source domain. Validate both sources, including unused endpoints, and reject invalid updates atomically. Export detached source scales and fixed weights.
+- Evaluate the public API on 240 new independent paths with causal fitted rolling forecasts, six stress processes and prespecified sharing weights. Report observed score/coverage tradeoffs, nominal Monte Carlo summaries and finite-score limitations; no universal efficiency or foundational novelty claim.
+- Add source snapshots, three reproducible study figures, current-source runtime/memory measurements, and a self-contained frozen v0.7 archive.
+
 ## 0.7.0
 
 - Add `MultiStepConformal` and `multistep_intervals` for univariate consecutive integer-time observations. Observe current labels before issuing future paths; update only matured forecasts and retain unobserved future targets as pending. Freeze each issued scale and interval.

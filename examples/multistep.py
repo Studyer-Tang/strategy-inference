@@ -43,7 +43,7 @@ def run():
         y, rolling.forecasts[:, :, 0], origins=origins, lead_times=leads,
         alpha=0.1, step_size=rates, decay=0.2, scale=initial_scales,
         initial_quantile=0.65, strategy="pooled", scale_decay=0.97,
-        scale_source="shortest", scale_floor=1e-8,
+        scale_source="blended", scale_share_weight=0.5, scale_floor=1e-8,
     )
 
     # The class observes each current label before issuing its future path.
@@ -51,7 +51,8 @@ def run():
     tiny_leads = np.asarray([1, 3])
     tracker = MultiStepConformal(
         tiny_leads, scale=np.sqrt(tiny_leads), step_size=0.1 / np.sqrt(tiny_leads),
-        decay=0.2, initial_quantile=0.65, scale_decay=0.97, scale_source="shortest",
+        decay=0.2, initial_quantile=0.65, scale_decay=0.97, scale_source="blended",
+        scale_share_weight=[0.5, 0.75],
     )
     for t, label in enumerate(y[:4]):
         tracker.observe(t, float(label))
@@ -70,9 +71,10 @@ def run():
             "observed_through": tracker.last_time,
             "summary": tracker.summary(),
             "current_scales": list(tracker.current_scales),
+            "scale_share_weight": list(tracker.current_scale_weights),
             "pending": [interval.to_dict() for interval in tracker.pending],
         },
-        "interpretation": "Per-lead realized mature coverage; no per-time, conditional or simultaneous-path guarantee. Shared shortest-lead scales are an experimental option, not a proved efficiency improvement.",
+        "interpretation": "Per-lead realized mature coverage; no per-time, conditional or simultaneous-path guarantee. Fixed blend weights are a prespecified compromise between own-lead and shortest-lead scales, not an optimal-weight claim.",
     }
 
 
