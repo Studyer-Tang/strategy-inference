@@ -9,11 +9,11 @@ from scipy.stats import norm
 
 from ._validation import as_returns, positive_integer, probability
 from .bootstrap import (
+    _stationary_bootstrap_means,
+    _stationary_bootstrap_statistics,
     default_block_length,
-    stationary_bootstrap_means,
-    stationary_bootstrap_statistics,
 )
-from .inference import infer_mean
+from .inference import _infer_mean
 
 
 @dataclass(frozen=True)
@@ -189,11 +189,11 @@ def audit_returns(
             or len(set(names)) != len(names)
         ):
             raise ValueError("names must contain one distinct, nonempty label per candidate.")
-    iid = infer_mean(data, method="iid", confidence=1 - alpha)
-    hac = infer_mean(data, method="hac", lags=lags, confidence=1 - alpha)
+    iid = _infer_mean(data, method="iid", lags=None, confidence=1 - alpha)
+    hac = _infer_mean(data, method="hac", lags=lags, confidence=1 - alpha)
     block_length = default_block_length(len(data)) if block_length is None else block_length
     if studentization == "resampled":
-        draws = stationary_bootstrap_statistics(
+        draws = _stationary_bootstrap_statistics(
             data,
             n_resamples=n_resamples,
             block_length=block_length,
@@ -203,7 +203,7 @@ def audit_returns(
         )
     else:
         draws = (
-            stationary_bootstrap_means(
+            _stationary_bootstrap_means(
                 data,
                 n_resamples=n_resamples,
                 block_length=block_length,

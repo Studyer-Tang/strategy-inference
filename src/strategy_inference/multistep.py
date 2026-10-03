@@ -18,6 +18,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from ._validation import positive_integer
 from .conformal import AdaptiveConformal, IntervalKind, _bounded_score, _finite
+from .evaluation import _interval_score
 
 _MAX_TIME = np.iinfo(np.int64).max
 
@@ -277,7 +278,8 @@ class MultiStepConformal:
         return origin % self._leads[i] if self._strategy == "interlaced" else 0
 
     def _state(self, i, lane):
-        return self._states.get((i, lane), _Lane(self._initial_quantile))
+        state = self._states.get((i, lane))
+        return _Lane(self._initial_quantile) if state is None else state
 
     def lane_state(self, lead_time: int, lane: int = 0):
         """Detached state, including not-yet-used lanes without allocating them."""
@@ -319,7 +321,8 @@ class MultiStepConformal:
                 point, lower, upper, q, width_scale, kind))
             keys.append(key)
         for key, interval in zip(keys, intervals, strict=True):
-            self._states.setdefault(key, _Lane(self._initial_quantile))
+            if key not in self._states:
+                self._states[key] = _Lane(self._initial_quantile)
             self._pending.setdefault(interval.target, []).append(interval)
         self._issued = [n + 1 for n in self._issued]
         self._last_prediction = self._last
@@ -523,28 +526,28 @@ class MultiStepResult:
             mask = self.evaluated[:, h]
             n = int(mask.sum())
             finite = mask & ~self.empty[:, h] & ~self.unbounded[:, h]
-            widths = [float(self.upper[f, h]) - float(self.lower[f, h]) for f in np.flatnonzero(finite)]
-            width_ok = bool(widths) and all(isfinite(value) for value in widths)
+            with np.errstate(over="ignore"):
+                widths = self.upper[finite, h] - self.lower[finite, h]
+            width_ok = bool(widths.size) and bool(np.isfinite(widths).all())
             empty, full = int(np.count_nonzero(mask & self.empty[:, h])), int(np.count_nonzero(mask & self.unbounded[:, h]))
             status, score = "no_evaluated_intervals", None
             if n and (empty or full):
                 status = "empty_or_unbounded"
             elif n:
                 alpha = self._state_record["alpha"]
-                scores = [float(self.upper[f, h]) - float(self.lower[f, h])
-                    + 2 * (max(float(self.lower[f, h]) - float(self.actual[f, h]), 0) / alpha)
-                    + 2 * (max(float(self.actual[f, h]) - float(self.upper[f, h]), 0) / alpha)
-                    for f in np.flatnonzero(mask)]
-                status = "finite" if all(isfinite(value) for value in scores) else "overflow"
+                scores = _interval_score(
+                    self.actual[mask, h], self.lower[mask, h], self.upper[mask, h], alpha
+                )
+                status = "finite" if np.isfinite(scores).all() else "overflow"
                 if status == "finite":
-                    score = _mean_nonnegative(scores)
+                    score = _mean_nonnegative(scores.tolist())
             rows.append(dict(lead_time=lead, n_issued=self.n_origins, n_evaluated=n,
                 n_pending=self.n_origins - n,
                 coverage=1 - int(np.count_nonzero(mask & self.misses[:, h])) / n if n else None,
                 coverage_bound=bounds[h], empty_rate=empty / n if n else None,
                 unbounded_rate=full / n if n else None, finite_width_count=len(widths),
-                mean_finite_width=_mean_nonnegative(widths) if width_ok else None,
-                finite_width_status="finite" if width_ok else "overflow" if widths else "no_finite_evaluations",
+                mean_finite_width=_mean_nonnegative(widths.tolist()) if width_ok else None,
+                finite_width_status="finite" if width_ok else "overflow" if widths.size else "no_finite_evaluations",
                 mean_interval_score=score, interval_score_status=status))
         return rows
 

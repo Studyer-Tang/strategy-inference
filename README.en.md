@@ -9,13 +9,13 @@ A Python time-series toolbox for forecast evaluation, online uncertainty and str
 Requires Python 3.10+, NumPy and SciPy. The GitHub release wheel can be installed without cloning. The package has not been published to PyPI.
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.0/strategy_inference-0.8.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.1/strategy_inference-0.8.1-py3-none-any.whl
 ```
 
 Source installation from the corresponding tag:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.1'
 ```
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
@@ -141,9 +141,11 @@ strategy-inference test examples/demo_returns.csv \
 
 ## Documentation, research and performance
 
+Start with `src/strategy_inference/` and `examples/`. Reproduction and release tools live in `scripts/`; saved research evidence lives in `results/`. v0.8.1 removes superseded scale-learning prototypes and their dedicated tests from the active tree, sharing data generation, path metrics and validation in `scripts/_scale_study.py`. Historical source and tests remain available at the [v0.8.0 tag](https://github.com/Studyer-Tang/strategy-inference/tree/v0.8.0); saved results and source ZIPs are unchanged.
+
 The [roadmap](docs/toolbox-roadmap.md) distinguishes implemented functionality from proposed extensions. The [research index](docs/research.md) retains historical evaluations, failed settings, frozen protocols and raw evidence. Implementations of established forecasting, bootstrap and conformal algorithms are not claims of foundational algorithmic novelty.
 
-The historical v0.6 [archived page](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/), [performance notes](docs/time-series-performance.md) and [raw record](benchmarks/results/time-series-0.6.json) retain that release's conditions, five warmed samples and source hashes. They bind v0.6 release source; v0.7 [performance notes](docs/multistep-performance.md) and [raw measurements](benchmarks/results/multistep-0.7.json) are reported separately. The v0.8 [blending measurements](docs/blended-scales-performance.md) cover the current implementation. Local engineering measurements do not guarantee universal speed or statistical calibration.
+The historical v0.6 [archived page](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/), [performance notes](docs/time-series-performance.md) and [raw record](benchmarks/results/time-series-0.6.json) retain that release's conditions, five warmed samples and source hashes. They bind v0.6 release source; v0.7 [performance notes](docs/multistep-performance.md) and [raw measurements](benchmarks/results/multistep-0.7.json) are reported separately. The [blending measurements](docs/blended-scales-performance.md) distinguish frozen v0.8.0 measurements from the v0.8.1 refactor comparison. Local engineering measurements do not guarantee universal speed or statistical calibration.
 
 Historical evidence remains in the [v0.5 page and full benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/) and [v0.5 performance notes](docs/performance.md). Older timings do not measure current interfaces. Reproduce historical formal studies at the frozen commit/tag specified in their metadata.
 

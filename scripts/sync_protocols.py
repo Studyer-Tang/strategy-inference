@@ -1,4 +1,4 @@
-"""Sync protocols used by the installed CLI, excluding repository-only pilots."""
+"""Sync the two protocols consumed by the installed reproduction CLI."""
 
 import argparse
 from pathlib import Path
@@ -6,11 +6,6 @@ from pathlib import Path
 PACKAGED_PROTOCOLS = (
     "protocol.json",
     "calibration-protocol.json",
-    "tail-diagnostic-protocol.json",
-    "parametric-replay-protocol.json",
-    "parameter-uncertainty-protocol.json",
-    "joint-uncertainty-protocol.json",
-    "multistep-protocol.json",
 )
 
 

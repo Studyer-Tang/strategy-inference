@@ -19,6 +19,7 @@ jobs:
       - run: git fetch --no-tags --depth=1 origin da5d8cbf9bd69ff092d92576cd4b3f905c337ad2
       - run: git fetch --no-tags --depth=1 origin ffcd83b7043056182fdf7a6e36f1011e11889a34
       - run: git fetch --no-tags --depth=1 origin 93e3ff427ab1a05b0b17c5c164585ab756645539
+      - run: git fetch --no-tags --depth=1 origin 7488a96283890a7884d0cb58346f973bfd4a245b
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}

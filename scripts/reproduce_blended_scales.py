@@ -16,13 +16,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from reproduce_multistep import metrics  # noqa: E402
-from reproduce_scale_transfer import (  # noqa: E402
+from _scale_study import (  # noqa: E402
     _array_sha,
     _ci,
     forecasts,
     generate,
     initial_scales,
+    metrics,
 )
 
 
@@ -30,8 +30,7 @@ def source_hashes():
     paths = list((ROOT / "src/strategy_inference").glob("*.py")) + [
         Path(__file__),
         ROOT / "pyproject.toml",
-        ROOT / "scripts/reproduce_scale_transfer.py",
-        ROOT / "scripts/reproduce_multistep.py",
+        ROOT / "scripts/_scale_study.py",
         ROOT / "experiments/blended-scale-protocol.json",
     ]
     return {
@@ -59,25 +58,31 @@ def replay(actual, points, origins, scales, protocol, method):
 
 
 def summarize(records, protocol, repetitions):
+    paths = {}
+    seeds = {}
+    for row in records:
+        key = row["scenario"], row["replicate"], row["method"], row["lead_time"]
+        path = key[:2]
+        if key in paths or (path in seeds and seeds[path] != row["seed"]):
+            raise ValueError("Every declared path must be unique and share its seed across methods.")
+        paths[key], seeds[path] = row, row["seed"]
+    expected = {
+        (scenario["name"], rep, method, lead)
+        for scenario in protocol["scenarios"]
+        for rep in range(repetitions)
+        for method in protocol["methods"]
+        for lead in protocol["lead_times"]
+    }
+    if paths.keys() != expected:
+        raise ValueError("Every declared independent replicate must be retained exactly once.")
     aggregate, contrasts = [], []
     for scenario in protocol["scenarios"]:
         for lead in protocol["lead_times"]:
             groups = {
-                method: sorted(
-                    (
-                        r
-                        for r in records
-                        if r["scenario"] == scenario["name"]
-                        and r["lead_time"] == lead
-                        and r["method"] == method
-                    ),
-                    key=lambda r: r["replicate"],
-                )
+                method: [paths[scenario["name"], rep, method, lead] for rep in range(repetitions)]
                 for method in protocol["methods"]
             }
             for method, group in groups.items():
-                if [r["replicate"] for r in group] != list(range(repetitions)):
-                    raise ValueError("Every declared independent replicate must be retained.")
                 invalid = sum(r["mean_interval_score"] is None for r in group)
                 aggregate.append(
                     dict(
@@ -99,8 +104,6 @@ def summarize(records, protocol, repetitions):
                 )
             for baseline in ("horizon", "shortest"):
                 pairs = list(zip(groups["blend_50"], groups[baseline], strict=True))
-                if any(a["seed"] != b["seed"] for a, b in pairs):
-                    raise ValueError("Paired paths must share seed identity.")
                 invalid = sum(
                     a["mean_interval_score"] is None or b["mean_interval_score"] is None
                     for a, b in pairs

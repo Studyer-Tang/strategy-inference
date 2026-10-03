@@ -71,6 +71,13 @@ def infer_mean(
     The IID t test is finite-sample exact only for independent Gaussian data.
     """
     data = as_returns(returns)
+    return _infer_mean(data, method=method, lags=lags, confidence=confidence)
+
+
+def _infer_mean(
+    data: NDArray[np.float64], *, method: str, lags: int | None, confidence: float
+) -> MeanInference:
+    """Compute inference for a matrix already checked by ``as_returns``."""
     confidence = probability(confidence, "confidence")
     n_obs, n_strategies = data.shape
     mean = data.mean(axis=0)

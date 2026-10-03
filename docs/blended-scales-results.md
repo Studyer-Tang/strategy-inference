@@ -48,7 +48,7 @@ h=24 的预测偏差情形，该局部误差均值由最短共享的 0.159375 �
 
 ![h=24 预声明权重敏感性](../results/research/blended-scales/full/figures/weight-sensitivity.svg)
 
-在冻结源码和协议下生成正式记录；绘图只读取保存的路径账本，不重新拟合模型：
+逐字节复核已发表研究时使用 [v0.8.0 标签](https://github.com/Studyer-Tang/strategy-inference/tree/v0.8.0)。下列命令也可在当前源码运行同一协议；生成器输入与旧版本逐位核对，新的记录保存当前版本及共享研究模块的哈希，不沿用旧源码清单。绘图只读取保存的路径账本，不重新拟合模型：
 
 ```bash
 python -m pip install -e '.[figures]'

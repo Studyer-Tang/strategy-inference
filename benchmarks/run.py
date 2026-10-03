@@ -34,6 +34,9 @@ CASES = {
     "bootstrap_resampled_1024x100": ("resampled", 1024, 100, 499),
     "gaussian_ar_512x20": ("gaussian_ar", 512, 20, 0),
     "gaussian_ar_2048x100": ("gaussian_ar", 2048, 100, 0),
+    "multistep_summary_12000x4": ("multistep_summary", 12000, 4, 0),
+    "multistep_stream_12000x4": ("multistep_stream", 12000, 4, 0),
+    "bootstrap_fixed_8192x100": ("fixed", 8192, 100, 39),
 }
 
 
@@ -57,13 +60,46 @@ def _worker(case: str, package_root: Path, repeats: int):
     import_ms = 1000 * (time.perf_counter() - started)
     assert Path(si.__file__).resolve().is_relative_to(package_root.resolve())
     started = time.perf_counter()
-    if mode == "gaussian_ar":
+    setup_ms, settings = 0.0, None
+    if mode.startswith("multistep_"):
+        tracker_class, batch = si.MultiStepConformal, si.multistep_intervals
+    elif mode == "gaussian_ar":
         function, options = si.wilks_uncertainty_test, {}
     elif mode == "hac":
         function, options = si.long_run_variance, {}
     else:
         function, options = si.audit_returns, dict(n_resamples=b, seed=41, studentization=mode)
     api_load_ms = 1000 * (time.perf_counter() - started)
+    if mode.startswith("multistep_"):
+        started = time.perf_counter()
+        leads = np.array([1, 6, 12, 24])
+        actual = x[:, 0].copy()
+        origins = np.arange(t - int(leads[-1]), dtype=np.int64)
+        points = phi ** leads * actual[origins, None]
+        options = dict(scale=np.sqrt((1 - phi ** (2 * leads)) / (1 - phi**2)),
+            scale_decay=0.97, scale_source="blended", scale_share_weight=0.5,
+            initial_quantile=0.65, step_size=0.1, decay=0.2)
+        settings = dict(lead_times=leads.tolist(), options={
+            name: value.tolist() if isinstance(value, np.ndarray) else value
+            for name, value in options.items()},
+            actual_sha256=hashlib.sha256(actual.tobytes()).hexdigest(),
+            predicted_sha256=hashlib.sha256(points.tobytes()).hexdigest(),
+            scope="Known-coefficient AR workload; input and summary preparation excluded from timing.")
+        tracker_options = options
+        if mode == "multistep_summary":
+            prepared = batch(actual, points, origins=origins, lead_times=leads, **options)
+            def function(_):
+                return prepared.summary()
+        else:
+            def function(_):
+                tracker = tracker_class(leads, **tracker_options)
+                for i, value in enumerate(actual):
+                    tracker.observe(i, float(value))
+                    if i < len(points):
+                        tracker.predict(points[i])
+                return tracker
+        options = {}
+        setup_ms = 1000 * (time.perf_counter() - started)
     started = time.perf_counter()
     result = function(x, **options)
     cold_ms = 1000 * (time.perf_counter() - started)
@@ -72,7 +108,12 @@ def _worker(case: str, package_root: Path, repeats: int):
         started = time.perf_counter()
         function(x, **options)
         samples.append(1000 * (time.perf_counter() - started))
-    if mode == "hac":
+    if mode.startswith("multistep_"):
+        record = result if mode == "multistep_summary" else result.to_dict()
+        fingerprint = {"output_sha256": hashlib.sha256(
+            json.dumps(record, sort_keys=True, allow_nan=False).encode()).hexdigest(),
+            "inputs": settings}
+    elif mode == "hac":
         fingerprint = {"numeric": {"long_run_variance": result.tolist()}}
     elif mode == "gaussian_ar":
         evidence = {f.name: getattr(result, f.name) for f in fields(result)}
@@ -95,7 +136,7 @@ def _worker(case: str, package_root: Path, repeats: int):
                 "mean", "standard_error", "statistic", "simultaneous_ci_low", "simultaneous_ci_high",
             )}}
     wrapper_ms = None
-    if mode != "hac" and hasattr(si, "test_returns"):
+    if mode in ("fixed", "resampled", "gaussian_ar") and hasattr(si, "test_returns"):
         kwargs = dict(method="gaussian_ar") if mode == "gaussian_ar" else dict(method="bootstrap", **options)
         si.test_returns(x, **kwargs)
         wrapper_samples = []
@@ -110,7 +151,7 @@ def _worker(case: str, package_root: Path, repeats: int):
     tracemalloc.stop()
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return dict(case=case, mode=mode, n_obs=t, k=k, n_resamples=b, code_version=si.__version__,
-        import_ms=import_ms, api_load_ms=api_load_ms, cold_call_ms=cold_ms,
+        import_ms=import_ms, api_load_ms=api_load_ms, preparation_ms=setup_ms, cold_call_ms=cold_ms,
         first_use_ms=import_ms + api_load_ms + cold_ms, warm_call_ms=samples,
         warm_median_ms=statistics.median(samples), unified_api_warm_median_ms=wrapper_ms,
         process_peak_rss_mib=peak / (2**20 if sys.platform == "darwin" else 1024),
@@ -119,7 +160,8 @@ def _worker(case: str, package_root: Path, repeats: int):
 
 
 def _run(case: str, package_root: Path, repeats: int):
-    env = dict(os.environ, OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1")
+    env = dict(os.environ, OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1",
+        VECLIB_MAXIMUM_THREADS="1", BLIS_NUM_THREADS="1")
     completed = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker", case,
         "--package-root", str(package_root), "--repeats", str(repeats)],
         check=True, capture_output=True, text=True, env=env, timeout=120)
@@ -130,7 +172,7 @@ def _compare(before, after):
     import numpy as np
 
     a, b = before["fingerprint"], after["fingerprint"]
-    for key in ("decisions", "adjusted_pvalue", "global_pvalue", "exact_evidence_sha256"):
+    for key in ("decisions", "adjusted_pvalue", "global_pvalue", "exact_evidence_sha256", "output_sha256", "inputs"):
         if key in a:
             if a[key] != b[key]:
                 raise ValueError(f"Result differs for {before['case']}: {key}")
@@ -150,6 +192,7 @@ def main():
     parser.add_argument("--repeats", type=int, default=7)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--worker", choices=tuple(CASES), help=argparse.SUPPRESS)
+    parser.add_argument("--cases", nargs="+", choices=tuple(CASES), default=list(CASES)[:6])
     parser.add_argument("--package-root", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.repeats < 1:
@@ -178,7 +221,7 @@ def main():
         baseline_root = destination / "src"
         baseline_hashes = _source_hashes(baseline_root / "strategy_inference")
         candidate_hashes = _source_hashes(ROOT / "src/strategy_inference")
-        for case in CASES:
+        for case in args.cases:
             a, b = _run(case, baseline_root, args.repeats), _run(case, ROOT / "src", args.repeats)
             before.append(a)
             after.append(b)

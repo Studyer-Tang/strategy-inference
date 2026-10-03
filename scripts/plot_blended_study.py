@@ -14,9 +14,9 @@ import stat
 import zipfile
 from pathlib import Path
 
-import plot_scale_study as common
+import _scale_study as common
 
-COMMON_SHA256 = "2c129a90e5c448bc34201277d0cca2c04f7137d6be996b12187c4c0daf90fd5c"
+COMMON_SHA256 = hashlib.sha256(Path(common.__file__).read_bytes()).hexdigest()
 PRIMARY = ("fixed", "horizon", "shortest", "blend_50")
 WEIGHT_METHODS = ("horizon", "blend_25", "blend_50", "blend_75", "shortest")
 WEIGHTS = (0.0, 0.25, 0.5, 0.75, 1.0)
@@ -62,6 +62,9 @@ REQUIRED_SOURCES = frozenset(
         "experiments/blended-scale-protocol.json",
     }
 )
+CURRENT_SOURCES = (REQUIRED_SOURCES - {
+    "scripts/reproduce_scale_transfer.py", "scripts/reproduce_multistep.py",
+}) | {"scripts/_scale_study.py"}
 
 
 def _digest(value):
@@ -134,9 +137,13 @@ def statistics(report):
     if parameters["fixed"] != {"scale_source": "horizon", "scale_decay": None}:
         raise ValueError("The fixed-scale reference must disable scale adaptation.")
     source = report.get("source_sha256")
+    required = {"0.8.0": REQUIRED_SOURCES, "0.8.1": CURRENT_SOURCES}.get(
+        report.get("package_version")
+    )
     if (
         not isinstance(source, dict)
-        or set(source) != REQUIRED_SOURCES
+        or required is None
+        or set(source) != required
         or not all(_digest(digest) for digest in source.values())
     ):
         raise ValueError("A complete, valid frozen study source-hash inventory is required.")
@@ -391,7 +398,7 @@ def plot_study(input_path, output):
                     "scripts/plot_blended_study.py": hashlib.sha256(
                         Path(__file__).read_bytes()
                     ).hexdigest(),
-                    "scripts/plot_scale_study.py": COMMON_SHA256,
+                    "scripts/_scale_study.py": COMMON_SHA256,
                 },
                 matplotlib=matplotlib.__version__,
                 study=report["study"],

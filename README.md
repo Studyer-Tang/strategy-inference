@@ -9,13 +9,13 @@
 需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone。尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.0/strategy_inference-0.8.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.8.1/strategy_inference-0.8.1-py3-none-any.whl
 ```
 
 对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.8.1'
 ```
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
@@ -141,9 +141,11 @@ strategy-inference test examples/demo_returns.csv \
 
 ## 文档、研究与性能
 
+日常使用从 `src/strategy_inference/` 和 `examples/` 开始；`scripts/` 保留复现与发布工具，`results/` 保存研究证据。v0.8.1 将淘汰的尺度学习原型及其专用测试移出活跃目录，正式研究的生成器、路径统计与校验统一在 `scripts/_scale_study.py`。旧方案的源码和测试仍可在 [v0.8.0 标签](https://github.com/Studyer-Tang/strategy-inference/tree/v0.8.0)复核，结果及源码 ZIP 保留原样。
+
 [路线图](docs/toolbox-roadmap.md)区分已实现功能与待核验扩展；[研究索引](docs/research.md)保留历史评价、失败边界、冻结协议和原始证据。基础预测、bootstrap 与 conformal 算法的实现不作为算法创新主张。
 
-历史 v0.6 的[归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)、[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存当时运行条件、五次热调用与源码哈希。它们绑定 v0.6 发布源码；v0.7 的[多步性能说明](docs/multistep-performance.md)和[原始记录](benchmarks/results/multistep-0.7.json)另行报告。v0.8 的[融合性能说明](docs/blended-scales-performance.md)测量当前实现；本机工程测量不提供通用速度或统计校准保证。
+历史 v0.6 的[归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)、[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存当时运行条件、五次热调用与源码哈希。它们绑定 v0.6 发布源码；v0.7 的[多步性能说明](docs/multistep-performance.md)和[原始记录](benchmarks/results/multistep-0.7.json)另行报告。[融合性能说明](docs/blended-scales-performance.md)区分冻结的 v0.8.0 测量和 v0.8.1 重构对照；本机工程测量不提供通用速度或统计校准保证。
 
 历史证据保留在 [v0.5 页面与完整 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)和[v0.5 性能说明](docs/performance.md)。旧版本计时不代表当前接口。历史正式研究应在 metadata 指定的冻结 commit/tag 下复核。
 

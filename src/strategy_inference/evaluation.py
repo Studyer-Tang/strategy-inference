@@ -112,6 +112,11 @@ def interval_score(
         actual = actual[..., None]
     if np.isposinf(lower).any() or np.isneginf(upper).any():
         raise ValueError("Infinite lower/upper bounds must point outwards.")
+    return _interval_score(actual, lower, upper, alpha)
+
+
+def _interval_score(actual, lower, upper, alpha):
+    """Score aligned arrays whose values and interval semantics are checked."""
     with np.errstate(over="ignore"):
         return (
             upper

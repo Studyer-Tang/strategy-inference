@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "package_version": "0.8.1",
+  "package_version": "0.8.0",
   "evidence_version": "0.8.0",
   "evidence_commit": "7488a96283890a7884d0cb58346f973bfd4a245b",
   "builder_sha256": "ec61e8ef95f5a540ea80759291275f2864d000f8026c2334011024227dd08a2f",
@@ -17,7 +17,7 @@
     "results/research/blended-scales/full/figures/weight-sensitivity.svg": "281f691caaaf6974149ef59b16d2883f6149f8a43f7a0795f34dc43247b84151"
   },
   "output_sha256": {
-    "index.html": "12d3af6f83f3e531cb15890349f49f0d738a1a8420bd7eac16709325ae6f36ce",
+    "index.html": "7fc859cd43ee80744187aee52eed561e95d0936e633eda3a9b56b7f3f278d56b",
     "research/blended/results.json": "5601df3323211d5e8d211c002c8634a34816166db6dce3f5b8adbeb7dfd1cb31",
     "research/blended/protocol.json": "1078226d6a063f28b57beaef89871cf8a615934eae031ee1ad8e61ef3bf45092",
     "research/blended/source.zip": "dc854fa1943b6b1cabf024793027a6f8f4243040012b3194e854b43965a237b4",

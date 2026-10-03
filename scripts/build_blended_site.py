@@ -1,7 +1,7 @@
-"""Package the v0.8 book page from saved, verified research and timing evidence.
+"""Package current and archived book pages from frozen v0.8.0 evidence.
 
-No model fitting, simulation, benchmark or source import is performed. Only
-source-bound ledger validators and path-level summary calculations are used.
+No model fitting, simulation or benchmark is run. Only frozen release ledger
+validators and path-level summary calculations are used.
 """
 
 from __future__ import annotations
@@ -14,11 +14,14 @@ import json
 import math
 import re
 import statistics
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.8.0"
+CURRENT_VERSION = "0.8.1"
+RELEASE_COMMIT = "7488a96283890a7884d0cb58346f973bfd4a245b"
 GITHUB = "https://github.com/Studyer-Tang/strategy-inference/blob/main"
 STUDY = "results/research/blended-scales/full"
 BENCHMARK = "benchmarks/results/blended-scales-0.8.json"
@@ -56,7 +59,7 @@ def _sha(contents):
 
 
 def _read(path):
-    if not path.is_relative_to(ROOT):
+    if not path.is_relative_to(ROOT) or ".." in path.relative_to(ROOT).parts:
         raise ValueError("Evidence must remain inside the repository.")
     for parent in (path, *path.parents):
         if parent.is_symlink():
@@ -118,14 +121,78 @@ def _digest(value):
         raise ValueError("Expected a SHA-256 digest.")
 
 
-def _plotters():
-    """Load only the two existing read-only validation/summary modules."""
+def _release_files(paths):
+    """Read ordinary release blobs; never import the evolving checkout's sources."""
+    command = ["git", "--no-replace-objects", "-C", str(ROOT)]
+    probe = subprocess.run(
+        [*command, "rev-parse", "--show-toplevel"], capture_output=True, timeout=15
+    )
+    if probe.returncode:
+        init = _read(ROOT / "src/strategy_inference/__init__.py").decode()
+        if re.search(r'^__version__ = "0\.8\.0"$', init, re.MULTILINE) is None:
+            raise ValueError(
+                "Historical evidence needs its frozen Git commit outside v0.8.0 fixtures."
+            )
+        return {path: _read(ROOT / path) for path in paths}, None
+    if Path(probe.stdout.decode().strip()).resolve() != ROOT.resolve():
+        raise ValueError("The evidence root must be the Git repository root.")
+    kind = subprocess.run(
+        [*command, "cat-file", "-t", RELEASE_COMMIT], capture_output=True, timeout=15
+    )
+    if kind.returncode or kind.stdout != b"commit\n":
+        raise ValueError("Missing frozen v0.8.0 Git commit; fetch the complete release history.")
+    tree = subprocess.run(
+        [*command, "ls-tree", "-r", "-z", RELEASE_COMMIT], capture_output=True, timeout=15
+    )
+    if tree.returncode:
+        raise ValueError("Cannot read the frozen Git tree.")
+    entries = {}
+    for entry in tree.stdout.split(b"\0"):
+        if entry:
+            header, name = entry.split(b"\t", 1)
+            mode, kind, digest = header.split()
+            entries[name.decode()] = mode, kind, digest
+    ordered = sorted(paths)
+    digests = []
+    for path in ordered:
+        entry = entries.get(path)
+        if entry is None or entry[0] not in (b"100644", b"100755") or entry[1] != b"blob":
+            raise ValueError(f"Missing ordinary frozen Git blob: {path}")
+        digests.append(entry[2])
+    blobs = subprocess.run(
+        [*command, "cat-file", "--batch"],
+        input=b"\n".join(digests) + b"\n",
+        capture_output=True,
+        timeout=15,
+    )
+    if blobs.returncode:
+        raise ValueError("Cannot read the frozen Git blobs.")
+    result, offset = {}, 0
+    for path, digest in zip(ordered, digests, strict=True):
+        end = blobs.stdout.index(b"\n", offset)
+        header = blobs.stdout[offset:end].split()
+        if len(header) != 3 or header[:2] != [digest, b"blob"]:
+            raise ValueError("Unexpected frozen Git object.")
+        size = int(header[2])
+        offset = end + 1
+        result[path] = blobs.stdout[offset : offset + size]
+        offset += size
+        if blobs.stdout[offset : offset + 1] != b"\n":
+            raise ValueError("Incomplete frozen Git blob.")
+        offset += 1
+    if offset != len(blobs.stdout):
+        raise ValueError("Unexpected frozen Git output.")
+    return result, RELEASE_COMMIT
+
+
+def _plotters(sources):
+    """Load only the two release-bound read-only validation/summary modules."""
     previous = sys.modules.get("plot_scale_study")
     loaded = []
     try:
         for name in ("plot_scale_study", "plot_blended_study"):
             path = ROOT / "scripts" / f"{name}.py"
-            source = _read(path)
+            source = sources[f"scripts/{name}.py"]
             spec = importlib.util.spec_from_file_location(name, path)
             module = importlib.util.module_from_spec(spec)
             exec(compile(source, str(path), "exec"), module.__dict__)
@@ -352,14 +419,14 @@ def _terminal(case, options, size):
     )
 
 
-def _benchmark(performance, study):
+def _benchmark(performance, study, sources):
     _same(performance["schema_version"], 1, "benchmark schema")
     _same(performance["package_version"], VERSION, "benchmark version")
-    sources = {Path(k).name: v for k, v in study["source_sha256"].items() if k.startswith("src/")}
-    _same(performance["candidate_source_sha256"], sources, "benchmark source inventory")
+    inventory = {Path(k).name: v for k, v in study["source_sha256"].items() if k.startswith("src/")}
+    _same(performance["candidate_source_sha256"], inventory, "benchmark source inventory")
     _same(
         performance["benchmark_source_sha256"],
-        _sha(_read(ROOT / "benchmarks/blended_scales.py")),
+        _sha(sources["benchmarks/blended_scales.py"]),
         "benchmark runner source",
     )
     _same(performance["repeats"], 5, "timing repeats")
@@ -476,22 +543,55 @@ def evidence():
     _same(study["profile"], "full", "study profile")
     _read(ROOT / STUDY / "source.zip")
     _json(_read(ROOT / STUDY / "source-manifest.json"))
-    common, plotter = _plotters()
+    figure_raw = _read(ROOT / STUDY / "figures/figure-data.json")
+    figures = _json(figure_raw)
+    saved_paths = {
+        PROTOCOL,
+        BENCHMARK,
+        *[
+            f"{STUDY}/{name}"
+            for name in (
+                "results.json",
+                "source.zip",
+                "source-manifest.json",
+                "environment.json",
+                "figures/figure-data.json",
+            )
+        ],
+        *[
+            f"{STUDY}/figures/{stem}.{extension}"
+            for stem in FIGURES
+            for extension in ("svg", "png", "pdf")
+        ],
+    }
+    source_paths = {
+        *study["source_sha256"],
+        "benchmarks/blended_scales.py",
+        "scripts/plot_scale_study.py",
+        "scripts/plot_blended_study.py",
+    }
+    sources, commit = _release_files(saved_paths | source_paths)
+    if commit is not None:
+        for path in saved_paths:
+            _same(_read(ROOT / path), sources[path], f"frozen evidence bytes {path}")
+    for path, digest in study["source_sha256"].items():
+        _same(_sha(sources[path]), digest, "frozen study source")
+    _same(
+        set(figures["plotter_sha256"]),
+        {"scripts/plot_scale_study.py", "scripts/plot_blended_study.py"},
+        "plotter inventory",
+    )
+    for path, digest in figures["plotter_sha256"].items():
+        _same(_sha(sources[path]), digest, "frozen plotter source")
+    common, plotter = _plotters(sources)
     computed, _ = plotter.statistics(study)
     if len(study["records"]) != 5760 or len(study["input_fingerprints"]) != 240:
         raise ValueError("The public page requires all 240 full paths and 5760 records.")
-    for path, digest in study["source_sha256"].items():
-        _same(_sha(_read(ROOT / path)), digest, "current study source")
     _same(_json(_read(ROOT / PROTOCOL)), study["protocol"], "protocol")
-    init = _read(ROOT / "src/strategy_inference/__init__.py").decode()
-    if re.search(rf'^__version__ = "{re.escape(VERSION)}"$', init, re.MULTILINE) is None:
-        raise ValueError("Current package version must match the evidence.")
     _summaries(study, common)
     archive = plotter.verify_archive(ROOT / STUDY / "results.json", study)
     if archive is None:
         raise ValueError("The frozen experiment source snapshot is required.")
-    figure_raw = _read(ROOT / STUDY / "figures/figure-data.json")
-    figures = _json(figure_raw)
     for field, value in dict(
         schema_version=1,
         input_sha256=_sha(raw),
@@ -510,13 +610,6 @@ def evidence():
         {f"{s}.{e}" for s in FIGURES for e in ("svg", "png", "pdf")},
         "figure inventory",
     )
-    _same(
-        set(figures["plotter_sha256"]),
-        {"scripts/plot_scale_study.py", "scripts/plot_blended_study.py"},
-        "plotter inventory",
-    )
-    for path, digest in figures["plotter_sha256"].items():
-        _same(_sha(_read(ROOT / path)), digest, "plotter source")
     for name, digest in figures["figure_sha256"].items():
         _same(_sha(_read(ROOT / STUDY / "figures" / name)), digest, "figure bytes")
     environment = _json(_read(ROOT / STUDY / "environment.json"))
@@ -530,8 +623,8 @@ def evidence():
     _same(environment["matplotlib"], figures["matplotlib"], "plot environment")
     benchmark_raw = _read(ROOT / BENCHMARK)
     performance = _json(benchmark_raw)
-    _benchmark(performance, study)
-    return study, performance
+    _benchmark(performance, study, sources)
+    return study, performance, commit
 
 
 CSS = """
@@ -549,7 +642,16 @@ footer{border-top:1px solid #d8cebd;margin-top:3rem;padding-top:1rem}
 """
 
 
-def render(study, performance):
+def render(study, performance, *, archive=False):
+    page_version = VERSION if archive else CURRENT_VERSION
+    github = GITHUB.rsplit("/", 1)[0] + f"/{RELEASE_COMMIT}" if archive else GITHUB
+    prefix = "../" if archive else ""
+    archive_link = '<a href="../">当前版本</a>' if archive else '<a href="v0.8.0/">v0.8.0 归档</a>'
+    maintenance = (
+        "本页保存 v0.8.0 的完整研究与计时记录，源码绑定不可变提交。"
+        if archive
+        else f'v0.8.1 精简共享研究代码与文件组织，减少重复校验和无用对象分配。下面的研究与该组计时属于 v0.8.0；<a href="{github}/docs/blended-scales-performance.md">v0.8.1 重构性能对照</a>另行记录。'
+    )
     names = [r["name"] for r in study["protocol"]["scenarios"]]
     group = {(r["scenario"], r["method"]): r for r in study["aggregate"] if r["lead_time"] == 24}
     methods = ("fixed", "horizon", "shortest", "blend_50")
@@ -610,12 +712,13 @@ def render(study, performance):
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>strategy-inference · 时间序列工具库</title><meta name="description" content="时间序列评价、预测比较与在线区间。Python API、完整研究记录和本机性能证据。">
 <style>{CSS}</style></head><body>
-<nav aria-label="目录"><a href="#start">开始使用</a><a href="#tools">功能</a><a href="#research">研究记录</a><a href="#performance">工程计时</a><a href="v0.7.0/">v0.7 归档</a><a href="https://github.com/Studyer-Tang/strategy-inference">GitHub</a></nav>
-<main><p class="small">strategy-inference · v{VERSION} · Python ≥ 3.10</p>
+<nav aria-label="目录"><a href="#start">开始使用</a><a href="#tools">功能</a><a href="#research">研究记录</a><a href="#performance">工程计时</a>{archive_link}<a href="{prefix}v0.7.0/">v0.7 归档</a><a href="https://github.com/Studyer-Tang/strategy-inference">GitHub</a></nav>
+<main><p class="small">strategy-inference · v{page_version} · Python ≥ 3.10</p>
 <h1>从时序评价，到在线不确定性</h1>
 <p>一个可安装的 Python 工具库：整理预测损失、做因果回测、比较预测器，并在标签成熟后更新单步或多步区间。统计假设、数值边界与复现记录随代码一起保留。</p>
+<p class="small">{maintenance}</p>
 <h2 id="start">开始使用</h2>
-<pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v{VERSION}/strategy_inference-{VERSION}-py3-none-any.whl</code></pre>
+<pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v{page_version}/strategy_inference-{page_version}-py3-none-any.whl</code></pre>
 <pre><code>import numpy as np
 from strategy_inference import MultiStepConformal
 
@@ -629,12 +732,12 @@ for t, value in enumerate(observations):
     intervals = tracker.predict([value] * 4)  # naive 基线；只用当前标签</code></pre>
 <p class="small">示例尺度须在使用前由训练数据确定；上面只示范接口。允许跳过发行，观测时钟连续。每个区间保持发行时的阈值和尺度，未成熟标签留在 pending。</p>
 <h2 id="tools">可用功能</h2>
-<ul><li><a href="{GITHUB}/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线。</li>
-<li><a href="{GITHUB}/docs/time-series.md">预测器比较</a>：时间依赖下的路径损失差与重采样。</li>
-<li><a href="{GITHUB}/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>
-<li><a href="{GITHUB}/docs/api.md">金融策略推断</a>：HAC、筛选重放及有模型条件的参数不确定性检验。</li></ul>
-<p><a href="{GITHUB}/examples/multistep.py">完整例子</a> · <a href="{GITHUB}/docs/multistep-methods.md">递推与证明</a> · <a href="{GITHUB}/docs/toolbox-roadmap.md">发展路线</a></p>
-<h2 id="research">固定尺度融合：保留折中，保留对照</h2>
+<ul><li><a href="{github}/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线。</li>
+<li><a href="{github}/docs/time-series.md">预测器比较</a>：时间依赖下的路径损失差与重采样。</li>
+<li><a href="{github}/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>
+<li><a href="{github}/docs/api.md">金融策略推断</a>：HAC、筛选重放及有模型条件的参数不确定性检验。</li></ul>
+<p><a href="{github}/examples/multistep.py">完整例子</a> · <a href="{github}/docs/multistep-methods.md">递推与证明</a> · <a href="{github}/docs/toolbox-roadmap.md">发展路线</a></p>
+<h2 id="research">v0.8.0 研究 · 固定尺度融合</h2>
 <p>v0.8 可按预先固定的权重，融合自身步长成熟残差 RMS 与最短步长共享 RMS。权重为 0、1 时，在两来源均可表示的范围内复现两个原模式；默认半权重不表示最优。融合保持每步长阈值独立，既不提前获得长步长标签，也不改变理想平均覆盖账本。</p>
 <p>六个情形，每个 40 条独立路径；每条 3,000 个观测。滚动 AR(1) 点预测只用起点已有标签；训练前缀为 600，评价排除前 128 个发行起点。表中是本次模拟的 interval score 观测均值，越低越好。</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="评分表，可横向滚动"><table><thead>{headings}</thead><tbody>{"".join(score_rows)}</tbody></table></div>
@@ -645,18 +748,18 @@ for t, value in enumerate(observations):
 <div class="table-scroll" tabindex="0" role="region" aria-label="覆盖表，可横向滚动"><table><thead>{headings}</thead><tbody>{"".join(coverage_rows)}</tbody></table></div></details>
 {figures}
 <p><a href="research/blended/results.json" download>六方法 × 四步长完整路径账本</a> · <a href="research/blended/protocol.json" download>冻结协议</a> · <a href="research/blended/source.zip" download>实验源码快照</a> · <a href="research/blended/source-manifest.json" download>源码 SHA-256</a> · <a href="research/blended/environment.json" download>运行环境</a> · <a href="research/blended/figure-data.json" download>图表数据与哈希</a></p>
-<p class="small">source.zip 保存实验运行时的源码，是复核快照；不是 Python 安装包。完整统计口径与工程选择见<a href="{GITHUB}/docs/blended-scales-results.md">结果说明</a>，重放见<a href="{GITHUB}/scripts/reproduce_blended_scales.py">复现程序</a>。</p>
-<h2 id="performance">本机工程计时</h2>
+<p class="small">source.zip 保存实验运行时的源码，是复核快照；不是 Python 安装包。证据绑定提交 <a href="https://github.com/Studyer-Tang/strategy-inference/tree/{RELEASE_COMMIT}"><code>{RELEASE_COMMIT[:7]}</code></a>。完整统计口径见<a href="{GITHUB.rsplit("/", 1)[0]}/{RELEASE_COMMIT}/docs/blended-scales-results.md">结果说明</a>，重放见<a href="{GITHUB.rsplit("/", 1)[0]}/{RELEASE_COMMIT}/scripts/reproduce_blended_scales.py">v0.8.0 复现程序</a>。</p>
+<h2 id="performance">v0.8.0 本机工程计时</h2>
 <p>固定融合流式处理 50,000 × 4：{stream["warm_median_seconds"]:.3f} 秒，跟踪分配峰值 {stream["traced_peak_bytes"] / 1024:.1f} KiB；在同机同输入下，比最短共享增加 {overhead:.1f}% 耗时。独立保存两个 RMS 来源只增加 O(H) 状态；pending 取决于步长集合，批量结果另需 O(FH)。</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="本机性能表，可横向滚动"><table><thead><tr><th>任务</th><th>热调用 / ms</th><th>分配峰值 / KiB</th></tr></thead><tbody>{timing_rows}</tbody></table></div>
 <p class="small">{html.escape(performance["platform"])} · Python {html.escape(performance["python"].split()[0])} · NumPy {html.escape(performance["numpy"])}。串行进程，BLAS 线程环境设为 1，一次预热后五次热调用中位数。导入、输入生成、一致性检查和调用后指纹不计时；API 内部输出构造计时。tracemalloc 单独一次，排除已有输入，包含新增分配，不是 RSS。</p>
-<p class="small">工程负载统一学习率 0.1；统计实验采用 0.1/√h。这些 source-bound 本机测量不构成通用性能或统计保证。</p>
-<p><a href="research/blended/benchmark.json" download>全部计时、设置与源码哈希</a> · <a href="v0.7.0/">v0.7 页面与计时归档</a> · <a href="v0.6.0/">v0.6 归档</a> · <a href="v0.5.0/">v0.5 归档</a></p>
-</main><footer>BSD-3-Clause · <a href="{GITHUB}/docs/multistep-api.md">参数、数值边界与失败处理</a> · <a href="research/blended/site-manifest.json" download>本页证据索引</a></footer></body></html>'''.encode()
+<p class="small">工程负载统一学习率 0.1；统计实验采用 0.1/√h。这些 v0.8.0 source-bound 本机测量不构成当前版本性能、通用性能或统计保证。</p>
+<p><a href="research/blended/benchmark.json" download>全部计时、设置与源码哈希</a> · <a href="{prefix}v0.7.0/">v0.7 页面与计时归档</a> · <a href="{prefix}v0.6.0/">v0.6 归档</a> · <a href="{prefix}v0.5.0/">v0.5 归档</a></p>
+</main><footer>BSD-3-Clause · <a href="{github}/docs/multistep-api.md">参数、数值边界与失败处理</a> · <a href="research/blended/site-manifest.json" download>本页证据索引</a></footer></body></html>'''.encode()
 
 
 def build(*, check=False, destination=None):
-    study, performance = evidence()
+    study, performance, commit = evidence()
     destination = ROOT / "docs/library" if destination is None else Path(destination)
     resources = {
         "results.json": ROOT / STUDY / "results.json",
@@ -668,21 +771,28 @@ def build(*, check=False, destination=None):
         "figure-data.json": ROOT / STUDY / "figures/figure-data.json",
         **{f"{name}.svg": ROOT / STUDY / "figures" / f"{name}.svg" for name in FIGURES},
     }
-    outputs = {"index.html": render(study, performance)}
-    outputs.update({f"research/blended/{name}": _read(path) for name, path in resources.items()})
-    manifest = dict(
-        schema_version=1,
-        package_version=VERSION,
-        builder_sha256=_sha(_read(ROOT / "scripts/build_blended_site.py")),
-        input_sha256={
-            path.relative_to(ROOT).as_posix(): _sha(_read(path)) for path in resources.values()
-        },
-        output_sha256={name: _sha(raw) for name, raw in outputs.items()},
-        scope="Saved evidence only; managed current-page files, leaving old archives and assets untouched.",
-    )
-    outputs["research/blended/site-manifest.json"] = (
-        json.dumps(manifest, indent=2, allow_nan=False) + "\n"
-    ).encode()
+    downloads = {f"research/blended/{name}": _read(path) for name, path in resources.items()}
+    outputs = {}
+    for archive in (False, True):
+        page = {"index.html": render(study, performance, archive=archive), **downloads}
+        manifest = dict(
+            schema_version=2,
+            package_version=VERSION if archive else CURRENT_VERSION,
+            evidence_version=VERSION,
+            evidence_commit=commit,
+            builder_sha256=_sha(_read(ROOT / "scripts/build_blended_site.py")),
+            input_sha256={
+                path.relative_to(ROOT).as_posix(): _sha(downloads[f"research/blended/{name}"])
+                for name, path in resources.items()
+            },
+            output_sha256={name: _sha(raw) for name, raw in page.items()},
+            scope="Saved v0.8.0 evidence; no new performance measurements or simulations.",
+        )
+        page["research/blended/site-manifest.json"] = (
+            json.dumps(manifest, indent=2, allow_nan=False) + "\n"
+        ).encode()
+        prefix = "v0.8.0/" if archive else ""
+        outputs.update({prefix + name: raw for name, raw in page.items()})
     targets = {destination / name: raw for name, raw in outputs.items()}
     for path in targets:
         for parent in path.parents:

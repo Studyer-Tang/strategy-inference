@@ -1,11 +1,14 @@
 """Holdout completeness and independent path-pairing for public scale blending."""
 
+import ast
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 
 import numpy as np
 import pytest
+from scipy.stats import t as student_t
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
@@ -54,15 +57,19 @@ def test_aggregate_keeps_declared_paths_and_propagates_invalid_scores():
     assert all(r["score_difference"]["mean"] is None for r in contrasts)
 
 
-@pytest.mark.parametrize("change", ["drop", "duplicate", "seed"])
+@pytest.mark.parametrize("change", ["drop", "duplicate", "seed", "extra", "sensitivity_seed"])
 def test_bad_pairing_or_missing_paths_raise(change):
     rows = records()
     if change == "drop":
         rows.pop()
     elif change == "duplicate":
         rows[-1]["replicate"] = 0
-    else:
+    elif change == "seed":
         next(r for r in rows if r["method"] == "blend_50")["seed"] = 777
+    elif change == "extra":
+        rows.append({**rows[-1], "method": "undeclared"})
+    else:
+        next(r for r in rows if r["method"] == "blend_75")["seed"] = 777
     with pytest.raises(ValueError):
         study.summarize(rows, small_protocol(), 2)
 
@@ -80,7 +87,7 @@ def test_interval_score_ci_uses_paired_paths_and_handles_record_order():
 
 
 def test_full_seeds_equal_prespecified_untouched_holdout_and_avoid_all_pilots():
-    third = json.loads((ROOT / "experiments/interval-scale-mixture-protocol.json").read_text())
+    third = json.loads((ROOT / "results/research/interval-scale-mixture/pilot-03/results.json").read_text())["protocol"]
 
     def seeds(protocol, profile):
         settings = protocol["profiles"][profile]
@@ -93,8 +100,8 @@ def test_full_seeds_equal_prespecified_untouched_holdout_and_avoid_all_pilots():
     full = seeds(PROTOCOL, "full")
     assert full == seeds(third, "full")
     assert full.isdisjoint(seeds(PROTOCOL, "smoke"))
-    for path in ("scale-transfer", "scale-mixture", "interval-scale-mixture"):
-        pilot = json.loads((ROOT / f"experiments/{path}-protocol.json").read_text())
+    for path, number in (("scale-transfer", 1), ("scale-mixture", 2), ("interval-scale-mixture", 3)):
+        pilot = json.loads((ROOT / f"results/research/{path}/pilot-0{number}/results.json").read_text())["protocol"]
         assert full.isdisjoint(seeds(pilot, "pilot"))
 
 
@@ -115,3 +122,45 @@ def test_public_methods_have_identical_shortest_lead_and_complete_maturity():
             np.testing.assert_array_equal(
                 getattr(result, field)[:, 0], getattr(results["horizon"], field)[:, 0]
             )
+
+
+@pytest.fixture(scope="module")
+def frozen_generator():
+    commit = "7488a96283890a7884d0cb58346f973bfd4a245b"
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "show", f"{commit}:scripts/reproduce_scale_transfer.py"],
+        check=True, capture_output=True, text=True,
+    )
+    names = {"generate", "forecasts", "initial_scales", "_ci"}
+    nodes = [node for node in ast.parse(result.stdout).body
+        if isinstance(node, ast.FunctionDef) and node.name in names]
+    assert {node.name for node in nodes} == names
+    namespace = {"np": np, "student_t": student_t}
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), "v0.8.0-generator", "exec"), namespace)
+    return namespace
+
+
+@pytest.mark.parametrize("scenario", PROTOCOL["scenarios"], ids=lambda s: s["name"])
+def test_shared_generation_matches_frozen_inputs_bitwise(frozen_generator, scenario):
+    settings = {"n_obs": 1000}
+    inputs = study.generate(PROTOCOL, settings, scenario, 1928831)
+    reference = frozen_generator["generate"](PROTOCOL, settings, scenario, 1928831)
+    for actual, expected in zip(inputs, reference, strict=True):
+        np.testing.assert_array_equal(actual, expected)
+    origins, points = study.forecasts(inputs[0], PROTOCOL, scenario)
+    old_origins, old_points = frozen_generator["forecasts"](inputs[0], PROTOCOL, scenario)
+    np.testing.assert_array_equal(origins, old_origins)
+    np.testing.assert_array_equal(points, old_points)
+    np.testing.assert_array_equal(
+        study.initial_scales(inputs[0], origins, points, PROTOCOL["lead_times"], 600),
+        frozen_generator["initial_scales"](inputs[0], old_origins, old_points, PROTOCOL["lead_times"], 600),
+    )
+
+
+def test_indexed_aggregate_matches_frozen_study_statistics():
+    saved = json.loads((ROOT / "results/research/blended-scales/full/results.json").read_text())
+    aggregate, contrasts = study.summarize(saved["records"], saved["protocol"], 40)
+    for actual, expected in zip(aggregate + contrasts, saved["aggregate"] + saved["paired_contrasts"], strict=True):
+        assert actual.keys() == expected.keys()
+        for key, value in actual.items():
+            assert value == pytest.approx(expected[key], abs=1e-12) if isinstance(value, dict) else value == expected[key]

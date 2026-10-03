@@ -20,7 +20,6 @@ from scipy.stats import norm
 
 from .bootstrap import default_block_length, stationary_bootstrap_means
 from .inference import default_lags, infer_mean
-from .plotting import plot_autocorrelation, plot_robustness, plot_selection
 from .simulations import simulate_returns
 
 CSV_COLUMNS = (
@@ -385,6 +384,10 @@ def run_experiments(
     if isinstance(seed, (bool, np.bool_)) or not isinstance(seed, (int, np.integer)) or seed < 0:
         raise ValueError("seed must be a nonnegative integer")
     seed = int(seed)
+    # Numerical helpers are usable without figures; a figure-producing run
+    # checks the optional dependency before creating output or simulating.
+    from .plotting import plot_autocorrelation, plot_robustness, plot_selection
+
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     settings = protocol["profiles"][profile]

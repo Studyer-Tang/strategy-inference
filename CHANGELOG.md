@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1
+
+- Remove superseded scale-learning prototypes and their dedicated tests from the active tree. Keep historical source at v0.8.0 and preserve all saved results and source ZIPs. Share the current study's generation, metrics and validation, and index path records once when aggregating.
+- Validate the audit input matrix once; retain strict public entry points and the same bootstrap arithmetic, random streams and workspace budget. Share interval scoring and vectorize multistep summaries while retaining scaled `math.fsum` means and invalid-interval handling. Avoid unused feedback-lane allocations.
+- Load plotting only for figure-producing runs. Package the two protocols actually consumed by the installed CLI; retain canonical research protocols outside the wheel.
+- Bind v0.8.0 evidence to its immutable release and add a self-contained archive. Document a five-workload, same-input performance comparison separately from historical timings; preserve public APIs and statistical scope.
+
 ## 0.8.0
 
 - Add optional `scale_source="blended"` with fixed scalar or per-lead `scale_share_weight`: combine own-lead mature RMS with shortest-lead shared RMS, retaining the existing threshold recursion and feedback queue.

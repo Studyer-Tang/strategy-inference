@@ -2,12 +2,21 @@
 
 import importlib.util
 import json
-import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
+RELEASE = "7488a96283890a7884d0cb58346f973bfd4a245b"
+
+
+def _release_bytes(path):
+    return subprocess.run(
+        ["git", "-C", str(REPO), "show", f"{RELEASE}:{path}"],
+        check=True,
+        capture_output=True,
+    ).stdout
 
 
 @pytest.fixture
@@ -32,7 +41,11 @@ def builder(tmp_path, monkeypatch):
     for relative in paths:
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(REPO / relative, target)
+        target.write_bytes(
+            (REPO / relative).read_bytes()
+            if relative == "scripts/build_blended_site.py"
+            else _release_bytes(relative)
+        )
     archive = root / "docs/library/v0.7.0/index.html"
     archive.parent.mkdir(parents=True, exist_ok=True)
     archive.write_bytes(b"Preserved v0.7 book and source-bound timing archive.\n")
@@ -40,6 +53,30 @@ def builder(tmp_path, monkeypatch):
     legacy.write_bytes(b"Preserved legacy timing.\n")
     monkeypatch.setattr(module, "ROOT", root)
     return module
+
+
+@pytest.fixture
+def git_builder(builder, monkeypatch):
+    def git(*args):
+        return (
+            subprocess.run(["git", "-C", str(builder.ROOT), *args], check=True, capture_output=True)
+            .stdout.decode()
+            .strip()
+        )
+
+    git("init", "--quiet")
+    git("add", "--all")
+    git(
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-qm",
+        "Frozen evidence",
+    )
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", git("rev-parse", "HEAD"))
+    return builder
 
 
 def _update(path, mutation):
@@ -59,7 +96,7 @@ def _snapshot(root):
 def test_build_copies_exact_downloads_and_check_leaves_archive_and_inputs_untouched(builder):
     old = _snapshot(builder.ROOT / "docs/library")
     outputs = builder.build()
-    assert len(outputs) == 12
+    assert len(outputs) == 24
     page = (builder.ROOT / "docs/library/index.html").read_text()
     assert "5 个评分均值最低" in page
     assert "名义 MC 汇总" in page and "总体期望可能无穷" in page
@@ -67,6 +104,12 @@ def test_build_copies_exact_downloads_and_check_leaves_archive_and_inputs_untouc
     assert "v0.7.0/" in page and "pilot-01" not in page and "pilot-02" not in page
     assert page.count('<div class="table-scroll"') == 3
     assert 'loading="lazy"' in page and '<html lang="zh-CN">' in page
+    assert "v0.8.1" in page and "v0.8.1 重构性能对照" in page
+    assert "strategy_inference-0.8.1-py3-none-any.whl" in page
+    archive = (builder.ROOT / "docs/library/v0.8.0/index.html").read_text()
+    assert "strategy_inference-0.8.0-py3-none-any.whl" in archive
+    assert 'href="../v0.7.0/"' in archive and 'href="../"' in archive
+    assert f"/blob/{builder.RELEASE_COMMIT}/docs/time-series.md" in archive
     downloads = builder.ROOT / "docs/library/research/blended"
     assert (downloads / "source.zip").read_bytes() == (
         builder.ROOT / builder.STUDY / "source.zip"
@@ -77,7 +120,13 @@ def test_build_copies_exact_downloads_and_check_leaves_archive_and_inputs_untouc
     assert (downloads / "benchmark.json").read_bytes() == (
         builder.ROOT / builder.BENCHMARK
     ).read_bytes()
-    assert json.loads((downloads / "site-manifest.json").read_text())["package_version"] == "0.8.0"
+    manifest = json.loads((downloads / "site-manifest.json").read_text())
+    assert manifest["package_version"] == "0.8.1" and manifest["evidence_version"] == "0.8.0"
+    archived = builder.ROOT / "docs/library/v0.8.0/research/blended"
+    assert json.loads((archived / "site-manifest.json").read_text())["package_version"] == "0.8.0"
+    for path in downloads.iterdir():
+        if path.name != "site-manifest.json":
+            assert (archived / path.name).read_bytes() == path.read_bytes()
     for relative, before in old.items():
         assert _snapshot(builder.ROOT / "docs/library")[relative] == before
     snapshot = _snapshot(builder.ROOT)
@@ -217,3 +266,115 @@ def test_duplicate_json_fields_are_rejected(builder):
     path.write_text('{"schema_version": 1, "schema_version": 1}')
     with pytest.raises(ValueError, match="Duplicate JSON"):
         builder.build()
+
+
+def test_git_release_survives_evolving_or_deleted_current_sources(git_builder):
+    builder = git_builder
+    root = builder.ROOT
+    (root / "src/strategy_inference/__init__.py").write_text('__version__ = "0.8.1"\n')
+    for path in (
+        "scripts/reproduce_scale_transfer.py",
+        "scripts/reproduce_blended_scales.py",
+        "scripts/plot_scale_study.py",
+        "scripts/plot_blended_study.py",
+        "benchmarks/blended_scales.py",
+        "src/strategy_inference/multistep.py",
+    ):
+        (root / path).unlink()
+    assert len(builder.build()) == 24
+    manifest = json.loads((root / "docs/library/research/blended/site-manifest.json").read_text())
+    assert manifest["evidence_commit"] == builder.RELEASE_COMMIT
+    snapshot = _snapshot(root)
+    builder.build(check=True)
+    assert _snapshot(root) == snapshot
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "results.json",
+        "source.zip",
+        "source-manifest.json",
+        "environment.json",
+        "figures/figure-data.json",
+        "figures/weight-sensitivity.pdf",
+    ],
+)
+def test_git_binding_rejects_any_modified_saved_evidence(git_builder, name):
+    path = git_builder.ROOT / git_builder.STUDY / name
+    path.write_bytes(path.read_bytes() + b"\n")
+    before = _snapshot(git_builder.ROOT)
+    with pytest.raises(ValueError, match="frozen evidence bytes"):
+        git_builder.build()
+    assert _snapshot(git_builder.ROOT) == before
+
+
+def test_git_binding_rejects_even_internally_consistent_altered_timing(git_builder):
+    def mutation(data):
+        case = data["cases"][0]
+        case["warm_seconds"] = [value * 2 for value in case["warm_seconds"]]
+        case["warm_median_seconds"] *= 2
+
+    _update(git_builder.ROOT / git_builder.BENCHMARK, mutation)
+    with pytest.raises(ValueError, match="frozen evidence bytes"):
+        git_builder.build()
+
+
+def test_missing_release_history_does_not_fall_back_to_current_sources(git_builder, monkeypatch):
+    monkeypatch.setattr(git_builder, "RELEASE_COMMIT", "f" * 40)
+    with pytest.raises(ValueError, match="fetch the complete release history"):
+        git_builder.build()
+
+
+def test_non_git_future_version_cannot_impersonate_historical_sources(builder):
+    (builder.ROOT / "src/strategy_inference/__init__.py").write_text('__version__ = "0.8.1"\n')
+    with pytest.raises(ValueError, match="frozen Git commit outside v0.8.0 fixtures"):
+        builder.build()
+
+
+def test_frozen_symlink_is_not_an_ordinary_release_blob(git_builder, monkeypatch):
+    path = git_builder.ROOT / "scripts/plot_scale_study.py"
+    path.unlink()
+    path.symlink_to("plot_blended_study.py")
+    subprocess.run(
+        ["git", "-C", str(git_builder.ROOT), "add", "--all"], check=True, capture_output=True
+    )
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(git_builder.ROOT),
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-qm",
+            "Invalid frozen source",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    commit = (
+        subprocess.run(
+            ["git", "-C", str(git_builder.ROOT), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
+    monkeypatch.setattr(git_builder, "RELEASE_COMMIT", commit)
+    with pytest.raises(ValueError, match="ordinary frozen Git blob"):
+        git_builder.build()
+
+
+def test_archive_downloads_are_managed_but_older_archives_are_not(builder):
+    builder.build()
+    old = builder.ROOT / "docs/library/v0.7.0/index.html"
+    before = old.read_bytes(), old.stat().st_mtime_ns
+    asset = builder.ROOT / "docs/library/v0.8.0/research/blended/source.zip"
+    asset.write_bytes(b"stale archived snapshot")
+    with pytest.raises(ValueError, match="stale or missing"):
+        builder.build(check=True)
+    assert (old.read_bytes(), old.stat().st_mtime_ns) == before

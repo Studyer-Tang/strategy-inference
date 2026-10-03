@@ -65,7 +65,7 @@ def test_ties_are_counted_and_plus_one_prevents_zero(monkeypatch):
     scale = infer_mean(values, method="hac", lags=1).standard_error[0]
     fixed_means = np.array([[0], [-scale], [scale], [0]])
     monkeypatch.setattr(
-        "strategy_inference.audit.stationary_bootstrap_means",
+        "strategy_inference.audit._stationary_bootstrap_means",
         lambda *_args, **_kwargs: fixed_means,
     )
     audit = audit_returns(values, n_resamples=4, lags=1)
@@ -136,7 +136,7 @@ def _audit_with_tail_count(monkeypatch, count, total=99, alpha=0.05):
     scale = infer_mean(values, method="hac", lags=1).standard_error[0]
     statistics = np.concatenate([np.ones(count), -np.ones(total - count)])
     monkeypatch.setattr(
-        "strategy_inference.audit.stationary_bootstrap_means",
+        "strategy_inference.audit._stationary_bootstrap_means",
         lambda *_args, **_kwargs: statistics[:, None] * scale,
     )
     return audit_returns(values, n_resamples=total, lags=1, alpha=alpha)

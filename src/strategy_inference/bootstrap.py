@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ._validation import as_returns, positive_integer
-from .inference import default_lags
+from .inference import _lag_count
 
 # Bound transient draw/index arrays even when callers request very large chunks.
 # The input T x K matrix and required B x K output are separate from this budget.
@@ -88,6 +88,26 @@ def stationary_bootstrap_means(
     center=True subtracts each sample column mean before resampling.
     """
     data = as_returns(returns)
+    return _stationary_bootstrap_means(
+        data,
+        n_resamples=n_resamples,
+        block_length=block_length,
+        seed=seed,
+        batch_size=batch_size,
+        center=center,
+    )
+
+
+def _stationary_bootstrap_means(
+    data: NDArray[np.float64],
+    *,
+    n_resamples: int,
+    block_length: float | None,
+    seed: int | np.random.Generator | np.random.SeedSequence,
+    batch_size: int,
+    center: bool,
+) -> NDArray[np.float64]:
+    """Resample a matrix already checked by ``as_returns``."""
     n_obs, n_strategies = data.shape
     n_resamples = positive_integer(n_resamples, "n_resamples")
     batch_size = positive_integer(batch_size, "batch_size")
@@ -128,6 +148,28 @@ def stationary_bootstrap_statistics(
     This construction is asymptotic, not a finite-sample calibration guarantee.
     """
     data = as_returns(returns)
+    return _stationary_bootstrap_statistics(
+        data,
+        n_resamples=n_resamples,
+        block_length=block_length,
+        lags=lags,
+        seed=seed,
+        batch_size=batch_size,
+        column_batch_size=column_batch_size,
+    )
+
+
+def _stationary_bootstrap_statistics(
+    data: NDArray[np.float64],
+    *,
+    n_resamples: int,
+    block_length: float | None,
+    lags: int | None,
+    seed: int | np.random.Generator | np.random.SeedSequence,
+    batch_size: int,
+    column_batch_size: int = 8,
+) -> NDArray[np.float64]:
+    """Studentize draws of a matrix already checked by ``as_returns``."""
     n_obs, n_strategies = data.shape
     n_resamples = positive_integer(n_resamples, "n_resamples")
     batch_size = positive_integer(batch_size, "batch_size")
@@ -141,9 +183,7 @@ def stationary_bootstrap_statistics(
         batch_size,
         max(1, _MAX_BOOTSTRAP_WORK_BYTES // (n_obs * (16 * column_batch_size + 32))),
     )
-    lags = default_lags(n_obs) if lags is None else positive_integer(lags, "lags", 0)
-    if lags > n_obs - 2:
-        raise ValueError("lags must be <= T - 2.")
+    lags = _lag_count(n_obs, lags)
     block_length = default_block_length(n_obs) if block_length is None else block_length
     block_length = _block_length(block_length, n_obs)
     rng = np.random.default_rng(seed)
