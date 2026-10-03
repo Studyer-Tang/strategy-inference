@@ -1,0 +1,132 @@
+{
+  "status": "passed",
+  "browser": "isolated headless Microsoft Edge / Playwright",
+  "results": [
+    {
+      "title": "参数不确定性与最大值检验",
+      "width": 1440,
+      "documentWidth": 1440,
+      "images": [
+        {
+          "loaded": true,
+          "src": "figure-1-replay-size.svg"
+        },
+        {
+          "loaded": true,
+          "src": "figure-2-replay-fit.svg"
+        },
+        {
+          "loaded": true,
+          "src": "figure-3-replay-power.svg"
+        }
+      ],
+      "links": [
+        "../../../../docs/parametric-replay.md",
+        "../../../../experiments/parametric-replay-protocol.json",
+        "figure-1-replay-size.svg",
+        "figure-1-replay-size.png",
+        "figure-1-replay-size.svg",
+        "figure-1-replay-size.pdf",
+        "figure-2-replay-fit.svg",
+        "figure-2-replay-fit.png",
+        "figure-2-replay-fit.svg",
+        "figure-2-replay-fit.pdf",
+        "figure-3-replay-power.svg",
+        "figure-3-replay-power.png",
+        "figure-3-replay-power.svg",
+        "figure-3-replay-power.pdf",
+        "paired.csv",
+        "summary.csv",
+        "summary.csv",
+        "paired.csv",
+        "calibration.json",
+        "inner-snapshots.json",
+        "metadata.json",
+        "presentation.json",
+        "p0-g04.csv.gz",
+        "p0-g07.csv.gz",
+        "p1-g01.csv.gz",
+        "p1-g02.csv.gz",
+        "p1-g03.csv.gz",
+        "p1-g04.csv.gz",
+        "p1-g05.csv.gz",
+        "p1-g06.csv.gz",
+        "p1-g07.csv.gz",
+        "p2-g04.csv.gz",
+        "p2-g07.csv.gz",
+        "audit.json",
+        "../../../../docs/replay-results.md",
+        "../../../../experiments/parametric-replay-protocol.json",
+        "../../../../docs/parametric-replay.md",
+        "../../../../docs/tail-mechanism.md",
+        "../../../../scripts/replay_report.py",
+        "https://doi.org/10.1080/01621459.2026.2676715"
+      ],
+      "localLinksChecked": 32,
+      "errors": []
+    },
+    {
+      "title": "参数不确定性与最大值检验",
+      "width": 390,
+      "documentWidth": 390,
+      "images": [
+        {
+          "loaded": true,
+          "src": "figure-1-replay-size.svg"
+        },
+        {
+          "loaded": true,
+          "src": "figure-2-replay-fit.svg"
+        },
+        {
+          "loaded": true,
+          "src": "figure-3-replay-power.svg"
+        }
+      ],
+      "links": [
+        "../../../../docs/parametric-replay.md",
+        "../../../../experiments/parametric-replay-protocol.json",
+        "figure-1-replay-size.svg",
+        "figure-1-replay-size.png",
+        "figure-1-replay-size.svg",
+        "figure-1-replay-size.pdf",
+        "figure-2-replay-fit.svg",
+        "figure-2-replay-fit.png",
+        "figure-2-replay-fit.svg",
+        "figure-2-replay-fit.pdf",
+        "figure-3-replay-power.svg",
+        "figure-3-replay-power.png",
+        "figure-3-replay-power.svg",
+        "figure-3-replay-power.pdf",
+        "paired.csv",
+        "summary.csv",
+        "summary.csv",
+        "paired.csv",
+        "calibration.json",
+        "inner-snapshots.json",
+        "metadata.json",
+        "presentation.json",
+        "p0-g04.csv.gz",
+        "p0-g07.csv.gz",
+        "p1-g01.csv.gz",
+        "p1-g02.csv.gz",
+        "p1-g03.csv.gz",
+        "p1-g04.csv.gz",
+        "p1-g05.csv.gz",
+        "p1-g06.csv.gz",
+        "p1-g07.csv.gz",
+        "p2-g04.csv.gz",
+        "p2-g07.csv.gz",
+        "audit.json",
+        "../../../../docs/replay-results.md",
+        "../../../../experiments/parametric-replay-protocol.json",
+        "../../../../docs/parametric-replay.md",
+        "../../../../docs/tail-mechanism.md",
+        "../../../../scripts/replay_report.py",
+        "https://doi.org/10.1080/01621459.2026.2676715"
+      ],
+      "localLinksChecked": 32,
+      "errors": []
+    }
+  ]
+}

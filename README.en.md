@@ -103,6 +103,23 @@ python scripts/tail_diagnostics.py --profile full --output results/research/tail
 
 Run from a source checkout with the `figures` extra installed, using an empty output directory. Every comparison uses a known correlation matrix; only the true-variance reference has the exact Gaussian scale. This is a mechanism study, not an implementable joint test with unknown covariance. The new research modules do not alter `audit_returns`.
 
+## Fitted replay and finite Monte Carlo resolution
+
+The research branch now implements full parametric replay within a common Gaussian AR model, separating temporal fitting, correlation fitting and correction-factor refitting. The [proofs](docs/parametric-replay.md) establish conditional validity for fixed K under mild persistence and path limits for the specific estimator and statistic in a local-unit sequence. Finite B can also impose a power ceiling on the prespecified jitter-based, independently size-matched simulation comparison.
+
+The frozen study uses 13,000 outer datasets across independent calibration, null evaluation and power stages, 199 inner draws, and 147,000 method records. With 100 correlated candidates, fitted replay reduces rejection from **19.4% to 6.4%**; strong persistence still yields **16.6%**, and heterogeneous temporal structure yields **30.0%**. Only one correctly specified cell clears the prespecified six-cell size screen. These research helpers do not change the public audit rule.
+
+Read the [interpretation](docs/replay-results.md), [three-figure report and records](results/research/replay/full/report.html), [protocol](experiments/parametric-replay-protocol.json), and [independent audit](results/research/replay/full/audit.json).
+
+```bash
+# Rebuild all three figures and the report without new Monte Carlo draws:
+python scripts/replay_report.py --output results/research/replay/full
+# Recompute in an empty output directory:
+python scripts/parametric_replay.py --profile full --output results/research/replay/reproduced
+python scripts/replay_report.py --output results/research/replay/reproduced
+python scripts/verify_parametric_replay.py --output results/research/replay/reproduced
+```
+
 ## Uncertainty and scope
 
 Bootstrap p values use `(1 + exceedances)/(B + 1)`. This avoids zero estimates and sets the numerical resolution; it is not an exact randomization-test guarantee. A conditional bootstrap-tail interval describes uncertainty from a finite number of draws for the observed data.

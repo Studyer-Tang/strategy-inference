@@ -1,0 +1,198 @@
+{
+  "status": "passed",
+  "audited_at_utc": "2026-10-03T03:54:26.390209+00:00",
+  "elapsed_seconds": 12.265144292032346,
+  "output": "/Users/a13849/Documents/ChatGPT/qingjun/strategy-inference/results/research/replay/full",
+  "profile": "full",
+  "calculation_git_revision": "d898d36c5578e2be95ae73941d0d046e1ed66d0f",
+  "calculation_metadata_sha256": "3eb0f385811ea136a2299018fd1e2cb40b9caa0bdd0fa8042fe4d49f7e323ee8",
+  "calculation_source_hashes": {
+    "scripts/parametric_replay.py": "2f590935e310df4e61f53750d3c40e2e0c37f1a15791d97c0bbac6f9dcfbad4d",
+    "experiments/parametric-replay-protocol.json": "0ad71a6377a2515236527cc876761181f082ae67e5b22a2d053eb5869468371c",
+    "src/strategy_inference/parametric.py": "9f60708f9fa1dd1e6cc6ed9093d3fd6b19af0ea102f7d26e8eaa9b194f0729ca",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9"
+  },
+  "raw_output_hashes": {
+    "calibration.json": "5626c91a23aa385d6c8673e90b1359c073f0840b3fe972fcfc6e41e275e3d268",
+    "inner-snapshots.json": "5453896c819d28d0a80d81ba13e567c66e89c688cdc044ab871c0f139e88be4d",
+    "p0-g04.csv.gz": "628630d63d2c1b07854a022ce05d12382d1109b6371f262132c203d028d8e4a1",
+    "p0-g07.csv.gz": "78262d5101d94ed47909a016150af931ffa055699e6675c116d68ffe1a6a88cb",
+    "p1-g01.csv.gz": "b0552fc38f03b973822b020f63f6ca5b3e3ead28964cab8273586d3d4ff46c15",
+    "p1-g02.csv.gz": "5915722a4aacf7c07525a9dc9dc2f96123eb2dcdb48ae9cc2c2419dc44753b76",
+    "p1-g03.csv.gz": "b5efb7f46a648f5e903c4c1310be6fc472264d3348ffcd761033afa18e2aad33",
+    "p1-g04.csv.gz": "3bd772f445ec1d80888ad700d1ead96677f807753823ef94644db8539b6787a8",
+    "p1-g05.csv.gz": "930eb48f9c7e88f56378348883a3a76024bd7dfdf4eb0c841bb61cb93b57ed8e",
+    "p1-g06.csv.gz": "bf745dfed1b476085bf7a9f506c21d4bb8da632c9f813c339c7c1c4e5d2e7299",
+    "p1-g07.csv.gz": "53be89129c9d878d7e739dff8d644ba9a646f1098bb544f34396330b3d592d64",
+    "p2-g04.csv.gz": "ff4a4a75134139995f6d7fa4b21a11ea01da8db86ce6832768d147d111b9e49b",
+    "p2-g07.csv.gz": "c4cf47362e3e5e1d204c26a943b71ef5d5d933c9b2bab54fe72342249e71958c",
+    "paired.csv": "66327c6d104909abbd96391fa30a727fc57da212faa8d68058b78d7ddc137361",
+    "summary.csv": "101fb5a43cce4d4f762577eba3a85eabf2d00f5b2a1d2486dc92d2a206fd0947"
+  },
+  "audit_source_sha256": "1b68024c46935f111f152f4fe9431f7a5e8e5f1a6b144e31baa8780f850c97e3",
+  "audit_environment": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1"
+  },
+  "method_records": 147000,
+  "monte_carlo_records": 85000,
+  "cells": 11,
+  "regenerated_snapshot_replicates": 33,
+  "recorded_inner_batch_size": 32,
+  "regeneration_batch_size": 7,
+  "checks": {
+    "completed": 1,
+    "calculation_source_hash": 8,
+    "protocol_hash": 1,
+    "profile_settings": 1,
+    "unique_groups": 1,
+    "separate_stage_seeds": 1,
+    "previous_study_seeds": 1,
+    "raw_output_members": 1,
+    "raw_output_hash": 15,
+    "metadata_cells": 1,
+    "calibration_groups": 1,
+    "snapshot_members": 1,
+    "cell_record_count": 11,
+    "cell_metadata_count": 11,
+    "cell_metadata_address": 11,
+    "fitted_phi_domain": 13000,
+    "rho_projection": 13000,
+    "rho_projection_flag": 13000,
+    "raw_schema": 147000,
+    "raw_address": 147000,
+    "raw_method_order": 147000,
+    "constant_fit_across_methods_and_shifts": 588000,
+    "winner_domain": 147000,
+    "pvalue_domain": 147000,
+    "finite_statistic": 147000,
+    "raw_reject": 147000,
+    "analytic_count_blank": 62000,
+    "oracle_phi_blank": 17000,
+    "matched_reject_blank": 79000,
+    "selected_phi_domain": 119000,
+    "selected_variance_domain": 119000,
+    "monte_carlo_count_domain": 85000,
+    "gls_tail_fields_blank": 11000,
+    "snapshot_methods": 33,
+    "snapshot_inner_count": 165,
+    "snapshot_finite": 165,
+    "saved_snapshot_exceedances": 225,
+    "regenerated_row_count": 33,
+    "regenerated_inner_count": 165,
+    "regenerated_raw_record_schema": 390,
+    "regenerated_raw_record_integer": 3159,
+    "regenerated_raw_record_text": 846,
+    "calibration_size": 17,
+    "calibration_rank": 17,
+    "calibration_interval_shape": 17,
+    "calibration_methods": 2,
+    "matched_reject": 68000,
+    "total_method_records": 1,
+    "summary.csv_identities": 1,
+    "summary.csv_members": 1,
+    "summary_schema": 181,
+    "summary_integer": 911,
+    "summary_text": 712,
+    "paired.csv_identities": 1,
+    "paired.csv_members": 1,
+    "paired_schema": 160,
+    "paired_integer": 800,
+    "paired_text": 480,
+    "metadata_unchanged": 1,
+    "raw_unchanged_during_audit": 15,
+    "source_unchanged_during_audit": 8
+  },
+  "numeric_residuals": {
+    "alpha": {
+      "count": 1,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "finite_mean_target": {
+      "count": 11,
+      "max_absolute": 1.4210854715202004e-14,
+      "max_scaled": 2.3272638223462847e-16
+    },
+    "correlation_of_means": {
+      "count": 11,
+      "max_absolute": 1.1102230246251565e-16,
+      "max_scaled": 1.1102230246251565e-16
+    },
+    "raw_shift": {
+      "count": 147000,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "analytic_pvalue": {
+      "count": 62000,
+      "max_absolute": 4.440892098500626e-16,
+      "max_scaled": 4.440892098500626e-16
+    },
+    "analytic_score": {
+      "count": 62000,
+      "max_absolute": 5.329070518200751e-15,
+      "max_scaled": 4.973449941915118e-16
+    },
+    "oracle_scale": {
+      "count": 17000,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "monte_carlo_rank_p": {
+      "count": 85000,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "monte_carlo_jitter_score": {
+      "count": 85000,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "regenerated_inner_maximum": {
+      "count": 32835,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "regenerated_raw_record_numeric": {
+      "count": 3405,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "projected_fraction": {
+      "count": 11,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "calibration_cutoff": {
+      "count": 17,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "calibration_unconditional_size": {
+      "count": 17,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "calibration_beta_interval": {
+      "count": 34,
+      "max_absolute": 0.0,
+      "max_scaled": 0.0
+    },
+    "summary_numeric": {
+      "count": 911,
+      "max_absolute": 1.1102230246251565e-16,
+      "max_scaled": 1.1102230246251565e-16
+    },
+    "paired_numeric": {
+      "count": 800,
+      "max_absolute": 1.0547118733938987e-15,
+      "max_scaled": 1.0547118733938987e-15
+    }
+  },
+  "scope": "All hashed raw records, decisions, analytic probabilities, calibration, summaries and paired statistics checked. Every saved inner snapshot checked and its selected replicate regenerated. Other inner draws were not rerun. This is an evidence-integrity audit, not a proof of statistical validity or originality. Derived presentation files are outside the frozen raw hash set."
+}

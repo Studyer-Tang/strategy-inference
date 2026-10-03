@@ -89,7 +89,24 @@ strategy-inference reproduce --study baseline --profile full
 python scripts/tail_diagnostics.py --profile full --output results/research/tail/reproduced
 ```
 
-以上命令从源码运行，需安装 `figures` 依赖；输出目录必须为空。全部比较使用已知候选相关结构，属于机制诊断。未知相关矩阵下的可实施联合方法尚未完成；实验模块未接入公共审计接口。
+以上命令从源码运行，需安装 `figures` 依赖；输出目录必须为空。该实验使用已知候选相关结构，属于机制诊断。未知参数的研究另见下一节；实验模块未接入公共审计接口。
+
+## 参数重放：拟合误差与计算分辨率
+
+研究分支进一步实现共同 Gaussian AR 模型内的完整参数重放，分别检验时间参数、相关参数和随机补尾因子的作用。[证明说明](docs/parametric-replay.md)给出固定 K、温和持久性下的条件保证，以及具体估计器和统计量的 local-unit 路径极限；有限 B 的独立尺寸匹配还可能遇到 p 值饱和带来的功效上限。
+
+新协议使用 13,000 份独立阶段数据、199 次内层模拟，保存 147,000 条方法记录。100 个相关候选下，完整拟合重放把误报从 **19.4% 降到 6.4%**；强持久性下仍为 **16.6%**，异质时间结构下为 **30.0%**。只有一个正确模型格点通过预定的六格点尺寸检查。该方法有条件证明，也有清楚的有限样本失败边界，目前不改变公共审计规则。
+
+[结果解读](docs/replay-results.md) · [三张图与原始记录](results/research/replay/full/report.html) · [冻结协议](experiments/parametric-replay-protocol.json) · [独立审计](results/research/replay/full/audit.json)
+
+```bash
+# 仅读取保存的证据，一次重建三张图及研究报告：
+python scripts/replay_report.py --output results/research/replay/full
+# 重新计算须使用新的空目录：
+python scripts/parametric_replay.py --profile full --output results/research/replay/reproduced
+python scripts/replay_report.py --output results/research/replay/reproduced
+python scripts/verify_parametric_replay.py --output results/research/replay/reproduced
+```
 
 ## 推断边界
 

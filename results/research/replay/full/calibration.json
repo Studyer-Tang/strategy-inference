@@ -1,0 +1,176 @@
+{
+  "4": {
+    "oracle_gaussian": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 1.0214921215981958,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "gaussian_known": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 1.2161753840638176,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "gaussian_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 1.2203130011497183,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_known": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9531692146310822,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_phi_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.956335532266732,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_rho_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9531692146310822,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9565523382884937,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_frozen": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9761301143689736,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "gls_known": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9832791033324804,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    }
+  },
+  "7": {
+    "oracle_gaussian": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9958685473416476,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "gaussian_known": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 3.422821424072083,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "gaussian_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 2.463914821372429,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_known": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9533545120235395,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_phi_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9989221549162893,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_rho_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9626717661791718,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_fitted": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9989221549162893,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    },
+    "replay_frozen": {
+      "n": 2000,
+      "rank": 1901,
+      "cutoff": 0.9989406602215809,
+      "unconditional_size": 0.04997501249375312,
+      "conditional_size_interval": [
+        0.04086426771825134,
+        0.05993731615842638
+      ]
+    }
+  }
+}

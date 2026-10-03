@@ -1,6 +1,6 @@
 # 强时间依赖下的策略筛选：联合检验何时可靠
 
-研究方案，2026-10-02。本文规定下一阶段的问题与论证顺序，不属于 v0.2.0 已完成的实验结论。2026-10-03 已冻结并完成第一项[机制诊断协议](../experiments/tail-diagnostic-protocol.json)，结果见[独立实验解读](tail-results.md)；未知参数下的新联合方法仍未完成。
+研究方案，2026-10-02，更新于 2026-10-03。本文规定论证顺序，不属于 v0.2.0 的发布结论。第一项[机制诊断协议](../experiments/tail-diagnostic-protocol.json)已经完成，结果见[独立实验解读](tail-results.md)。第二项[参数重放协议](../experiments/parametric-replay-protocol.json)在评价前冻结；[推导](parametric-replay.md)已经给出固定 K、温和持久性下的条件保证，以及具体参数估计器的 local-unit 非退化极限。未知参数的有限样本保证仍未完成。
 
 ## 研究问题
 
@@ -111,4 +111,16 @@ P\{M>q\sqrt{1+\varepsilon}\}-\eta
 
 候选修正只有在同一统计目标下经独立评价改善误报，且没有以极端保守换取表面校准时，才进入公共审计接口。新理论、参数拟合、bootstrap 条件有效性与真实数据适用范围分别陈述。
 
-近期另两篇邻近文献是 [Bi 等，2026，因子 AR-sieve](https://doi.org/10.1016/j.jspi.2026.106402) 和 [Ma–Zhang，2026，最大值 subsample bootstrap](https://doi.org/10.1016/j.jmva.2025.105579)。本轮未取得并核验其完整定理，保留为进一步查重项目，不凭摘要宣称它们没有覆盖上述问题。
+近期另两篇邻近文献是 [Bi 等，2026，因子 AR-sieve](https://doi.org/10.1016/j.jspi.2026.106402) 和 [Ma–Zhang，2026，最大值 subsample bootstrap](https://doi.org/10.1016/j.jmva.2025.105579)。Bi 等的作者稿本轮进一步阅读，见下一节；Ma–Zhang 的完整定理仍待核验。不凭摘要宣称它们没有覆盖上述问题。
+
+## 参数不确定性与近期邻近工作
+
+第二项实验分别改变生成器的时间参数、相关参数和统计量重拟合规则，并加入时间参数异质的共同因子压力场景。名义尺寸评价与功效校准使用不同随机流；相同实际尺寸的功效比较保留 order-statistic 阈值的 Beta 不确定性。该校准知道实验 DGP，只用于比较，不作为真实数据使用方法。
+
+进一步的方向是从参数估计点转向参数不确定性集合。它需要真实参数的覆盖率以及连续参数上可证的 p 值上界，不能把有限网格最大值当成保守 supremum。相关原理已经存在，项目的研究空间应放在持久性、随机尺度和筛选之间的具体耦合，以及可计算的保证与功效代价。
+
+- [Dufour，2006](https://jeanmariedufour.github.io/Dufour_1995_MCT_W.pdf)，§2、§4、§6：有限样本 Monte Carlo 秩检验、nuisance maximization 和条件成立时的点估计 bootstrap。新文档逐项核查本项目估计器，而非把这些原理重新命名。
+- [Glazer–Stark，JCGS 2026，35(1)，273–282](https://www.tandfonline.com/doi/full/10.1080/10618600.2025.2526416)：反演保守 MC 检验，并跨参数共用模拟样本。快速搜索依赖单调或弱单峰等结构；当前二维持久性与相关参数问题尚未证明这类结构。
+- [Rodriguez Rondon–Dufour，Bank of Canada 2026-23](https://www.bankofcanada.ca/wp-content/uploads/2026/07/swp2026-23.pdf)，Proposition 3.1：近期 MMC 方法应用及 nuisance 参数处理的参照。其检验目标是 Markov switching 的状态数量或同步性，与本项目原始候选收益均值不同，不能直接移用功效结论。
+
+本轮进一步阅读了 [Bi 等作者稿](https://arxiv.org/html/2112.00414)：固定因子数、均值投影与个体误差条件需要逐项对应；其线性均值投影结果不能直接校准这里逐列随机分母的最大值。尚未完成与期刊最终版的逐项比对。以上阅读用于确定重叠和证明义务，不构成“现有工作没有覆盖”的查重结论。
