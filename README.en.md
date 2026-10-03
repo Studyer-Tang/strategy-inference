@@ -107,4 +107,4 @@ python -m pytest
 ruff check .
 ```
 
-The [method notes](docs/methods.md) derive the statistics and connect them to the implementation. Source methods and software references are recorded in [references.bib](docs/references.bib). Code is licensed under BSD-3-Clause.
+The [method notes](docs/methods.md) derive the statistics and connect them to the implementation. The [next-stage research plan](docs/research-plan.md) (Chinese) connects recent papers to proposed questions and proof obligations; it does not report new validated methods. Source methods and software references are recorded in [references.bib](docs/references.bib). Code is licensed under BSD-3-Clause.

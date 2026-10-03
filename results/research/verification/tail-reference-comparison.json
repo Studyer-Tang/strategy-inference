@@ -1,0 +1,401 @@
+{
+  "status": "passed",
+  "cases": 8,
+  "scalar_checks": 48,
+  "max_absolute_error": 1.978150976356119e-11,
+  "max_relative_error": 2.189048942532165e-13,
+  "scope": "author lrv.np, arma11.M and arma11.lrv functions executed in R; fixed bandwidth; paper gamma1/gamma0 supplied for fitted-parameter ratios. Not a reproduction of the author's tseries::arma fitting wrapper or adaptive Table B.7.",
+  "file_hashes": {
+    "results/research/verification/tail-reference-input.csv": "f4a335a3489779bd9f898bc33e47d07d637cc0924736dfa81dd383c8f105c877",
+    "results/research/verification/tail-reference-r.csv": "c0722b9b9b87b0a62bc75833a211a1249c306ac6f21b5b1844ddf124abe4e73f",
+    "scripts/check_tail_reference.R": "c5edc6769c6a62c7c34ecbf099d512e18c9a18d18872f1f3dbbe8f3364558b1c",
+    "scripts/verify_tail_reference.py": "7c8f8cbc4c5642212cf16fcddcbc7c10e96a94d17a585ca494aefa5b4488e974",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6"
+  },
+  "checks": [
+    {
+      "case": 1,
+      "field": "fitted_phi",
+      "python": -0.5345809297161646,
+      "author_r": -0.534580929716165,
+      "absolute_error": 4.440892098500626e-16,
+      "relative_error": 8.307240029790273e-16
+    },
+    {
+      "case": 1,
+      "field": "unadjusted",
+      "python": 1.6731281531309037,
+      "author_r": 1.6731281531309,
+      "absolute_error": 3.774758283725532e-15,
+      "relative_error": 2.2561082823583377e-15
+    },
+    {
+      "case": 1,
+      "field": "known_lrv",
+      "python": 0.900915159378179,
+      "author_r": 0.900915159378179,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 1,
+      "field": "plugin_lrv",
+      "python": 0.5074386983552083,
+      "author_r": 0.507438698355208,
+      "absolute_error": 2.220446049250313e-16,
+      "relative_error": 4.3757917093189387e-16
+    },
+    {
+      "case": 1,
+      "field": "known_finite",
+      "python": 0.919477971728004,
+      "author_r": 0.919477971728004,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 1,
+      "field": "plugin_finite",
+      "python": 0.5311766418446989,
+      "author_r": 0.531176641844699,
+      "absolute_error": 1.1102230246251565e-16,
+      "relative_error": 2.0901201919751475e-16
+    },
+    {
+      "case": 2,
+      "field": "fitted_phi",
+      "python": -0.518662964754531,
+      "author_r": -0.518662964754531,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 2,
+      "field": "unadjusted",
+      "python": 0.48904334988804,
+      "author_r": 0.48904334988804,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 2,
+      "field": "known_lrv",
+      "python": 0.44065502192991596,
+      "author_r": 0.440655021929916,
+      "absolute_error": 5.551115123125783e-17,
+      "relative_error": 1.2597417133279965e-16
+    },
+    {
+      "case": 2,
+      "field": "plugin_lrv",
+      "python": 0.39698049470672264,
+      "author_r": 0.396980494706723,
+      "absolute_error": 3.3306690738754696e-16,
+      "relative_error": 8.390006859999673e-16
+    },
+    {
+      "case": 2,
+      "field": "known_finite",
+      "python": 0.44973445232682346,
+      "author_r": 0.449734452326824,
+      "absolute_error": 5.551115123125783e-16,
+      "relative_error": 1.2343095118476186e-15
+    },
+    {
+      "case": 2,
+      "field": "plugin_finite",
+      "python": 0.41458499666526744,
+      "author_r": 0.414584996665267,
+      "absolute_error": 4.440892098500626e-16,
+      "relative_error": 1.0711656558295985e-15
+    },
+    {
+      "case": 3,
+      "field": "fitted_phi",
+      "python": 0.05682450254559146,
+      "author_r": 0.0568245025455915,
+      "absolute_error": 4.163336342344337e-17,
+      "relative_error": 7.326656910025749e-16
+    },
+    {
+      "case": 3,
+      "field": "unadjusted",
+      "python": 1.366082021269394,
+      "author_r": 1.36608202126939,
+      "absolute_error": 3.9968028886505635e-15,
+      "relative_error": 2.9257415194855256e-15
+    },
+    {
+      "case": 3,
+      "field": "known_lrv",
+      "python": 1.366082021269394,
+      "author_r": 1.36608202126939,
+      "absolute_error": 3.9968028886505635e-15,
+      "relative_error": 2.9257415194855256e-15
+    },
+    {
+      "case": 3,
+      "field": "plugin_lrv",
+      "python": 1.392544347817025,
+      "author_r": 1.39254434781702,
+      "absolute_error": 4.884981308350689e-15,
+      "relative_error": 3.5079538515297423e-15
+    },
+    {
+      "case": 3,
+      "field": "known_finite",
+      "python": 1.366082021269394,
+      "author_r": 1.36608202126939,
+      "absolute_error": 3.9968028886505635e-15,
+      "relative_error": 2.9257415194855256e-15
+    },
+    {
+      "case": 3,
+      "field": "plugin_finite",
+      "python": 1.387582661422295,
+      "author_r": 1.3875826614223,
+      "absolute_error": 4.884981308350689e-15,
+      "relative_error": 3.520497512806542e-15
+    },
+    {
+      "case": 4,
+      "field": "fitted_phi",
+      "python": 0.19387451387170285,
+      "author_r": 0.193874513871703,
+      "absolute_error": 1.6653345369377348e-16,
+      "relative_error": 8.589754804181092e-16
+    },
+    {
+      "case": 4,
+      "field": "unadjusted",
+      "python": 0.41198671078212684,
+      "author_r": 0.411986710782127,
+      "absolute_error": 1.6653345369377348e-16,
+      "relative_error": 4.0422045016360295e-16
+    },
+    {
+      "case": 4,
+      "field": "known_lrv",
+      "python": 0.5868087835889453,
+      "author_r": 0.586808783588945,
+      "absolute_error": 3.3306690738754696e-16,
+      "relative_error": 5.675901873017255e-16
+    },
+    {
+      "case": 4,
+      "field": "plugin_lrv",
+      "python": 0.4416407757630704,
+      "author_r": 0.44164077576307,
+      "absolute_error": 4.440892098500626e-16,
+      "relative_error": 1.0055439493392843e-15
+    },
+    {
+      "case": 4,
+      "field": "known_finite",
+      "python": 0.5524254591619832,
+      "author_r": 0.552425459161983,
+      "absolute_error": 1.1102230246251565e-16,
+      "relative_error": 2.0097245813206e-16
+    },
+    {
+      "case": 4,
+      "field": "plugin_finite",
+      "python": 0.4360803432999126,
+      "author_r": 0.436080343299912,
+      "absolute_error": 5.551115123125783e-16,
+      "relative_error": 1.2729569696077843e-15
+    },
+    {
+      "case": 5,
+      "field": "fitted_phi",
+      "python": 0.92512917962396,
+      "author_r": 0.92512917962396,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 5,
+      "field": "unadjusted",
+      "python": 4.082999912391055,
+      "author_r": 4.08299991239105,
+      "absolute_error": 5.329070518200751e-15,
+      "relative_error": 1.305185067976156e-15
+    },
+    {
+      "case": 5,
+      "field": "known_lrv",
+      "python": 29.244773494128633,
+      "author_r": 29.2447734941283,
+      "absolute_error": 3.339550858072471e-13,
+      "relative_error": 1.1419308338096646e-14
+    },
+    {
+      "case": 5,
+      "field": "plugin_lrv",
+      "python": 20.232034839779473,
+      "author_r": 20.2320348397795,
+      "absolute_error": 2.842170943040401e-14,
+      "relative_error": 1.4047874895174786e-15
+    },
+    {
+      "case": 5,
+      "field": "known_finite",
+      "python": 26.39538262566693,
+      "author_r": 26.3953826256667,
+      "absolute_error": 2.3092638912203256e-13,
+      "relative_error": 8.748741868870703e-15
+    },
+    {
+      "case": 5,
+      "field": "plugin_finite",
+      "python": 18.93345277795855,
+      "author_r": 18.9334527779586,
+      "absolute_error": 4.973799150320701e-14,
+      "relative_error": 2.6269900206004447e-15
+    },
+    {
+      "case": 6,
+      "field": "fitted_phi",
+      "python": 0.977927983896043,
+      "author_r": 0.977927983896043,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 6,
+      "field": "unadjusted",
+      "python": 2.686381648724776,
+      "author_r": 2.68638164872478,
+      "absolute_error": 3.9968028886505635e-15,
+      "relative_error": 1.4878015901232194e-15
+    },
+    {
+      "case": 6,
+      "field": "known_lrv",
+      "python": 90.84723968224438,
+      "author_r": 90.8472396822246,
+      "absolute_error": 1.978150976356119e-11,
+      "relative_error": 2.1774475298044406e-13
+    },
+    {
+      "case": 6,
+      "field": "plugin_lrv",
+      "python": 41.88048547165911,
+      "author_r": 41.8804854716587,
+      "absolute_error": 4.050093593832571e-13,
+      "relative_error": 9.670598485715607e-15
+    },
+    {
+      "case": 6,
+      "field": "known_finite",
+      "python": 51.70713893480962,
+      "author_r": 51.7071389347983,
+      "absolute_error": 1.1318945780658396e-11,
+      "relative_error": 2.189048942532165e-13
+    },
+    {
+      "case": 6,
+      "field": "plugin_finite",
+      "python": 32.60717299750207,
+      "author_r": 32.6071729975019,
+      "absolute_error": 1.7053025658242404e-13,
+      "relative_error": 5.229838741171727e-15
+    },
+    {
+      "case": 7,
+      "field": "fitted_phi",
+      "python": 0.9754224844903515,
+      "author_r": 0.975422484490351,
+      "absolute_error": 5.551115123125783e-16,
+      "relative_error": 5.690985405186952e-16
+    },
+    {
+      "case": 7,
+      "field": "unadjusted",
+      "python": 7.27127758567386,
+      "author_r": 7.27127758567386,
+      "absolute_error": 0.0,
+      "relative_error": 0.0
+    },
+    {
+      "case": 7,
+      "field": "known_lrv",
+      "python": 95.32808669352963,
+      "author_r": 95.3280866935334,
+      "absolute_error": 3.765876499528531e-12,
+      "relative_error": 3.9504375154777864e-14
+    },
+    {
+      "case": 7,
+      "field": "plugin_lrv",
+      "python": 41.508786947111375,
+      "author_r": 41.5087869471111,
+      "absolute_error": 2.7711166694643907e-13,
+      "relative_error": 6.6759760360986726e-15
+    },
+    {
+      "case": 7,
+      "field": "known_finite",
+      "python": 54.25748366480404,
+      "author_r": 54.2574836648061,
+      "absolute_error": 2.0605739337042905e-12,
+      "relative_error": 3.7977690716992716e-14
+    },
+    {
+      "case": 7,
+      "field": "plugin_finite",
+      "python": 33.22688899886916,
+      "author_r": 33.2268889988691,
+      "absolute_error": 5.684341886080802e-14,
+      "relative_error": 1.7107656050117337e-15
+    },
+    {
+      "case": 8,
+      "field": "fitted_phi",
+      "python": 0.9423394645530435,
+      "author_r": 0.942339464553044,
+      "absolute_error": 4.440892098500626e-16,
+      "relative_error": 4.712624553623001e-16
+    },
+    {
+      "case": 8,
+      "field": "unadjusted",
+      "python": 5.916431746014043,
+      "author_r": 5.91643174601404,
+      "absolute_error": 2.6645352591003757e-15,
+      "relative_error": 4.503618690261237e-16
+    },
+    {
+      "case": 8,
+      "field": "known_lrv",
+      "python": 22.541414111431976,
+      "author_r": 22.5414141114323,
+      "absolute_error": 3.232969447708456e-13,
+      "relative_error": 1.4342354174083494e-14
+    },
+    {
+      "case": 8,
+      "field": "plugin_lrv",
+      "python": 7.963555713923177,
+      "author_r": 7.96355571392321,
+      "absolute_error": 3.2862601528904634e-14,
+      "relative_error": 4.126624175109214e-15
+    },
+    {
+      "case": 8,
+      "field": "known_finite",
+      "python": 12.829801272153484,
+      "author_r": 12.8298012721537,
+      "absolute_error": 2.1671553440683056e-13,
+      "relative_error": 1.6891573751590243e-14
+    },
+    {
+      "case": 8,
+      "field": "plugin_finite",
+      "python": 7.293505142132654,
+      "author_r": 7.29350514213268,
+      "absolute_error": 2.6645352591003757e-14,
+      "relative_error": 3.653298663914075e-15
+    }
+  ]
+}

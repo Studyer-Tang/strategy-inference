@@ -98,6 +98,7 @@ python scripts/build_site.py --check
 - [方法说明](docs/methods.md)：统计目标、公式、假设、实现和数值范围。
 - [结果解读](docs/results.md)：本轮模拟的发现及未解决的问题。
 - [项目讨论](docs/interview-notes.md)：围绕方法与研究设计的讨论。
+- [下一阶段研究方案](docs/research-plan.md)：2026 年相关论文、拟研究的问题与待验证的边界。
 - [文献](docs/references.bib)：统计方法及软件来源。本项目是实现与模拟研究，不声明原创定理。
 
 BSD-3-Clause 许可证。

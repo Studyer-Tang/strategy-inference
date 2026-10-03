@@ -1,0 +1,25 @@
+{
+  "author_zip_sha256": "187eb25f17321ccf05fd8eb1f53cc72a25ac43f5e0bfa56ed7a816e0f0180301",
+  "source_sha256": "573d98ebc1d149b5b18bfdce1c4bd760024ad40965d0f6c0375b2f850c953c94",
+  "source_url": "https://drive.google.com/uc?export=download&id=15DwPIjZtC3528k4LgYTudGt7GhS2gwDY",
+  "webr_version": "0.6.0",
+  "webr_tarball_sha256": "5821c8bd87484add59064fa13fa62a65f686032f3f64dacf4b0aa34c4325e959",
+  "status": "executed",
+  "r_runtime": "R version 4.6.0 (2026-04-24)",
+  "r_execution": "WebR 0.6.0 (WebAssembly R), isolated Node.js process",
+  "author_package_version": "0.0.0.3",
+  "author_package_license": "GPL >= 2",
+  "functions_executed": [
+    "lrv.np",
+    "arma11.M",
+    "arma11.lrv"
+  ],
+  "not_executed": [
+    "lrv0",
+    "lrv",
+    "tseries::arma",
+    "adaptive bandwidth selection"
+  ],
+  "author_source_vendored": false,
+  "verification_date": "2026-10-03"
+}
