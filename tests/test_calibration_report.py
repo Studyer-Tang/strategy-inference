@@ -375,7 +375,7 @@ def _stub_reproduction(monkeypatch):
         ]
 
     monkeypatch.setattr(experiments, "run_experiments", baseline)
-    monkeypatch.setattr(cli, "write_experiment_report", baseline_report)
+    monkeypatch.setattr("strategy_inference.report.write_experiment_report", baseline_report)
     monkeypatch.setattr(calibration, "run_calibration", calibrated)
     monkeypatch.setattr(plotting, "plot_calibration", saved_figures)
     return calls

@@ -1,33 +1,30 @@
-"""Inference on mean returns under time dependence and candidate selection."""
+"""Mean-return inference with explicit time-dependence and selection models."""
 
-from .audit import AuditResult, audit_returns
-from .bootstrap import (
-    default_block_length,
-    stationary_bootstrap_means,
-    stationary_bootstrap_statistics,
-    stationary_indices,
-    stationary_mean_variance,
-)
-from .inference import MeanInference, default_lags, infer_mean, long_run_variance
-from .uncertainty import UncertaintyResult, uncertainty_test
-from .wilks import WilksResult, WilksScale, wilks_uncertainty_test
+from importlib import import_module
 
-__version__ = "0.4.0"
-__all__ = [
-    "AuditResult",
-    "MeanInference",
-    "UncertaintyResult",
-    "WilksResult",
-    "WilksScale",
-    "audit_returns",
-    "default_block_length",
-    "default_lags",
-    "infer_mean",
-    "long_run_variance",
-    "stationary_bootstrap_means",
-    "stationary_bootstrap_statistics",
-    "stationary_indices",
-    "stationary_mean_variance",
-    "uncertainty_test",
-    "wilks_uncertainty_test",
-]
+__version__ = "0.5.0"
+_EXPORTS = {
+    "AuditResult": "audit", "audit_returns": "audit",
+    "default_block_length": "bootstrap", "stationary_bootstrap_means": "bootstrap",
+    "stationary_bootstrap_statistics": "bootstrap", "stationary_indices": "bootstrap",
+    "stationary_mean_variance": "bootstrap",
+    "MeanInference": "inference", "default_lags": "inference", "infer_mean": "inference",
+    "long_run_variance": "inference", "ReturnTable": "io", "read_returns_csv": "io",
+    "TestResult": "testing", "test_returns": "testing",
+    "UncertaintyResult": "uncertainty", "uncertainty_test": "uncertainty",
+    "WilksResult": "wilks", "WilksScale": "wilks", "wilks_uncertainty_test": "wilks",
+}
+__all__ = list(_EXPORTS)
+
+
+def __getattr__(name):
+    """Load numerical dependencies only when a numerical interface is requested."""
+    if name not in _EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(f".{_EXPORTS[name]}", __name__), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))

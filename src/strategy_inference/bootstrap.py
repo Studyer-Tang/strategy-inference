@@ -6,6 +6,10 @@ from numpy.typing import ArrayLike, NDArray
 from ._validation import as_returns, positive_integer
 from .inference import default_lags
 
+# Bound transient draw/index arrays even when callers request very large chunks.
+# The input T x K matrix and required B x K output are separate from this budget.
+_MAX_BOOTSTRAP_WORK_BYTES = 16 * 1024 * 1024
+
 
 def default_block_length(n_obs: int) -> int:
     """Prespecified heuristic expected block length, ceil(2 T**(1/3))."""
@@ -38,10 +42,21 @@ def _indices(
     restarts = draws[:, :, 0] < 1 / block_length
     restarts[:, 0] = True
     starts = (draws[:, :, 1] * n_obs).astype(np.int64)
+    del draws
     time = np.arange(n_obs, dtype=np.int64)[None, :]
-    last_restart = np.maximum.accumulate(np.where(restarts, time, 0), axis=1)
-    block_start = np.take_along_axis(starts, last_restart, axis=1)
-    return (block_start + time - last_restart) % n_obs
+    last_restart = np.where(restarts, time, 0)
+    del restarts
+    np.maximum.accumulate(last_restart, axis=1, out=last_restart)
+    # Store start-time offsets so the final arithmetic needs no extra B x T arrays.
+    starts -= time
+    indices = starts[np.arange(n_resamples)[:, None], last_restart]
+    indices += time
+    # Power-of-two circular lengths permit exactly the same wrap without division.
+    if n_obs & (n_obs - 1) == 0:
+        np.bitwise_and(indices, n_obs - 1, out=indices)
+    else:
+        np.remainder(indices, n_obs, out=indices)
+    return indices
 
 
 def stationary_indices(
@@ -76,6 +91,7 @@ def stationary_bootstrap_means(
     n_obs, n_strategies = data.shape
     n_resamples = positive_integer(n_resamples, "n_resamples")
     batch_size = positive_integer(batch_size, "batch_size")
+    batch_size = min(batch_size, max(1, _MAX_BOOTSTRAP_WORK_BYTES // (40 * n_obs)))
     block_length = default_block_length(n_obs) if block_length is None else block_length
     block_length = _block_length(block_length, n_obs)
     rng = np.random.default_rng(seed)
@@ -85,9 +101,11 @@ def stationary_bootstrap_means(
         last = min(first + batch_size, n_resamples)
         indices = _indices(n_obs, last - first, block_length, rng)
         offsets = n_obs * np.arange(last - first, dtype=np.int64)[:, None]
-        counts = np.bincount((indices + offsets).ravel(), minlength=(last - first) * n_obs)
+        indices += offsets
+        counts = np.bincount(indices.ravel(), minlength=(last - first) * n_obs)
         counts = counts.reshape(last - first, n_obs)
         output[first:last] = counts @ values / n_obs
+        del indices, counts
     return output
 
 
@@ -114,6 +132,15 @@ def stationary_bootstrap_statistics(
     n_resamples = positive_integer(n_resamples, "n_resamples")
     batch_size = positive_integer(batch_size, "batch_size")
     column_batch_size = positive_integer(column_batch_size, "column_batch_size")
+    # The gather and its time-contiguous copy can briefly coexist. Reserve index
+    # storage too; a single draw/column is the irreducible minimum for large T.
+    column_batch_size = min(
+        column_batch_size, n_strategies, max(1, _MAX_BOOTSTRAP_WORK_BYTES // (48 * n_obs))
+    )
+    batch_size = min(
+        batch_size,
+        max(1, _MAX_BOOTSTRAP_WORK_BYTES // (n_obs * (16 * column_batch_size + 32))),
+    )
     lags = default_lags(n_obs) if lags is None else positive_integer(lags, "lags", 0)
     if lags > n_obs - 2:
         raise ValueError("lags must be <= T - 2.")
@@ -127,14 +154,18 @@ def stationary_bootstrap_statistics(
         indices = _indices(n_obs, last - first, block_length, rng)
         for column in range(0, n_strategies, column_batch_size):
             end = min(column + column_batch_size, n_strategies)
-            sample = values[:, column:end][indices]
-            if np.any(sample.max(axis=1) == sample.min(axis=1)):
+            # Gather adjacent columns together, then make time the contiguous
+            # axis. Repeated HAC/max/min reductions no longer stride through K.
+            sample = np.ascontiguousarray(values[:, column:end][indices].transpose(0, 2, 1))
+            if np.any(sample.max(axis=2) == sample.min(axis=2)):
                 raise ValueError("A resampled HAC variance is undefined for a constant column.")
-            mean = sample.mean(axis=1)
-            sample -= mean[:, None, :]
-            variance = np.einsum("btk,btk->bk", sample, sample) / n_obs
+            mean = sample.mean(axis=2)
+            sample -= mean[:, :, None]
+            variance = np.einsum("bkt,bkt->bk", sample, sample) / n_obs
             for lag in range(1, lags + 1):
-                covariance = np.einsum("btk,btk->bk", sample[:, lag:], sample[:, :-lag]) / n_obs
+                covariance = (
+                    np.einsum("bkt,bkt->bk", sample[:, :, lag:], sample[:, :, :-lag]) / n_obs
+                )
                 variance += 2 * (1 - lag / (lags + 1)) * covariance
             if not np.isfinite(variance).all() or np.any(variance <= 0):
                 raise ValueError("A resampled HAC variance is not positive and finite.")
@@ -147,6 +178,8 @@ def stationary_bootstrap_statistics(
             if not np.isfinite(statistics).all():
                 raise ValueError("A resampled HAC statistic is outside the finite float range.")
             output[first:last, column:end] = statistics
+            del sample
+        del indices
     return output
 
 

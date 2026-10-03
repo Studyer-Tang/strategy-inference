@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from scipy.stats import norm, t
 
 from ._validation import as_returns, positive_integer, probability
 
@@ -29,18 +28,16 @@ def default_lags(n_obs: int) -> int:
     return min(int(np.floor(4 * (n_obs / 100) ** (2 / 9))), n_obs - 2)
 
 
-def long_run_variance(returns: ArrayLike, lags: int | None = None) -> NDArray[np.float64]:
-    """Bartlett HAC: gamma[0] + 2 sum_h (1 - h/(lags+1)) gamma[h].
-
-    Every sample autocovariance has divisor T. No degrees-of-freedom correction
-    is used. This estimates the asymptotic variance of sqrt(T) times the mean.
-    """
-    data = as_returns(returns)
-    n_obs = len(data)
+def _lag_count(n_obs: int, lags: int | None) -> int:
     lags = default_lags(n_obs) if lags is None else positive_integer(lags, "lags", 0)
     if lags > n_obs - 2:
         raise ValueError("lags must be <= T - 2.")
-    centered = data - data.mean(axis=0)
+    return lags
+
+
+def _bartlett_variance(centered: NDArray[np.float64], lags: int) -> NDArray[np.float64]:
+    """HAC kernel for already validated, centered T x K data and lag count."""
+    n_obs = len(centered)
     variance = np.einsum("ij,ij->j", centered, centered) / n_obs
     for lag in range(1, lags + 1):
         covariance = np.einsum("ij,ij->j", centered[lag:], centered[:-lag]) / n_obs
@@ -48,6 +45,17 @@ def long_run_variance(returns: ArrayLike, lags: int | None = None) -> NDArray[np
     if not np.isfinite(variance).all() or np.any(variance <= 0):
         raise ValueError("The HAC long-run variance is not positive and finite.")
     return variance
+
+
+def long_run_variance(returns: ArrayLike, lags: int | None = None) -> NDArray[np.float64]:
+    """Bartlett HAC: gamma[0] + 2 sum_h (1 - h/(lags+1)) gamma[h].
+
+    Every sample autocovariance has divisor T. No degrees-of-freedom correction
+    is used. This estimates the asymptotic variance of sqrt(T) times the mean.
+    """
+    data = as_returns(returns)
+    used_lags = _lag_count(len(data), lags)
+    return _bartlett_variance(data - data.mean(axis=0), used_lags)
 
 
 def infer_mean(
@@ -65,21 +73,25 @@ def infer_mean(
     data = as_returns(returns)
     confidence = probability(confidence, "confidence")
     n_obs, n_strategies = data.shape
+    mean = data.mean(axis=0)
     if method == "iid":
         if lags is not None:
             raise ValueError("lags is only used by method='hac'.")
+        from scipy.stats import t
+
         standard_error = data.std(axis=0, ddof=1) / np.sqrt(n_obs)
         distribution = t(n_obs - 1)
         used_lags = 0
     elif method == "hac":
-        used_lags = default_lags(n_obs) if lags is None else lags
-        standard_error = np.sqrt(long_run_variance(data, used_lags) / n_obs)
+        from scipy.stats import norm
+
+        used_lags = _lag_count(n_obs, lags)
+        standard_error = np.sqrt(_bartlett_variance(data - mean, used_lags) / n_obs)
         distribution = norm
     else:
         raise ValueError("method must be 'iid' or 'hac'.")
     if not np.isfinite(standard_error).all() or np.any(standard_error <= 0):
         raise ValueError("The standard error is outside the positive finite float range.")
-    mean = data.mean(axis=0)
     statistic = mean / standard_error
     if not np.isfinite(statistic).all():
         raise ValueError("The mean statistic is outside the finite float range.")

@@ -1,0 +1,115 @@
+{
+  "equivalence": [
+    {
+      "T": 512,
+      "K": 20,
+      "B": 1999,
+      "mode": "fixed",
+      "maximum_differences": {
+        "mean": 0.0,
+        "standard_error": 0.0,
+        "statistic": 0.0,
+        "iid_pvalue": 0.0,
+        "hac_pvalue": 0.0,
+        "marginal_bootstrap_pvalue": 0.0,
+        "adjusted_pvalue": 0.0,
+        "global_pvalue": 0.0,
+        "simultaneous_ci_low": 0.0,
+        "simultaneous_ci_high": 0.0,
+        "one_sided_lower": 0.0,
+        "max_cutoff": 0.0,
+        "max_abs_cutoff": 0.0,
+        "block_length": 0.0,
+        "alpha": 0.0,
+        "bootstrap_statistics": 0.0
+      },
+      "pvalues_exact": true
+    },
+    {
+      "T": 512,
+      "K": 20,
+      "B": 1999,
+      "mode": "resampled",
+      "maximum_differences": {
+        "mean": 0.0,
+        "standard_error": 0.0,
+        "statistic": 0.0,
+        "iid_pvalue": 0.0,
+        "hac_pvalue": 0.0,
+        "marginal_bootstrap_pvalue": 0.0,
+        "adjusted_pvalue": 0.0,
+        "global_pvalue": 0.0,
+        "simultaneous_ci_low": 1.1102230246251565e-16,
+        "simultaneous_ci_high": 5.551115123125783e-17,
+        "one_sided_lower": 1.1102230246251565e-16,
+        "max_cutoff": 1.3322676295501878e-15,
+        "max_abs_cutoff": 4.440892098500626e-16,
+        "block_length": 0.0,
+        "alpha": 0.0,
+        "bootstrap_statistics": 1.199040866595169e-14
+      },
+      "pvalues_exact": true
+    },
+    {
+      "T": 1024,
+      "K": 100,
+      "B": 499,
+      "mode": "fixed",
+      "maximum_differences": {
+        "mean": 0.0,
+        "standard_error": 0.0,
+        "statistic": 0.0,
+        "iid_pvalue": 0.0,
+        "hac_pvalue": 0.0,
+        "marginal_bootstrap_pvalue": 0.0,
+        "adjusted_pvalue": 0.0,
+        "global_pvalue": 0.0,
+        "simultaneous_ci_low": 0.0,
+        "simultaneous_ci_high": 0.0,
+        "one_sided_lower": 0.0,
+        "max_cutoff": 0.0,
+        "max_abs_cutoff": 0.0,
+        "block_length": 0.0,
+        "alpha": 0.0,
+        "bootstrap_statistics": 0.0
+      },
+      "pvalues_exact": true
+    },
+    {
+      "T": 1024,
+      "K": 100,
+      "B": 499,
+      "mode": "resampled",
+      "maximum_differences": {
+        "mean": 0.0,
+        "standard_error": 0.0,
+        "statistic": 0.0,
+        "iid_pvalue": 0.0,
+        "hac_pvalue": 0.0,
+        "marginal_bootstrap_pvalue": 0.0,
+        "adjusted_pvalue": 0.0,
+        "global_pvalue": 0.0,
+        "simultaneous_ci_low": 0.0,
+        "simultaneous_ci_high": 0.0,
+        "one_sided_lower": 1.1102230246251565e-16,
+        "max_cutoff": 1.3322676295501878e-15,
+        "max_abs_cutoff": 0.0,
+        "block_length": 0.0,
+        "alpha": 0.0,
+        "bootstrap_statistics": 1.4654943925052066e-14
+      },
+      "pvalues_exact": true
+    }
+  ],
+  "oversized_chunk_memory": {
+    "T": 1024,
+    "K": 100,
+    "B": 1999,
+    "requested_draw_batch": 10000,
+    "requested_column_batch": 10000,
+    "peak_bytes": 18926792,
+    "seconds_with_tracing": 0.6616290000383742,
+    "output_bytes": 1599200,
+    "full_BTK_bytes": 1637580800
+  }
+}

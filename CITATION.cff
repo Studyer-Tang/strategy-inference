@@ -5,7 +5,7 @@ title: "Strategy inference: mean-return tests under time dependence and strategy
 authors:
   - name: "Studyer-Tang"
     website: "https://github.com/Studyer-Tang"
-version: 0.4.0
+version: 0.5.0
 date-released: 2026-10-03
 url: "https://github.com/Studyer-Tang/strategy-inference"
 license: BSD-3-Clause

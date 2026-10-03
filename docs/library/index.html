@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>strategy-inference — Python 均值推断</title>
+<meta name="description" content="时间依赖与候选筛选的 Python 均值推断库：安装、API 与可核验的本机性能数据。">
+<style>
+:root { color-scheme: light; background:#fbf8f1; color:#29251f; }
+* { box-sizing:border-box; }
+body { margin:0 auto; max-width:58rem; padding:2.5rem clamp(1rem,4vw,3rem) 3rem;
+font:17px/1.8 Georgia,"Noto Serif CJK SC","Songti SC",serif; }
+main,section { min-width:0; }
+h1,h2,h3 { line-height:1.3; font-weight:normal; }
+h1 { font-size:clamp(2rem,6vw,3rem); margin:.6rem 0 1rem; }
+h2 { font-size:1.55rem; margin:2.6rem 0 1rem; }
+h3 { font-size:1.13rem; margin:1.7rem 0 .7rem; }
+p { margin:.7rem 0 1rem; }
+nav { display:flex; flex-wrap:wrap; gap:.4rem 1.1rem; padding:0 0 1rem;
+border-bottom:1px solid #d8cebd; }
+a { color:#775126; text-underline-offset:.2em; overflow-wrap:anywhere; }
+code { font: .87em/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; }
+pre { margin:1rem 0; padding:1rem 1.1rem; background:#f0eade;
+border-left:2px solid #c8b89e; max-width:100%; overflow-x:auto; }
+pre code { display:block; white-space:pre; }
+.table-scroll { max-width:100%; overflow-x:auto; }
+table { border-collapse:collapse; min-width:850px; width:100%; font-size:.85rem; }
+th,td { padding:.55rem .65rem; border-bottom:1px solid #d8cebd; text-align:left; white-space:nowrap; }
+th { font-weight:normal; color:#665c4e; }
+.small,footer { font-size:.88rem; color:#665c4e; }
+footer { border-top:1px solid #d8cebd; margin-top:2.8rem; padding-top:1rem; }
+</style>
+</head>
+<body>
+<nav aria-label="文档导航">
+<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/README.md">源码与首页</a>
+<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/api.md">API</a>
+<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/performance.md">性能说明</a>
+<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/methods.md">方法</a>
+<a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/research.md">研究证据</a>
+</nav>
+<main>
+<header>
+<p class="small">Python library · v0.5.0</p>
+<h1>strategy-inference</h1>
+<p>时间依赖与候选策略筛选之后的均值推断。输入同期收益矩阵，返回全族检验、列级决定和方法诊断。</p>
+</header>
+<section aria-labelledby="install">
+<h2 id="install">安装与首次调用</h2>
+<p>Python 3.10+，核心依赖 NumPy 与 SciPy。直接安装 GitHub v0.5.0 release 的 wheel，无需 clone；尚未发布到 PyPI。</p>
+<pre><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.5.0/strategy_inference-0.5.0-py3-none-any.whl</code></pre>
+<p>也可从对应标签的源码安装：</p>
+<pre><code>python -m pip install &#x27;git+https://github.com/Studyer-Tang/strategy-inference.git@v0.5.0&#x27;</code></pre>
+<p>下面的模拟数据可直接运行，候选集在生成数据前确定。收益为单期小数，结果不自动年化。</p>
+<pre><code>import numpy as np
+from strategy_inference import test_returns
+
+rng = np.random.default_rng(17)
+returns = rng.normal(0.0, 0.01, size=(512, 3))
+returns[:, 0] += 0.0005
+
+result = test_returns(
+    returns, method=&quot;bootstrap&quot;,
+    names=[&quot;strategy_a&quot;, &quot;strategy_b&quot;, &quot;strategy_c&quot;],
+    n_resamples=1999, seed=17, search_complete=True,
+)
+print(result.global_pvalue)
+print(result.adjusted_pvalue)
+print(result.decisions)</code></pre>
+</section>
+<section aria-labelledby="input">
+<h2 id="input">NumPy、DataFrame 与 CSV</h2>
+<p>形状为 <code>(T, K)</code>，行是时间、列是候选，一维输入作为单列。要求 T ≥ 8、有限数值和正样本方差。观测须等间隔、同期对齐；基准与成本由使用者扣除。缺失值报错，不自动删行。</p>
+<p>DataFrame 自动保留字符串化列名，需安装可选 pandas。输入的行顺序就是时间顺序，不根据索引自动重排。</p>
+<pre><code>import pandas as pd  # Optional: python -m pip install pandas
+frame = pd.DataFrame(returns, columns=[&quot;carry&quot;, &quot;value&quot;, &quot;trend&quot;])
+result = test_returns(frame, n_resamples=1999, seed=17)</code></pre>
+<p>CSV 可含严格递增的 ISO <code>date</code> 列，其他列为数值。指定基准列会从候选收益中减去并移除；日期检查不推断交易频率。</p>
+<pre><code>from strategy_inference import read_returns_csv
+table = read_returns_csv(&quot;returns.csv&quot;, benchmark=&quot;benchmark&quot;)
+result = test_returns(table, n_resamples=1999, seed=17)</code></pre>
+</section>
+<section aria-labelledby="methods">
+<h2 id="methods">选择方法</h2>
+<h3><code>method="bootstrap"</code></h3>
+<p>共享时间索引的 stationary bootstrap，默认每轮重新估计 HAC，返回全族和列级调整 p 值。近似需要平稳、弱时间依赖、适当矩及一致尺度估计；渐近讨论固定候选数。短样本或高持久性可能失准。</p>
+<h3><code>method="gaussian_ar"</code></h3>
+<p>在预先固定的候选集、共同平稳 Gaussian AR(1)、0 ≤ φ &lt; 1、正边际方差下，用参数集合与 GLS 认证提供保守强 FWER 决定。返回参数区间和固定水平决定，不提供连续 p 值。参数信息列与块尺度须事先确定；认证预算不足或信息退化时保守不拒绝，功效可能较低。</p>
+<p>调整覆盖输入候选集。隐藏搜索、自适应生成、反复监测后停止及未来市场变化，不能由一张收益矩阵自动解决。普通样本均值只是结果摘要，Gaussian AR 决策采用 GLS。</p>
+</section>
+<section aria-labelledby="export">
+<h2 id="export">结果导出</h2>
+<pre><code>import json
+print(json.dumps(result.to_dict(), ensure_ascii=False))
+rows = result.records()   # Candidate rows; no optional dependency.
+frame = result.to_frame() # Candidate table; requires pandas.</code></pre>
+<p>JSON 保留方法、水平、全族结果、参数集合和诊断；候选表只含名称、均值、拒绝决定及存在时的调整 p 值。完整底层结果在 <code>result.details</code>，参数和字段含义见 <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/api.md">API 说明</a>。</p>
+<pre><code>strategy-inference test returns.csv --method bootstrap --seed 17 --output result.json
+strategy-inference test returns.csv --method gaussian_ar --output gaussian-ar.json</code></pre>
+</section>
+<section aria-labelledby="performance">
+<h2 id="performance">保存的本机性能</h2>
+<p>v0.4.0 与 v0.5.0 的六格串行对照，暖核心时间为 7 次调用的中位数。时间单位毫秒。统一入口时间单独列出，不能与底层核心时间混用。</p>
+<p class="small">窄屏可横向滚动表格查看完整数据；长代码也可在块内横向滚动。</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="可横向滚动的性能表">
+<table>
+<thead><tr><th>任务</th><th>T × K</th><th>B</th><th>暖核心 0.4 → 0.5</th><th>比值</th><th>新入口暖调用</th><th>首次使用 0.4 → 0.5</th></tr></thead>
+<tbody><tr><td>HAC</td><td>512 × 20</td><td>—</td><td>0.06 → 0.07</td><td>0.99×</td><td>—</td><td>263.39 → 0.97</td></tr><tr><td>Bootstrap · fixed</td><td>512 × 20</td><td>1999</td><td>16.03 → 15.38</td><td>1.04×</td><td>15.67</td><td>264.04 → 261.09</td></tr><tr><td>Bootstrap · resampled</td><td>512 × 20</td><td>1999</td><td>160.09 → 74.63</td><td>2.15×</td><td>74.66</td><td>407.98 → 320.01</td></tr><tr><td>Bootstrap · resampled</td><td>1024 × 100</td><td>499</td><td>351.98 → 182.31</td><td>1.93×</td><td>183.27</td><td>600.93 → 431.44</td></tr><tr><td>Gaussian AR</td><td>512 × 20</td><td>—</td><td>50.90 → 21.18</td><td>2.40×</td><td>21.24</td><td>433.10 → 90.58</td></tr><tr><td>Gaussian AR</td><td>2048 × 100</td><td>—</td><td>136.69 → 76.75</td><td>1.78×</td><td>76.91</td><td>1209.30 → 340.22</td></tr></tbody>
+</table>
+</div>
+<p>首次使用是一次“包导入＋接口加载＋首次核心调用”。NumPy 已用于构造输入，因此该列不含 Python/NumPy 启动及数据生成；也不代表完整新进程总耗时。暖调用不含导入和首次证书缓存成本。</p>
+<p>环境：macOS-26.4-arm64-arm-64bit-Mach-O；Python 3.13.15；NumPy 2.5.3；SciPy 1.18.1；BLAS 线程 1。</p>
+<p>这些是指定输入、本机串行数据，不是普遍速度或统计校准保证。指纹对照保留 p 值、决定与 Gaussian 证书的一致性检查；浮点区间比较允许已记录的舍入误差。进程峰值 RSS 包含解释器、导入、输入与输出；调用分配峰值也不是同一对象，详见 <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/performance.md">性能说明</a>。</p>
+<p><a href="benchmark.json" download>下载完整基准记录</a>。生成前已核对当前 Python 源码与基准脚本哈希；来源绑定不等于对计时数据的可信签名。</p>
+</section>
+</main>
+<footer>
+<p>BSD-3-Clause · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/research.md">历史研究与失败边界</a> · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/v0.5.0/docs/references.bib">方法来源</a></p>
+<p>基准记录 SHA-256：<span style="overflow-wrap:anywhere">00181be2dcc5b964cc92ca20468bcc92b7fd78d4ccbffe8f936d649262158ed5</span></p>
+</footer>
+</body>
+</html>

@@ -1,195 +1,123 @@
 # strategy-inference
 
-时间依赖与策略筛选之后的平均收益推断。版本 0.4.0。
+用于时间依赖数据和候选策略筛选的 Python 均值推断库。输入同期收益矩阵，返回全族检验、列级决定和诊断信息。
 
-[English](README.en.md) · [方法说明](docs/methods.md) · [实验报告](https://studyer-tang.github.io/strategy-inference/) · [联合参数信息研究](https://studyer-tang.github.io/strategy-inference/research/joint/) · [上一轮参数不确定性](https://studyer-tang.github.io/strategy-inference/research/uncertainty/)
-
-一个策略的样本平均收益为正，并不意味着它的期望收益为正。连续观测的相关性会改变均值的标准误；从多条策略中选出表现最好的一条，又会改变检验的含义。这个项目将两种影响分开做实验，比较不同推断方法，并保留它们失效的情形。
-
-研究对象是一个**事先给定、有限的候选策略集合**：是否有策略的期望基准调整收益大于零？输入是同期、等间隔、已扣成本的 `T × K` 收益差分矩阵。实现包括 IID t 检验、Bartlett HAC 推断，以及共享时间索引的 stationary-bootstrap max 检验。
-
-独立评价中，50 条零均值候选经过筛选后，未经调整的 HAC 误报率为 **71.35%**；固定尺度的联合检验为 **10.65%**，每次重抽样重新估计 HAC 尺度后降至 **6.10%**（点态 95% Monte Carlo 区间 **5.13%–7.24%**）。重新学生化改善了近似，但没有通过预设的有限场景证据门槛，不能据此宣称普遍达到名义 5% 水平。方法、原始数据和失败边界均公开。
+[English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [API](docs/api.md) · [性能](docs/performance.md) · [方法说明](docs/methods.md) · [研究与复现](docs/research.md)
 
 ## 安装
 
-Python 3.10 或更高版本。从源码目录安装：
+需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。直接安装 GitHub v0.5.0 release 的 wheel，无需 clone：
 
 ```bash
-python -m pip install .
-# 重跑实验图需安装 Matplotlib：
-python -m pip install '.[figures]'
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.5.0/strategy_inference-0.5.0-py3-none-any.whl
 ```
 
-也可以直接安装本轮 GitHub 标签：
+也可从对应标签安装源码；开发或绘图时使用 checkout：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.4.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.5.0'
+
+# 开发与绘图：
+git clone --branch v0.5.0 https://github.com/Studyer-Tang/strategy-inference.git
+cd strategy-inference
+python -m pip install -e '.[figures,dev]'
 ```
 
-尚未发布到 PyPI。示例数据、说明文档和保存的实验结果在源码仓库中；安装后的命令行可直接运行两个实验协议。
+尚未发布到 PyPI。示例 CSV、研究脚本与保存的实验结果在源码仓库中。
 
-## 审计候选策略
+## 最小可运行例子
 
 ```python
-from strategy_inference import audit_returns
+import numpy as np
+from strategy_inference import test_returns
 
-# excess_returns：行是时间，列是完整候选集。
-result = audit_returns(
-    excess_returns,
-    studentization="resampled",
+rng = np.random.default_rng(17)
+returns = rng.normal(0.0, 0.01, size=(512, 3))
+returns[:, 0] += 0.0005
+
+result = test_returns(
+    returns,
+    method="bootstrap",
+    names=["strategy_a", "strategy_b", "strategy_c"],
     n_resamples=1999,
     seed=17,
-    search_complete=None,  # 完整性须由研究者确认，软件无法从收益推断。
+    search_complete=True,  # 本例的候选集在生成数据前已确定。
 )
-print(result.selected_name, result.global_pvalue)
+print(result.global_pvalue)    # 全部候选均值均不大于零的全族检验。
+print(result.adjusted_pvalue)  # 长度 K 的列级调整 p 值。
+print(result.decisions)        # 指定 alpha 下的列级拒绝决定。
+```
+
+数据为模拟的单期收益，单位是小数。默认 bootstrap 每轮重新估计 HAC 尺度；结果依赖重抽样近似。这个例子演示调用，不为任意金融序列提供有限样本保证。
+
+## 核心接口
+
+```text
+test_returns(returns, *, method="bootstrap", alpha=0.05, names=None, **options)
+```
+
+输入支持 NumPy 数组、数值 array-like、可选 pandas DataFrame，以及 `read_returns_csv` 返回的 `ReturnTable`。行是时间、列是候选，形状为 `(T, K)`；一维输入按单列处理。要求 `T >= 8`、各列方差为正、所有值有限。DataFrame 与 CSV 自动提供列名。
+
+观测须等间隔、同期对齐。检验基准调整收益时，应先减去基准并扣除交易成本。缺失值、非有限值和恒定列会报错，程序不会自动删行。输出均值与区间沿用输入的单期单位，不自动年化。
+
+统一返回 `TestResult`：
+
+| 属性 | 含义 |
+| --- | --- |
+| `names`、`mean` | 候选名与原样本均值 |
+| `decisions`、`global_reject` | 列级拒绝决定及是否至少拒绝一列 |
+| `adjusted_pvalue`、`global_pvalue` | bootstrap 调整 p 值；Gaussian AR 方法为 `None` |
+| `parameter_intervals` | Gaussian AR 方法的时间参数集合外包；bootstrap 为 `None` |
+| `diagnostics`、`details` | 方法诊断及原始底层结果 |
+
+`result.to_dict()` 生成 JSON 可序列化记录；`result.to_frame()` 返回候选结果表，可通过 `python -m pip install 'pandas>=2'` 安装所需的可选依赖。完整参数与诊断见 [API 说明](docs/api.md)。
+
+## 方法选择
+
+| 方法 | 用途 | 适用条件和边界 |
+| --- | --- | --- |
+| `test_returns(..., method="bootstrap")` | 事先给定的有限候选集，联合检验均值是否全部不大于零 | 平稳、弱时间依赖、适当矩条件和一致尺度估计；渐近讨论固定 `K`，短样本或高持久性可能失准 |
+| `test_returns(..., method="gaussian_ar")` | 共同未知时间参数下的保守同时决定 | 共同平稳 Gaussian AR(1)、`0 <= phi < 1`、未知边际尺度与同期协方差；模型内强 FWER 控制，可能明显保守 |
+| `infer_mean(..., method="hac")` 或 `"iid"` | 事先固定候选的逐列比较 | 不调整筛选；HAC 依赖渐近条件，IID t 检验仅在独立 Gaussian 观测下有限样本精确 |
+
+Bootstrap 默认 `studentization="resampled"`、`n_resamples=999`，列间共享 stationary-bootstrap 时间索引。可指定 `lags`、`block_length`、`n_resamples`、`seed` 与 `batch_size`；批次参数控制计算批量。默认带宽和块长是样本量启发式，重新学生化不自动消除有限样本误差。该接口不等同于 Hansen SPA。
+
+`"gaussian_ar"` 调用 `wilks_uncertainty_test`，使用 GLS 推断，并在整个参数集合上认证决定。要求 `0 < beta < alpha < 0.5`；用于参数信息的前 `min(K, max_dimension)` 列及时间块尺度须事先确定。认证预算不足、单位根端点保留或信息退化时，方法保守地不拒绝。理想 Gaussian 分布保证与给定浮点输入的代数认证范围见[联合方法证明](docs/joint-uncertainty.md)；测量舍入误差不在该分布定理内。
+
+原接口 `audit_returns`、`uncertainty_test`、`wilks_uncertainty_test`、`infer_mean` 和 `long_run_variance` 继续可用。`audit_returns` 为兼容历史版本仍默认 `studentization="fixed"`；统一入口的 bootstrap 默认值为 `"resampled"`。`uncertainty_test` 用事先指定的参考列构造参数集合，详见[参数不确定性方法](docs/parameter-uncertainty.md)。
+
+调整只覆盖输入候选集。软件不能从收益矩阵确认隐藏试验、策略自适应生成、反复查看后的停止规则或搜索完整性。全族拒绝也不保证所选策略未来可盈利。
+
+## CSV 与命令行
+
+```python
+from strategy_inference import read_returns_csv, test_returns
+
+table = read_returns_csv("examples/demo_returns.csv")
+result = test_returns(table, method="bootstrap", n_resamples=1999, seed=17)
 print(result.to_dict())
 ```
 
-全族原假设为所有候选的均值均不大于零。`global_pvalue` 是全族检验结果；`adjusted_pvalue` 是单步 max 调整后的列级结果。所选候选具有最大的原样本 HAC 均值统计量。IID 与 HAC 的列级 p 值保留作比较，单独使用它们不能处理筛选效应。
-
-CSV 可含一个可选的 `date` 列，其余列是同期策略收益差分：
+CSV 可含一个 `date` 列，其余列为候选收益。`read_returns_csv(..., benchmark="benchmark")` 会减去指定基准列。重复表头、无效日期顺序及缺失数据会报错。示例 CSV 是模拟数据。
 
 ```bash
-strategy-inference audit examples/demo_returns.csv \
-  --studentization resampled --output results/demo --seed 17
+strategy-inference test examples/demo_returns.csv \
+  --method bootstrap --n-resamples 1999 --seed 17 --output result.json
+
+strategy-inference test examples/demo_returns.csv \
+  --method gaussian_ar --output gaussian-ar.json
 ```
 
-若其余列含原始策略收益及基准收益，可用 `--benchmark benchmark` 先减去基准。缺失值、重复表头、非递增日期和恒定策略会报错；程序不悄悄删行。结果保存为 JSON 与 HTML。示例数据是模拟数据。
+旧 `audit` 命令保留 JSON 与 HTML 报告功能。
 
-`studentization="fixed"` 仍是默认值，保留第一版的固定尺度构造；`"resampled"` 在每次重抽样中围绕该样本自身的均值重新估计 HAC，滞后阶数与原统计量一致。两者都使用列间共享的圆形时间索引和几何分布块长。完整定义见[方法说明](docs/methods.md)。
+## 研究与开发
 
-## 一键复现实验
+[研究索引](docs/research.md)集中保留各阶段评价、失败边界、功效代价、冻结协议、原始数据和复现命令。已知参数补尾与拟合参数重放属于研究模块，未接入统一检验入口。推导见[方法说明](docs/methods.md)，来源见[文献表](docs/references.bib)。
 
 ```bash
-strategy-inference reproduce --study calibration --profile quick
-strategy-inference reproduce --study calibration --profile full
-# 单独保留第一版固定尺度基线：
-strategy-inference reproduce --study baseline --profile full
-```
-
-`quick` 检查运行流程；正式报告使用 `full`。新研究的[冻结协议](experiments/calibration-protocol.json)规定了独立评价种子、主要实验、额外场景、块长敏感性和评价门槛。[原始协议](experiments/protocol.json)及其结果继续保留。每次运行保存拒绝次数、点态 Monte Carlo 区间、环境版本、源码及输出文件哈希。
-
-1. **时间依赖**：单个零均值 AR(1) 序列，比较不同自相关强度下的误报率。
-2. **策略筛选**：从嵌套的相关候选集中选择最大 HAC 统计量，比较列级检验与联合检验。
-3. **过程与检出能力**：比较高斯 AR、由标准化 t₅ 成分构造创新的 AR、GARCH，在零均值与植入信号下的表现。
-
-三张主图各提供 PNG、SVG、PDF。图中的数值可追溯到 CSV；报告另列 6 个额外场景和块长敏感性结果。高斯场景提供使用已知协方差的参考检验，用于分辨方法误差与模拟误差；实务审计接口不使用未知的总体参数。
-
-![候选筛选的误报率](results/calibration/full/figure-2-calibration-selection.png)
-
-## 新研究：方差修正以后，筛选检验为何仍失准
-
-以 Liu–Chan 的 [JASA 2026 尾部修正](https://doi.org/10.1080/01621459.2026.2676715)为基线，新增固定带宽 AR(1) 公式复现、中心化 Gaussian 二次型的精确矩，以及 12 个格点、每格 5000 轮的独立机制实验。公式与作者原始 R 函数的 48 项对照通过。
-
-在 `T=512, φ=0.9, K=100, ρ=0` 下，使用真实参数使每列方差估计的期望精确无偏，筛选后误报率仍为 **10.52%**（9.70%–11.40%）。全列平均尺度比为 **1.00015**，胜出列却为 **0.87302**。这使研究问题落到随机分母及其与筛选的关系，而不只是单列方差的平均偏差。
-
-[结果解读](docs/tail-results.md) · [命题与证明](docs/tail-mechanism.md) · [候选规模充分界](docs/oracle-selection-bound.md) · [三张图与逐轮记录](results/research/tail/full/report.html) · [冻结协议](experiments/tail-diagnostic-protocol.json)
-
-```bash
-python scripts/tail_diagnostics.py --profile full --output results/research/tail/reproduced
-```
-
-以上命令从源码运行，需安装 `figures` 依赖；输出目录必须为空。该实验使用已知候选相关结构，属于机制诊断。未知参数的研究另见下一节；实验模块未接入公共审计接口。
-
-## 参数重放：拟合误差与计算分辨率
-
-进一步实现共同 Gaussian AR 模型内的完整参数重放，分别检验时间参数、相关参数和随机补尾因子的作用。[证明说明](docs/parametric-replay.md)给出固定 K、温和持久性下的条件保证，以及具体估计器和统计量的 local-unit 路径极限；有限 B 的独立尺寸匹配还可能遇到 p 值饱和带来的功效上限。
-
-新协议使用 13,000 份独立阶段数据、199 次内层模拟，保存 147,000 条方法记录。100 个相关候选下，完整拟合重放把误报从 **19.4% 降到 6.4%**；强持久性下仍为 **16.6%**，异质时间结构下为 **30.0%**。只有一个正确模型格点通过预定的六格点尺寸检查。该方法有条件证明，也有清楚的有限样本失败边界，目前不改变公共审计规则。
-
-[结果解读](docs/replay-results.md) · [三张图与原始记录](results/research/replay/full/report.html) · [冻结协议](experiments/parametric-replay-protocol.json) · [独立审计](results/research/replay/full/audit.json)
-
-```bash
-# 仅读取保存的证据，一次重建三张图及研究报告：
-python scripts/replay_report.py --output results/research/replay/full
-# 重新计算须使用新的空目录：
-python scripts/parametric_replay.py --profile full --output results/research/replay/reproduced
-python scripts/replay_report.py --output results/research/replay/reproduced
-python scripts/verify_parametric_replay.py --output results/research/replay/reproduced
-```
-
-## 参数不确定性：有效检验的功效代价
-
-新增 `uncertainty_test`，针对共同未知时间参数 `0≤φ<1` 的平稳 Gaussian AR 模型。每列均值和尺度未知，横截面协方差任意。它在事先固定的参考列上构造精确 F 参数置信集合，再用整数与有理数证书检查整个连续参数集合上的 GLS 单侧检验。参数覆盖预算全族只计一次，结合 Bonferroni 得到强 FWER 控制；参考列可以有真实信号。
-
-```python
-from strategy_inference import uncertainty_test
-
-result = uncertainty_test(excess_returns, alpha=0.05, beta=0.005, reference=0)
-print(result.decisions)       # 每列在指定水平下是否拒绝 μ≤0
-print(result.interval_bounds) # 参数集合的保守外包
-print(result.phi1_retained)   # 保留单位根端点时，本方法全部不拒绝
-```
-
-这是明确模型下的另一项检验，使用 GLS 均值而非 HAC。返回固定水平决定，不提供伪造的连续 p 值；计算预算不足时不拒绝。数学分布保证针对理想 Gaussian 模型，机器符号证书针对给定浮点输入，二者与测量舍入误差的界限见[完整证明](docs/parameter-uncertainty.md)。
-
-正式协议使用 **16,000 份独立阶段噪声**、31,000 份含信号位移的数据及 **114,000 条方法记录**，把置信预算代价与参数集合的最不利检验代价分开。包括部分策略有信号时的强 FWER、正负横截面相关和不同尺度，以及保证外的异质 AR 诊断。在 `T=512、φ=.9、K=20、δ=3` 下，已知参数功效 **58.9%**，本构造仅 **1.1%**。这是一项保守研究构造，尚不是有竞争力的实用筛选方法；完整损失和失败结果均保留。
-
-[研究报告与三张图](https://studyer-tang.github.io/strategy-inference/research/uncertainty/) · [结果解读](docs/uncertainty-results.md) · [方法与证明](docs/parameter-uncertainty.md) · [冻结协议](experiments/parameter-uncertainty-protocol.json) · [独立审计](results/research/uncertainty/full/audit.json)
-
-```bash
-# 一次重建三张图和报告，不重新计算模拟：
-python scripts/uncertainty_report.py --output results/research/uncertainty/full
-# 重新计算用新的空目录：
-python scripts/parameter_uncertainty.py --profile full --output results/research/uncertainty/reproduced
-python scripts/verify_parameter_uncertainty.py --output results/research/uncertainty/reproduced
-python scripts/uncertainty_report.py --output results/research/uncertainty/reproduced
-```
-
-置信集合反演及最不利检验的基本原理已有 Dufour（1990）、Dufour–Neifar（2002）等前例；[Glazer–Stark（2026）](https://doi.org/10.1080/10618600.2025.2526416)讨论保守置信集合的可靠计算。本轮贡献定位为具体模型的可核验实现与功效成本研究，不把已有理论包装成新推断原理。
-
-## 共同参数的信息利用
-
-`wilks_uncertainty_test` 在同一共同 Gaussian AR 模型下，用事先指定的前 `min(K,8)` 列和长度 4、16、64 的时间块构造参数集合。真实参数处，块内与块均值创新的独立 Wishart 散布矩阵给出 Wilks 行列式比，消去未知横截面协方差；多尺度共用覆盖预算，随后认证整个集合上的 GLS 决策。临界值采用精确矩的保守界，不使用拟合参数或 Monte Carlo 分位数。
-
-```python
-from strategy_inference import wilks_uncertainty_test
-
-result = wilks_uncertainty_test(excess_returns, alpha=0.05, beta=0.005)
-print(result.decisions, result.interval_bounds)
-print(result.dimension, result.phi1_retained, result.singular_fallback)
-```
-
-固定列的奇异协方差会保守回退，不能把重复策略算成额外信息。返回固定水平下的同时决定；理论和观测舍入的界限与上一轮相同。联合 Wilks、矩界及投影推断属于已有原理，贡献在于具体构造、连续证书和冻结配对评价。
-
-新冻结评价包含 **22,000 份独立噪声、220,000 条方法记录**。`T=512、φ=.9、K=20` 时，δ=3 的真实信号检出率由旧方法 **1.3%** 提高到 **9.4%**，δ=6 由 **12.2%** 提高到 **88.0%**；G2 的 δ=3 则由 **0.4%** 到 **27.5%**。这些收益主要来自联合方向，单列多尺度并不普遍更强。单列近单位根仍几乎没有功效，完全重复列触发保守回退，异质 AR 的误报为 **7.5%**；仍定位为有明确范围的保守研究基线。
-
-[三张实验图](https://studyer-tang.github.io/strategy-inference/research/joint/) · [完整证明](docs/joint-uncertainty.md) · [结果解读](docs/joint-results.md) · [冻结协议](experiments/joint-uncertainty-protocol.json)
-
-```bash
-python scripts/joint_report.py --output results/research/joint/full
-# 完整重算使用新的空目录；workers 只改变执行顺序：
-python scripts/joint_uncertainty.py --profile full --workers 4 --output results/research/joint/reproduced
-python scripts/verify_joint_uncertainty.py --output results/research/joint/reproduced
-python scripts/verify_joint_bounds.py --output results/research/joint/reproduced
-python scripts/joint_report.py --output results/research/joint/reproduced
-```
-
-## 推断边界
-
-原 bootstrap 审计接口依赖平稳性、弱时间依赖、适当矩条件和一致的尺度估计；其理论讨论固定候选数 `K`。默认带宽与块长是事前启发式，有限样本效果需要另行检验。这里的去均值 max Bootstrap 不是 Hansen SPA，也不提供有限样本精确保证。新增 `uncertainty_test` 的有限样本保证采用上节明确的共同 Gaussian AR 模型，不能移用到原审计接口。
-
-外层模拟的 Wilson 区间描述每个误报率估计的不确定性；预设评价使用 19 个零均值场景的同时单侧 Clopper–Pearson 上界。未达到该门槛表示证据不足，并不等于这些场景的真实误报率必然超过门槛。API 中候选均值的同时置信区间属于另一类统计对象。
-
-调整只覆盖输入的候选集。隐藏试验、自适应生成策略、数据泄漏、交易成本遗漏、反复查看检验结果及未来市场变化，不能由一张收益矩阵自动解决。拒绝全族原假设也不等于识别出未来可交易的策略。
-
-## 开发与阅读
-
-```bash
-python -m pip install -e '.[figures,dev]'
 python -m pytest
 ruff check .
 python scripts/sync_protocols.py --check
-python scripts/build_site.py --check
-python scripts/build_uncertainty_site.py --check
-python scripts/build_joint_site.py --check
 ```
-
-- [方法说明](docs/methods.md)：统计目标、公式、假设、实现和数值范围。
-- [结果解读](docs/results.md)：本轮模拟的发现及未解决的问题。
-- [项目讨论](docs/interview-notes.md)：围绕方法与研究设计的讨论。
-- [研究方案](docs/research-plan.md)：2026 年相关论文、研究问题与后续证明义务。
-- [尾部修正机制研究](docs/tail-results.md)：冻结评价、精确矩与尺度无偏以后仍存在的失准。
-- [文献](docs/references.bib)：统计方法及软件来源。本项目是实现与模拟研究，不声明原创定理。
 
 BSD-3-Clause 许可证。

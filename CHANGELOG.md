@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- Add `test_returns` and `TestResult` for consistent array/DataFrame/CSV input, column decisions, JSON records and optional pandas tables. Keep legacy interfaces and their defaults; the new bootstrap entry uses resampled HAC scales explicitly.
+- Reduce resampled-bootstrap work with contiguous time-axis batches and a bounded workspace. Reuse validated mean/HAC computations and release index buffers early, while retaining float64, shared-row random streams and draw counts.
+- Reuse exact prefix Gram sums and Bernstein subdivision coefficients. Seed the Student root search using a standard-library approximation, then establish the same outward cutoff by exact integer comparisons. Preserve rational intervals, determinant polynomials, decisions and certification budgets.
+- Lazily load numerical interfaces; CLI help/version do not import NumPy or SciPy. Include typing markers, concise API documentation and source-bound before/after benchmarks. Retain frozen research protocols and evidence under their original revisions.
+
 ## 0.4.0
 
 - Add `wilks_uncertainty_test`: fixed multiscale innovation contrasts and up to eight prespecified columns inform the common AR parameter. Independent Wishart scatters remove unknown contemporaneous covariance; exact integer moments and outward rational roots preserve the coverage budget. Singular selected covariance supplies no information and conservatively retains the full parameter domain.

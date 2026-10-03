@@ -27,6 +27,7 @@ from .uncertainty import (
     _integer_column,
     _primitive,
     _split,
+    _split_bernstein,
 )
 
 
@@ -94,8 +95,43 @@ def _determinant_polynomial(
     return _interpolate_integer(values)
 
 
+def _scatter_grams(
+    columns: tuple[tuple[int, ...], ...], sizes: tuple[int, ...]
+) -> dict[int, tuple[tuple[tuple[int, int, int], ...], ...]]:
+    """Reuse exact prefix Gram sums across the prespecified scales."""
+    sizes = tuple(sorted(set(sizes), reverse=True))
+    if not sizes:
+        return {}
+    dimension, largest = len(columns), sizes[0]
+    result = {n: [[(0, 0, 0) for _ in columns] for _ in columns] for n in sizes}
+
+    def gram(i: int, j: int, start: int, stop: int) -> tuple[int, int, int]:
+        fi, fj = columns[i][start + 1 : stop + 1], columns[j][start + 1 : stop + 1]
+        pi, pj = columns[i][start:stop], columns[j][start:stop]
+        return (
+            sum(x * y for x, y in zip(fi, fj, strict=True)),
+            -sum(x * y + v * w for x, y, v, w in zip(fi, pj, pi, fj, strict=True)),
+            sum(x * y for x, y in zip(pi, pj, strict=True)),
+        )
+
+    for i in range(dimension):
+        for j in range(i, dimension):
+            current, previous = gram(i, j, 0, largest), largest
+            for n in sizes:
+                if n != previous:
+                    tail = gram(i, j, n, previous)
+                    current = tuple(x - y for x, y in zip(current, tail, strict=True))
+                result[n][i][j] = result[n][j][i] = current
+                previous = n
+    return {n: tuple(tuple(row) for row in matrix) for n, matrix in result.items()}
+
+
 def _scatter_polynomials(
-    columns: tuple[tuple[int, ...], ...], block_length: int, n: int
+    columns: tuple[tuple[int, ...], ...],
+    block_length: int,
+    n: int,
+    *,
+    gram_matrix: tuple[tuple[tuple[int, int, int], ...], ...] | None = None,
 ) -> tuple[tuple[int, ...], tuple[int, ...]]:
     """Common-scaled determinants of within-block and total centered scatters."""
     future = tuple(column[1 : n + 1] for column in columns)
@@ -114,10 +150,14 @@ def _scatter_polynomials(
     for i in range(dimension):
         for j in range(i, dimension):
             gram = (
-                sum(x * y for x, y in zip(future[i], future[j], strict=True)),
-                -sum(x * y for x, y in zip(future[i], past[j], strict=True))
-                - sum(x * y for x, y in zip(past[i], future[j], strict=True)),
-                sum(x * y for x, y in zip(past[i], past[j], strict=True)),
+                gram_matrix[i][j]
+                if gram_matrix is not None
+                else (
+                    sum(x * y for x, y in zip(future[i], future[j], strict=True)),
+                    -sum(x * y for x, y in zip(future[i], past[j], strict=True))
+                    - sum(x * y for x, y in zip(past[i], future[j], strict=True)),
+                    sum(x * y for x, y in zip(past[i], past[j], strict=True)),
+                )
             )
             grouped = (
                 sum(x[0] * y[0] for x, y in zip(blocks[i], blocks[j], strict=True)),
@@ -274,11 +314,11 @@ def _confidence_intervals(
     constraints: tuple[tuple[int, ...], ...], max_depth: int
 ) -> tuple[tuple[tuple[Fraction, Fraction], ...], int]:
     """Retain every unresolved dyadic interval; never assume connectedness."""
-    stack, kept = [(0, 1, 0)], []
+    root = (0, 1, 0)
+    stack, kept = [(root, tuple(_bernstein(polynomial, *root) for polynomial in constraints))], []
     unresolved = 0
     while stack:
-        cell = stack.pop()
-        bounds = [_bernstein(polynomial, *cell) for polynomial in constraints]
+        cell, bounds = stack.pop()
         if any(max(bound) < 0 for bound in bounds):
             continue
         if all(min(bound) >= 0 for bound in bounds):
@@ -288,7 +328,10 @@ def _confidence_intervals(
             unresolved += 1
         else:
             left, right = _split(cell)
-            stack.extend((right, left))
+            children = tuple(_split_bernstein(bound) for bound in bounds)
+            stack.extend(
+                ((right, tuple(x[1] for x in children)), (left, tuple(x[0] for x in children)))
+            )
     merged = []
     for left, right, depth in kept:
         interval = Fraction(left, 1 << depth), Fraction(right, 1 << depth)
@@ -404,7 +447,7 @@ def wilks_uncertainty_test(
     exact_beta = Fraction(beta)
     critical = _critical_squared(n_obs, k, Fraction(alpha) - exact_beta, critical_bits)
     columns = tuple(_integer_column(values[:, j]) for j in range(k))
-    scales = []
+    plans = []
     for length in lengths:
         blocks = (n_obs - 1) // length
         if blocks % 2 == 0:
@@ -414,6 +457,10 @@ def wilks_uncertainty_test(
         q, s = max(0, blocks - 1), n - blocks
         # At least one finite negative moment is needed for the two-sided cut.
         usable = blocks >= 3 and s >= dimension + 2
+        plans.append((length, n, q, s, usable))
+    grams = _scatter_grams(columns[:dimension], tuple(n for _, n, _, _, usable in plans if usable))
+    scales = []
+    for length, n, q, s, usable in plans:
         if not usable:
             scales.append(
                 WilksScale(
@@ -424,7 +471,7 @@ def wilks_uncertainty_test(
         cutoffs, lower_order, upper_order = _wilks_cutoffs(
             dimension, q, s, exact_beta / len(lengths), critical_bits
         )
-        within, total = _scatter_polynomials(columns[:dimension], length, n)
+        within, total = _scatter_polynomials(columns[:dimension], length, n, gram_matrix=grams[n])
         singular = not any(total)
         if singular and any(within):
             raise ArithmeticError("A singular total scatter has a nonzero within determinant.")

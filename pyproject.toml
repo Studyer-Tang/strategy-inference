@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strategy-inference"
-version = "0.4.0"
+version = "0.5.0"
 description = "Mean-return inference after strategy selection in dependent time series."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,11 +13,12 @@ dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
 [project.urls]
 Repository = "https://github.com/Studyer-Tang/strategy-inference"
-Documentation = "https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/methods.md"
+Documentation = "https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/api.md"
 Issues = "https://github.com/Studyer-Tang/strategy-inference/issues"
 
 [project.optional-dependencies]
 figures = ["matplotlib>=3.8"]
+pandas = ["pandas>=2"]
 dev = ["pytest>=8", "ruff>=0.9", "build>=1.2", "statsmodels>=0.14"]
 
 [project.scripts]
@@ -27,7 +28,7 @@ strategy-inference = "strategy_inference.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-strategy_inference = ["protocols/*.json"]
+strategy_inference = ["protocols/*.json", "*.pyi", "py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

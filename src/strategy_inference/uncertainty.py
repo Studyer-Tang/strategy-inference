@@ -14,7 +14,8 @@ Gaussian sample does not itself preserve an exactly Gaussian distribution.
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
-from math import comb, cos, gcd, lcm, pi
+from math import comb, cos, gcd, hypot, lcm, pi, sqrt
+from statistics import NormalDist
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -32,11 +33,24 @@ def _primitive(coefficients: tuple[int, ...]) -> tuple[int, ...]:
 
 def _integer_column(values: NDArray[np.float64]) -> tuple[int, ...]:
     """Scale a binary64 column exactly by a positive power of two."""
-    ratios = [float(value).as_integer_ratio() for value in values]
-    exponent = max(denominator.bit_length() - 1 for _, denominator in ratios)
+    # Decode binary64 directly; all subsequent arithmetic is on Python ints.
+    # A common exponent followed by gcd gives the same primitive column as
+    # per-observation as_integer_ratio, including subnormals and signed zero.
+    bits = np.asarray(values, dtype=np.float64).view(np.uint64)
+    exponents = (bits >> 52) & 0x7FF
+    if np.any(exponents == 0x7FF):
+        raise ValueError("The exact integer column requires finite observations.")
+    mantissas = (bits & ((1 << 52) - 1)) | ((exponents != 0).astype(np.uint64) << 52)
+    nonzero = mantissas != 0
+    if not np.any(nonzero):
+        return (0,) * len(values)
+    exponents = np.maximum(exponents, 1)
+    minimum = int(exponents[nonzero].min())
     integers = tuple(
-        numerator << (exponent - (denominator.bit_length() - 1))
-        for numerator, denominator in ratios
+        ((-value if sign else value) << (exponent - minimum)) if value else 0
+        for value, exponent, sign in zip(
+            mantissas.tolist(), exponents.tolist(), (bits >> 63).tolist(), strict=True
+        )
     )
     divisor = gcd(*integers)
     return tuple(value // divisor for value in integers) if divisor else integers
@@ -66,6 +80,22 @@ def _split(cell: tuple[int, int, int]) -> tuple[tuple[int, int, int], ...]:
     left, right, depth = cell
     middle = left + right
     return ((2 * left, middle, depth + 1), (middle, 2 * right, depth + 1))
+
+
+def _split_bernstein(bounds: tuple[int, ...]) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Exact half-interval de Casteljau coefficients, scaled by 2**degree.
+
+    This is the same integer scaling as _bernstein on the two child cells;
+    it uses additions and shifts instead of repeating power-basis conversion.
+    """
+    degree = len(bounds) - 1
+    current = bounds
+    left, right = [bounds[0] << degree], [bounds[-1] << degree]
+    for level in range(1, degree + 1):
+        current = tuple(x + y for x, y in zip(current[:-1], current[1:], strict=True))
+        left.append(current[0] << (degree - level))
+        right.append(current[-1] << (degree - level))
+    return tuple(left), tuple(right[::-1])
 
 
 def _beta_numerator(numerator: int, denominator: int, a: int, b: int) -> int:
@@ -139,6 +169,28 @@ def _critical_squared(n_obs: int, k: int, budget: Fraction, bits: int) -> Fracti
     target = budget / k
     denominator = 1 << bits
     left, right = 0, denominator
+    tail = float(target)
+    if 0 < tail < 0.5:
+        # A Cornish-Fisher guess saves expensive exact CDF evaluations. It
+        # contributes no numerical guarantee: even a bad guess is corrected
+        # by integer-CDF bracket expansion and the same final bisection.
+        z = -NormalDist().inv_cdf(tail)
+        z2 = z * z
+        c = (
+            z
+            + z * (z2 + 1) / (4 * even_df)
+            + z * (5 * z2 * z2 + 16 * z2 + 3) / (96 * even_df**2)
+            + z * (3 * z2**3 + 19 * z2 * z2 + 17 * z2 - 15) / (384 * even_df**3)
+        )
+        guess = min(denominator, max(0, int(denominator * c / hypot(sqrt(even_df), c))))
+        step = 2
+        left, right = max(0, guess - step), min(denominator, guess + step)
+        while (
+            _student_tail_at_u(left, denominator, even_df) <= target
+            or _student_tail_at_u(right, denominator, even_df) > target
+        ):
+            step *= 2
+            left, right = max(0, guess - step), min(denominator, guess + step)
     while right - left > 1:
         middle = (left + right) // 2
         if _student_tail_at_u(middle, denominator, even_df) <= target:
@@ -266,12 +318,12 @@ def _confidence_intervals(
             )
         ),
     )
-    stack = [(0, 1, 0)]
+    root = (0, 1, 0)
+    stack = [(root, tuple(_bernstein(polynomial, *root) for polynomial in polynomials))]
     kept = []
     unresolved = 0
     while stack:
-        cell = stack.pop()
-        bounds = [_bernstein(polynomial, *cell) for polynomial in polynomials]
+        cell, bounds = stack.pop()
         if any(max(bound) < 0 for bound in bounds):
             continue
         if all(min(bound) >= 0 for bound in bounds):
@@ -281,7 +333,10 @@ def _confidence_intervals(
             unresolved += 1
         else:
             left, right = _split(cell)
-            stack.extend((right, left))
+            children = tuple(_split_bernstein(bound) for bound in bounds)
+            stack.extend(
+                ((right, tuple(x[1] for x in children)), (left, tuple(x[0] for x in children)))
+            )
     # Traversal is ordered. Merge adjacent closed dyadic intervals exactly.
     merged: list[tuple[Fraction, Fraction]] = []
     for left, right, depth in kept:
@@ -308,7 +363,7 @@ def _gls_polynomials(
     n = len(column)
     interior_sum = sum(column[1:-1])
     interior_squares = sum(value * value for value in column[1:-1])
-    a = (sum(column), -interior_sum)
+    a = (column[0] + interior_sum + column[-1], -interior_sum)
     d = (n, -(n - 2))
     q = (
         column[0] ** 2 + column[-1] ** 2 + interior_squares,
@@ -344,15 +399,16 @@ def _certify_candidate(
 ) -> tuple[bool, bool, int]:
     if not intervals:
         return False, False, 0
-    stack = [(_interval_cell(interval), 0) for interval in intervals[::-1]]
+    stack = [
+        (cell, 0, _bernstein(a, *cell), _bernstein(r, *cell))
+        for cell in (_interval_cell(interval) for interval in intervals[::-1])
+    ]
     nodes = 0
     while stack:
-        cell, refinements = stack.pop()
+        cell, refinements, bounds_a, bounds_r = stack.pop()
         if nodes >= max_nodes:
             return False, True, nodes
         nodes += 1
-        bounds_a = _bernstein(a, *cell)
-        bounds_r = _bernstein(r, *cell)
         if min(bounds_a) > 0 and min(bounds_r) > 0:
             continue
         # An actual endpoint disproves positivity on this *outer* set. It does
@@ -362,7 +418,13 @@ def _certify_candidate(
         if refinements >= max_depth:
             return False, True, nodes
         left, right = _split(cell)
-        stack.extend(((right, refinements + 1), (left, refinements + 1)))
+        children_a, children_r = _split_bernstein(bounds_a), _split_bernstein(bounds_r)
+        stack.extend(
+            (
+                (right, refinements + 1, children_a[1], children_r[1]),
+                (left, refinements + 1, children_a[0], children_r[0]),
+            )
+        )
     return True, False, nodes
 
 
