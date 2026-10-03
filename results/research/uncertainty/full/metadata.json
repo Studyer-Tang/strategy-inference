@@ -1,0 +1,341 @@
+{
+  "status": "complete",
+  "profile": "full",
+  "settings": {
+    "null_replicates": 1000,
+    "power_replicates": 1000,
+    "partial_replicates": 1000,
+    "null_seed": 20261013,
+    "power_seed": 20261014,
+    "partial_seed": 20261015
+  },
+  "protocol": {
+    "study": "parameter-uncertainty",
+    "protocol_version": 1,
+    "alpha": 0.05,
+    "beta": 0.005,
+    "scope": "One-sided simultaneous Gaussian mean tests, common unknown stationary AR coefficient in [0,1), unrestricted contemporaneous covariance. The heterogeneous-persistence cell is a diagnostic outside the guarantee.",
+    "procedure": {
+      "reference": 0,
+      "ci_depth": 16,
+      "certificate_depth": 20,
+      "max_nodes": 4096,
+      "critical_bits": 40,
+      "basis": "Fixed rounded-integer cosine contrasts; exact rational orthogonal projection",
+      "low_rank": "Nearest even integer to n^(1/3), ties upwards; bounded by 2 and n-3",
+      "innovation_count": "Largest odd integer at most T-1"
+    },
+    "profiles": {
+      "quick": {
+        "null_replicates": 8,
+        "power_replicates": 8,
+        "partial_replicates": 8,
+        "null_seed": 20261012,
+        "power_seed": 20261016,
+        "partial_seed": 20261017
+      },
+      "full": {
+        "null_replicates": 1000,
+        "power_replicates": 1000,
+        "partial_replicates": 1000,
+        "null_seed": 20261013,
+        "power_seed": 20261014,
+        "partial_seed": 20261015
+      }
+    },
+    "groups": [
+      {
+        "id": 1,
+        "n_obs": 128,
+        "k": 20,
+        "phi_factor": 0.0,
+        "phi_idio": 0.0,
+        "rho": 0.0,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 2,
+        "n_obs": 256,
+        "k": 20,
+        "phi_factor": 0.5,
+        "phi_idio": 0.5,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 3,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 4,
+        "n_obs": 512,
+        "k": 100,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 5,
+        "n_obs": 1024,
+        "k": 20,
+        "phi_factor": 0.96875,
+        "phi_idio": 0.96875,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 6,
+        "n_obs": 200,
+        "k": 1,
+        "phi_factor": 0.99,
+        "phi_idio": 0.99,
+        "rho": 0.0,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 7,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.6,
+        "signed_scaled": true,
+        "in_scope": true
+      },
+      {
+        "id": 8,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.98,
+        "phi_idio": 0.3,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": false
+      }
+    ],
+    "power": {
+      "groups": [
+        2,
+        3,
+        5,
+        6,
+        8
+      ],
+      "standardized_mean_shifts": [
+        1.0,
+        2.0,
+        3.0,
+        6.0
+      ],
+      "target": "Only candidate 0 has mean delta times its true standard deviation of the sample mean; all other candidates remain at zero. Common noise is used for the four shifts within each independent replicate."
+    },
+    "partial_null": {
+      "groups": [
+        3,
+        4,
+        7
+      ],
+      "standardized_mean_shift": 3.0,
+      "target": "Even-index candidates, including the prespecified reference 0, have positive means; odd-index candidates have zero means. Strong FWER counts only rejection of an odd-index candidate."
+    },
+    "methods": [
+      "gls_known",
+      "gls_known_budget",
+      "gls_fitted",
+      "uncertainty"
+    ],
+    "comparisons": [
+      "gls_known",
+      "gls_known_budget"
+    ],
+    "uncertainty_reporting": "Pointwise 95% Wilson intervals for rates; paired normal intervals and exact McNemar p-values for power differences. Descriptive intervals are not simultaneous. CI coverage is checked separately from null rejection. No parameter tuning or size-matching on formal data.",
+    "cost_decomposition": "Known-phi alpha versus known-phi certified alpha-beta cutoff isolates confidence-budget and at-most-one-df rounding cost. Known-phi certified cutoff versus uncertainty procedure isolates the envelope and certificate cost. Both use the same observations and GLS mean target.",
+    "boundary": "If the outer confidence set retains phi=1, the procedure returns no rejection. This yields a procedure-specific power ceiling, not a bound for all valid tests.",
+    "rng": "NumPy SeedSequence([phase_seed, 43, phase, group_id, replicate, 0]); stationary Gaussian initial values; no observations or invalid replicates are dropped.",
+    "snapshot_replicates": "0, floor(R/2), R-1 in each cell, all shifts; independent audit regenerates these entire datasets and certificates. Other records receive arithmetic and hash checks."
+  },
+  "git_revision": "2b8ae791875ee3f7cf508e2246fab9411ff139c7",
+  "environment": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.3.0"
+  },
+  "source_hashes": {
+    "experiments/parameter-uncertainty-protocol.json": "0f9a5fc89d3a0399605541784894b21004d4bdbcb3a61eef1f201255e3e27562",
+    "scripts/parameter_uncertainty.py": "49185014fc067d1d2d5f8ba675bc1679e8490719bb8b0195bec67a335fe45ba3",
+    "scripts/parametric_replay.py": "2f590935e310df4e61f53750d3c40e2e0c37f1a15791d97c0bbac6f9dcfbad4d",
+    "src/strategy_inference/uncertainty.py": "4a719571fc9323e21a90a0cffe3053d84f9ee18aa39788d88d6d41134005be3e",
+    "src/strategy_inference/parametric.py": "9f60708f9fa1dd1e6cc6ed9093d3fd6b19af0ea102f7d26e8eaa9b194f0729ca",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f"
+  },
+  "cells": [
+    {
+      "key": "p1-g01",
+      "group": 1,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g02",
+      "group": 2,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g03",
+      "group": 3,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g04",
+      "group": 4,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g05",
+      "group": 5,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g06",
+      "group": 6,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g07",
+      "group": 7,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g08",
+      "group": 8,
+      "phase": 1,
+      "n": 1000,
+      "records": 2000,
+      "in_scope": false
+    },
+    {
+      "key": "p2-g02",
+      "group": 2,
+      "phase": 2,
+      "n": 1000,
+      "records": 16000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g03",
+      "group": 3,
+      "phase": 2,
+      "n": 1000,
+      "records": 16000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g05",
+      "group": 5,
+      "phase": 2,
+      "n": 1000,
+      "records": 16000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g06",
+      "group": 6,
+      "phase": 2,
+      "n": 1000,
+      "records": 16000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g08",
+      "group": 8,
+      "phase": 2,
+      "n": 1000,
+      "records": 8000,
+      "in_scope": false
+    },
+    {
+      "key": "p3-g03",
+      "group": 3,
+      "phase": 3,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g04",
+      "group": 4,
+      "phase": 3,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g07",
+      "group": 7,
+      "phase": 3,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": true
+    }
+  ],
+  "elapsed_seconds": 148.8075349580031,
+  "records": 114000,
+  "output_hashes": {
+    "certificates.json": "3c17fcec2a447101e350ba0844847976ced1e84ab428b3f0ad87b67b3d31c5b8",
+    "p1-g01.csv.gz": "687e980092e12cbdc2ee27f62fc108fd83b271fb0c802d16ace606856cd547ba",
+    "p1-g02.csv.gz": "b4edd7da343db4646df5c1e89c5842a29954ad90083076fbec4ef3d5ae58a911",
+    "p1-g03.csv.gz": "e2087bc0e4ee1a41bc85fda47e62cb510aa064b4d5bd805f86dd9e37ada0eb9c",
+    "p1-g04.csv.gz": "fd730096a0dfe7702233813dd547c5fb7fb4ab284d8cd40faa98a5bba7609baa",
+    "p1-g05.csv.gz": "9da9a0f17286b9d814b535fa0c715b1a181baf8c2bab35f92a9d2df79d119b8c",
+    "p1-g06.csv.gz": "c2614022ee4edcb37c7acbae0c9e271728c15bb30fdf6e0343a9e2e0ce97ac64",
+    "p1-g07.csv.gz": "c8f10d9378132720c2179a4a0fd032c4eceafce8caa73443032ffbb46d2a8e63",
+    "p1-g08.csv.gz": "1bd24df3073806be78f5991911fe494846b1b1c369fa3d63081e00f56cf7c261",
+    "p2-g02.csv.gz": "4b46a9dd7abb0cc7dc6ea1f39588040579ef68592cb8103d0dbfe085c612c246",
+    "p2-g03.csv.gz": "d705067075ed21b9f41bcdf3564de0d4821465280f90099258c343fc42c0ca91",
+    "p2-g05.csv.gz": "fd391fc8c58cf6e98dae7bdaa0800b92b6b4ffa95da8712378bac827bdda5a03",
+    "p2-g06.csv.gz": "9951e5fe4582b7d4606e2fd4aaa97960b120f63f6bc5a8ffad78442a29353a9b",
+    "p2-g08.csv.gz": "ef4857ecdda96a2a123ad8eff0afabb0e12ae7545c8a702bf5417dab9a7affee",
+    "p3-g03.csv.gz": "95c412bb0341c754c65234160a2ef91dcffe55e212161265cf5349f33d49e415",
+    "p3-g04.csv.gz": "b84104ace44379a06f324197babcc620bf285b626c040df6fee09f9c96457a3d",
+    "p3-g07.csv.gz": "2be30474e15b8c1399519410d4ac867f9130bb00cdf1fd07db87cd7fd75bb1e5",
+    "paired.csv": "68af48208e6addf4129b2b5f207d3f0071ea9ff237c6fa50607de6587598575d",
+    "summary.csv": "59353af629c35c728058428ec3821f28e2721e5bde8890facf9eb73822f3962e"
+  }
+}

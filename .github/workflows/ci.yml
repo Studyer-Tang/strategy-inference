@@ -23,6 +23,7 @@ jobs:
       - run: ruff check .
       - run: python scripts/sync_protocols.py --check
       - run: python scripts/build_site.py --check
+      - run: python scripts/build_uncertainty_site.py --check
       - run: python -m pytest
       - run: python -m build
       - run: strategy-inference reproduce --study baseline --profile quick --output results/quick

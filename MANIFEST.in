@@ -6,3 +6,4 @@ include CITATION.cff
 recursive-include docs *.md *.bib
 recursive-include experiments *.json
 recursive-include examples *.csv *.json
+recursive-include scripts *.py

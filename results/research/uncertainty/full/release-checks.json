@@ -1,0 +1,21 @@
+{
+  "version": "0.3.0",
+  "local_tests": {
+    "passed": 709,
+    "failed": 0
+  },
+  "ruff": "passed",
+  "protocol_resources": "matched",
+  "old_site": "matched",
+  "uncertainty_site": "matched",
+  "baseline_quick": "complete",
+  "calibration_quick": "complete",
+  "build": "sdist and wheel passed",
+  "wheel_exported_api": "passed",
+  "ui": "desktop and mobile; evidence report and Pages bundle; all local links and figures loaded; no document overflow",
+  "package_sha256": {
+    "strategy_inference-0.3.0-py3-none-any.whl": "bca8038442b9aaa8e1cf64c0ffe595039da0b83c66945aae10fd29a54cd57c70",
+    "strategy_inference-0.3.0.tar.gz": "cd4314af5fefdddb69cf871fcad234a5121e28328ebbba5e0693b3913554e137"
+  },
+  "scope": "Local Python 3.13 verification; GitHub matrix status must be checked separately."
+}

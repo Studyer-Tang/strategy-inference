@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 from matplotlib.ticker import PercentFormatter
 from parametric_replay import _sha
 
@@ -86,6 +87,7 @@ def _size(output, index, metadata):
         ax.axvline(.05, color="#66615b", linestyle="--", linewidth=.8)
         ax.set_yticks(range(len(groups)), [f"G{group}" for group in groups])
         ax.invert_yaxis()
+        ax.set_ylim(len(groups) - .5, -.5)
         ax.set_title(title, pad=13)
         ax.set_xlabel("Rejection probability")
         ax.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
@@ -101,9 +103,9 @@ def _size(output, index, metadata):
 
 def _boundary(output, index):
     figure, axes = plt.subplots(1, 2, figsize=(12.8, 4.6))
-    groups = list(range(1, 9))
     for ax, mode, title in zip(axes, ("ci_contains_truth", "phi1_retained"),
-                               (r"Coverage of true $\phi$ (G8: factor $\phi$ only)", r"Outer confidence set retains $\phi=1$"), strict=True):
+                               (r"Coverage of true common $\phi$", r"Outer confidence set retains $\phi=1$"), strict=True):
+        groups = list(range(1, 8 if mode == "ci_contains_truth" else 9))
         rows = [index[(1, group, 0, "confidence_set", mode)] for group in groups]
         x = np.arange(len(groups))
         colors = ["#306379"] * 7 + ["#a15c3a"]
@@ -127,8 +129,8 @@ def _power(output, index):
                                 (r"G2: $T=256,\ \phi=.5,\ K=20$", r"G3: $T=512,\ \phi=.9,\ K=20$",
                                  r"G5: $T=1024,\ \phi=.96875,\ K=20$", r"G6: $T=200,\ \phi=.99,\ K=1$"), strict=True):
         for method in METHODS:
-            deltas = (0, 1, 2, 3, 6)
-            rows = [index[(1 if delta == 0 else 2, group, delta, method, "reject")] for delta in deltas]
+            deltas = (1, 2, 3, 6)
+            rows = [index[(2, group, delta, method, "signal_reject")] for delta in deltas]
             ax.errorbar(deltas, [float(row["rate"]) for row in rows], yerr=_error(rows),
                         color=COLORS[method], linestyle="--" if method == "gls_known_budget" else "-",
                         marker="s" if method == "uncertainty" else "o", markersize=4, capsize=2,
@@ -138,18 +140,20 @@ def _power(output, index):
         ax.axhline(ceiling, color="#306379", linestyle=":", linewidth=1)
         ax.axhspan(1 - float(row["high"]), 1 - float(row["low"]), color="#306379", alpha=.07)
         ax.set_title(title, pad=12)
-        ax.set_xlim(-.15, 6.2)
+        ax.set_xlim(.8, 6.2)
         ax.set_ylim(0, 1.03)
-        ax.set_xticks((0, 1, 2, 3, 6))
+        ax.set_xticks((1, 2, 3, 6))
         ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
         ax.grid(axis="y")
     for ax in axes[-1]:
         ax.set_xlabel(r"Mean shift / true SD of sample mean, $\delta$")
     for ax in axes[:, 0]:
-        ax.set_ylabel("Global rejection probability")
+        ax.set_ylabel("True signal detection probability")
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    figure.legend(handles, labels, loc="lower center", ncol=4, frameon=False, bbox_to_anchor=(.5, -.002))
-    figure.subplots_adjust(left=.08, right=.985, bottom=.115, top=.94, hspace=.35, wspace=.16)
+    handles.append(Line2D([], [], color="#306379", linestyle=":"))
+    labels.append("Boundary ceiling (estimated)")
+    figure.legend(handles, labels, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(.5, -.002))
+    figure.subplots_adjust(left=.08, right=.985, bottom=.145, top=.94, hspace=.35, wspace=.16)
     _save(figure, output, FIGURES[2])
 
 
@@ -165,21 +169,21 @@ def _html(output, index, differences, metadata):
     group_table = "".join(f"<tr><td>G{g['id']}</td><td>{g['n_obs']}</td><td>{g['k']}</td><td>{g['phi_factor']:g} / {g['phi_idio']:g}</td><td>{g['rho']:g}</td><td>{'正负相关、不同尺度' if g['signed_scaled'] else '共同 AR' if g['in_scope'] else '异质 AR，保证外'}</td></tr>" for g in groups)
     costs = []
     for group in (2, 3, 5, 6):
-        oracle = index[(2, group, 3, "gls_known", "reject")]
-        budget = index[(2, group, 3, "gls_known_budget", "reject")]
-        unknown = index[(2, group, 3, "uncertainty", "reject")]
-        paired = differences[(2, group, 3, "gls_known", "reject")]
+        oracle = index[(2, group, 3, "gls_known", "signal_reject")]
+        budget = index[(2, group, 3, "gls_known_budget", "signal_reject")]
+        unknown = index[(2, group, 3, "uncertainty", "signal_reject")]
+        paired = differences[(2, group, 3, "gls_known", "signal_reject")]
         diff = f"{100 * float(paired['risk_difference']):.1f} [{100 * float(paired['low']):.1f}, {100 * float(paired['high']):.1f}]"
         costs.append(f"<tr><td>G{group}</td><td>{_pct(oracle)}</td><td>{_pct(budget)}</td><td>{_pct(unknown)}</td><td>{diff}</td></tr>")
-    summary_table = "".join(f"<tr><td>G{g['id']}</td><td>{_pct(index[(1,g['id'],0,'uncertainty','reject')])}</td><td>{_pct(index[(1,g['id'],0,'confidence_set','ci_contains_truth')])}</td><td>{_pct(index[(1,g['id'],0,'confidence_set','phi1_retained')])}</td></tr>" for g in groups)
+    summary_table = "".join(f"<tr><td>G{g['id']}</td><td>{_pct(index[(1,g['id'],0,'uncertainty','reject')])}</td><td>{_pct(index[(1,g['id'],0,'confidence_set','ci_contains_truth')]) if g['in_scope'] else '不定义（无共同 φ）'}</td><td>{_pct(index[(1,g['id'],0,'confidence_set','phi1_retained')])}</td></tr>" for g in groups)
     download = " · ".join(f'<a href="{html.escape(name)}">{html.escape(name)}</a>' for name in
                           ("summary.csv", "paired.csv", "metadata.json", "certificates.json", "audit.json"))
     raw = " · ".join(f'<a href="{cell["key"]}.csv.gz">{cell["key"]}</a>' for cell in metadata["cells"])
     figure_html = []
     captions = (
         "全零均值、混合真假原假设与模型失配分别列出。第二栏只统计零均值策略被拒绝，不把检出真实信号算成误报。误差线为点态 95% Wilson 区间。",
-        "置信集合的覆盖与边界保留是不同指标。G8 没有共同 φ，第一栏仅核对因子参数，不能解释为合法 nuisance 覆盖。右栏接近 100% 时，均值检验受到严重阻塞。",
-        "δ=0 使用独立零均值阶段，正 δ 共用同一份噪声。虚线横线及浅色带表示由零均值阶段估计的本方法边界功效上限与点态 95% 区间；不是所有有效检验的上限。",
+        "置信集合的覆盖与边界保留是不同指标。G8 没有共同 φ，因此不绘制其覆盖率。右栏接近 100% 时，均值检验受到严重阻塞。",
+        "只统计真实信号列 0 的拒绝，不把误拒其他零均值列当成信号检出；全族拒绝率另保存在原始数据中。四个正 δ 共用同一份噪声。虚线横线及浅色带表示由独立零均值阶段估计的本方法边界功效上限与点态 95% 区间；不是所有有效检验的上限。",
     )
     for number, (name, caption) in enumerate(zip(FIGURES, captions, strict=True), 1):
         figure_html.append(f'<figure><div class="figure-scroll"><a href="{name}.svg"><img src="{name}.png" alt="实验图 {number}" loading="eager"></a></div><figcaption>图 {number}．{caption} <a href="{name}.svg">SVG</a> · <a href="{name}.pdf">PDF</a></figcaption></figure>')
@@ -187,11 +191,12 @@ def _html(output, index, differences, metadata):
     text = f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · strategy-inference</title>
 <style>:root{{color-scheme:light}}*{{box-sizing:border-box}}body{{margin:0;background:#e9e4db;color:#302c26;font:17px/1.85 Georgia,"Noto Serif SC","Songti SC",serif}}main{{max-width:1080px;margin:35px auto;padding:55px 72px 70px;background:#faf7ef;box-shadow:0 4px 24px #4d413215;border-left:1px solid #d9d1c3;border-right:1px solid #d9d1c3}}header{{border-bottom:1px solid #cfc5b5;padding-bottom:24px}}.running{{font-size:12px;letter-spacing:1.4px;color:#776b59}}h1{{font-size:35px;font-weight:500;line-height:1.45;margin:16px 0}}h2{{font-size:23px;font-weight:500;margin:38px 0 14px}}p{{margin:16px 0}}a{{color:#365b69;text-decoration-color:#acbdc0;text-underline-offset:4px}}.note,figcaption{{font-size:14px;color:#746854}}figure{{margin:27px 0}}.figure-scroll{{overflow-x:auto}}img{{display:block;width:100%;min-width:900px;height:auto;background:white}}figcaption{{margin-top:11px;line-height:1.7}}.table-scroll{{overflow-x:auto}}table{{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}}th,td{{padding:9px 11px;border-bottom:1px solid #ddd4c7;text-align:left;white-space:nowrap}}th{{font-weight:500;border-top:1px solid #8f8370;border-bottom:1px solid #8f8370}}pre{{font:13px/1.7 Menlo,Consolas,monospace;background:#f0ebe0;padding:16px;overflow-x:auto;border-left:2px solid #b8a991}}code{{font-size:.86em}}footer{{border-top:1px solid #cfc5b5;margin-top:40px;padding-top:16px;font-size:13px;color:#766953}}.downloads{{overflow-wrap:anywhere}}@media(max-width:700px){{body{{font-size:16px}}main{{margin:0;padding:30px 20px;box-shadow:none}}h1{{font-size:28px}}h2{{font-size:21px}}}}</style>
 <main><header><div class="running">STRATEGY INFERENCE · RESEARCH NOTE III</div><h1>{title}</h1><p>把参数不确定性纳入检验，会换来多少可靠性，又付出多少检出能力？</p><div class="note">{quick} {independent:,} 份独立阶段噪声；{metadata['records']:,} 条方法记录。α=5%，参数置信预算 β=0.5%。</div></header>
+<p><strong>主要结果：</strong>本构造给出了明确模型内的错误率保证，但功效损失过大。G3 在 δ=3 时，已知参数参照的检出率为 {_pct(index[(2,3,3,'gls_known','signal_reject')])}，未知参数认证仅为 {_pct(index[(2,3,3,'uncertainty','signal_reject')])}。它适合作为保守研究基线公开，尚不适合作为有竞争力的实用筛选规则。</p>
 <h2>一、检验究竟保证什么</h2><p>假定每列是平稳 Gaussian AR(1)，共享未知时间参数 0≤φ&lt;1，列间同期协方差任意，均值和边际尺度未知。先在事先固定的第 0 列构造精确 F 置信集合，再对集合中的所有参数认证 GLS 均值检验超过保守临界值。它对输入候选集提供强族错误率控制：即使部分策略确有正均值，拒绝任何零均值或负均值策略的概率仍不超过 α。</p><p>置信集合和均值检验可以使用同一份数据，不要求二者独立。概率预算为一次 β 加 K 次边际尾概率；横截面协方差无需估计。数值证书用精确整数和有理数，未决区间保留、未决检验不拒绝。返回固定水平下的决定，不编造连续 p 值。</p><p class="note">保证针对上述理想实数 Gaussian 模型；精确计算证书针对传入的 binary64 观测。数据测量或浮点生成的舍入分布误差并未被另一条有限样本定理覆盖。异质时间参数、非 Gaussian 创新和自适应候选生成均不在本轮保证内。</p>
 <h2>二、独立评价与错误率</h2><div class="table-scroll"><table><thead><tr><th>组</th><th>T</th><th>K</th><th>因子 φ / 特有 φ</th><th>ρ</th><th>结构</th></tr></thead><tbody>{group_table}</tbody></table></div>{figure_html[0]}
 <p>比较已知真实 φ 的 GLS、采用相同保守临界值的已知 φ GLS、直接代入估计 φ 的 GLS，以及置信集合认证方法。前两项是知道未知参数的参照，不是可直接用于未知参数数据的竞争方法。所有方法使用相同观测；没有在正式数据上调参数或校准实际尺寸。</p>
-<h2>三、参数集合与接近单位根的阻塞</h2>{figure_html[1]}<p>若置信集合外包仍包含 φ=1，非退化数据的 GLS t 统计量在 φ→1 时趋于 0。程序因此无法在整个集合上认证拒绝。该集合对理想数据的常数均值平移不变；增加均值信号并不会修复这个阻塞。因此，本程序的功效对任意信号强度均不超过“集合排除 1”的概率。</p><div class="table-scroll"><table><thead><tr><th>组</th><th>认证检验误报率</th><th>参数覆盖率</th><th>保留 φ=1</th></tr></thead><tbody>{summary_table}</tbody></table></div><p class="note">表内括号均为点态 95% Wilson 区间。G8 的覆盖列只是失配诊断；它没有共同真实 φ。置信集合覆盖和程序的理论错误率保证由证明建立，不能由这些点估计替代。</p>
-<h2>四、功效的代价</h2>{figure_html[2]}<p>先从 5% 已知参数参照移到同一保守临界值，衡量置信预算与最多一个自由度取整的代价；再从相同临界值参照移到未知参数方法，衡量参数集合最不利检验与保守数值包围的代价。下表以 δ=3 为例，最后一列是同一噪声上的配对差及点态 95% 区间，单位为百分点。</p><div class="table-scroll"><table><thead><tr><th>组</th><th>已知 φ，5%</th><th>已知 φ，同临界值</th><th>未知 φ，认证</th><th>总功效损失 / 百分点</th></tr></thead><tbody>{''.join(costs)}</tbody></table></div><p>这是一项有明确保守代价的可靠性方案。若近单位根时功效大幅下降，应报告下降及其原因，不能把“有效”写成“普遍优于其他方法”。G8 的失配结果保留在原始记录中，超出共同 AR 假设时不承诺错误率。</p>
+<h2>三、参数集合与接近单位根的阻塞</h2>{figure_html[1]}<p>若置信集合外包仍包含 φ=1，非退化数据的 GLS t 统计量在 φ→1 时趋于 0。程序因此无法在整个集合上认证拒绝。该集合对理想数据的常数均值平移不变；增加均值信号并不会修复这个阻塞。因此，本程序的功效对任意信号强度均不超过“集合排除 1”的概率。</p><div class="table-scroll"><table><thead><tr><th>组</th><th>认证检验误报率</th><th>参数覆盖率</th><th>保留 φ=1</th></tr></thead><tbody>{summary_table}</tbody></table></div><p class="note">表内括号均为点态 95% Wilson 区间。G8 没有共同真实 φ，原始数据中的因子参数包含率仅是失配诊断。置信集合覆盖和程序的理论错误率保证由证明建立，不能由这些点估计替代。</p>
+<h2>四、功效的代价</h2>{figure_html[2]}<p>先从 5% 已知参数参照移到同一保守临界值，衡量置信预算与最多一个自由度取整的代价；再从相同临界值参照移到未知参数方法，衡量参数集合最不利检验与保守数值包围的代价。功效只统计真实信号列 0 的检出；全族拒绝率另行保存在原始数据中。下表以 δ=3 为例，最后一列是同一噪声上的配对差及点态 95% 区间，单位为百分点。</p><div class="table-scroll"><table><thead><tr><th>组</th><th>已知 φ，5%</th><th>已知 φ，同临界值</th><th>未知 φ，认证</th><th>总功效损失 / 百分点</th></tr></thead><tbody>{''.join(costs)}</tbody></table></div><p>这是一项有明确保守代价的可靠性方案。若近单位根时功效大幅下降，应报告下降及其原因，不能把“有效”写成“普遍优于其他方法”。G8 的失配结果保留在原始记录中，超出共同 AR 假设时不承诺错误率。</p>
 <h2>五、文献与本轮工作的范围</h2><p>Dufour（1990）与 Dufour–Neifar（2002）已提出参数置信集合和投影检验；Glazer–Stark（2026）讨论保守置信集合的可靠计算。这些是方法依据。本轮工作的具体内容是固定有理投影的 F 集合、对连续参数域的符号证书、任意横截面协方差下同时均值检验的实现，以及冻结协议下的功效损失分解。它不宣称新的通用推断原理或最优功效。</p><p><a href="../../../../docs/parameter-uncertainty.md">完整构造、命题与证明</a> · <a href="../../../../docs/uncertainty-results.md">结果解读</a> · <a href="../../../../experiments/parameter-uncertainty-protocol.json">冻结实验协议</a> · <a href="../../../../docs/references.bib">文献</a></p>
 <h2>六、复现与证据</h2><pre>python scripts/uncertainty_report.py --output results/research/uncertainty/full
 # 重新计算需使用新的空目录：

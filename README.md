@@ -1,8 +1,8 @@
 # strategy-inference
 
-时间依赖与策略筛选之后的平均收益推断。版本 0.2.0。
+时间依赖与策略筛选之后的平均收益推断。版本 0.3.0。
 
-[English](README.en.md) · [方法说明](docs/methods.md) · [结果解读](docs/results.md) · [实验报告](https://studyer-tang.github.io/strategy-inference/)
+[English](README.en.md) · [方法说明](docs/methods.md) · [结果解读](docs/results.md) · [实验报告](https://studyer-tang.github.io/strategy-inference/) · [参数不确定性研究](https://studyer-tang.github.io/strategy-inference/research/uncertainty/)
 
 一个策略的样本平均收益为正，并不意味着它的期望收益为正。连续观测的相关性会改变均值的标准误；从多条策略中选出表现最好的一条，又会改变检验的含义。这个项目将两种影响分开做实验，比较不同推断方法，并保留它们失效的情形。
 
@@ -20,10 +20,10 @@ python -m pip install .
 python -m pip install '.[figures]'
 ```
 
-也可以从 [GitHub Release](https://github.com/Studyer-Tang/strategy-inference/releases) 下载 wheel：
+也可以直接安装本轮 GitHub 标签：
 
 ```bash
-python -m pip install ./strategy_inference-0.2.0-py3-none-any.whl
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.3.0'
 ```
 
 尚未发布到 PyPI。示例数据、说明文档和保存的实验结果在源码仓库中；安装后的命令行可直接运行两个实验协议。
@@ -93,7 +93,7 @@ python scripts/tail_diagnostics.py --profile full --output results/research/tail
 
 ## 参数重放：拟合误差与计算分辨率
 
-研究分支进一步实现共同 Gaussian AR 模型内的完整参数重放，分别检验时间参数、相关参数和随机补尾因子的作用。[证明说明](docs/parametric-replay.md)给出固定 K、温和持久性下的条件保证，以及具体估计器和统计量的 local-unit 路径极限；有限 B 的独立尺寸匹配还可能遇到 p 值饱和带来的功效上限。
+进一步实现共同 Gaussian AR 模型内的完整参数重放，分别检验时间参数、相关参数和随机补尾因子的作用。[证明说明](docs/parametric-replay.md)给出固定 K、温和持久性下的条件保证，以及具体估计器和统计量的 local-unit 路径极限；有限 B 的独立尺寸匹配还可能遇到 p 值饱和带来的功效上限。
 
 新协议使用 13,000 份独立阶段数据、199 次内层模拟，保存 147,000 条方法记录。100 个相关候选下，完整拟合重放把误报从 **19.4% 降到 6.4%**；强持久性下仍为 **16.6%**，异质时间结构下为 **30.0%**。只有一个正确模型格点通过预定的六格点尺寸检查。该方法有条件证明，也有清楚的有限样本失败边界，目前不改变公共审计规则。
 
@@ -108,9 +108,39 @@ python scripts/replay_report.py --output results/research/replay/reproduced
 python scripts/verify_parametric_replay.py --output results/research/replay/reproduced
 ```
 
+## 参数不确定性：有效检验的功效代价
+
+新增 `uncertainty_test`，针对共同未知时间参数 `0≤φ<1` 的平稳 Gaussian AR 模型。每列均值和尺度未知，横截面协方差任意。它在事先固定的参考列上构造精确 F 参数置信集合，再用整数与有理数证书检查整个连续参数集合上的 GLS 单侧检验。参数覆盖预算全族只计一次，结合 Bonferroni 得到强 FWER 控制；参考列可以有真实信号。
+
+```python
+from strategy_inference import uncertainty_test
+
+result = uncertainty_test(excess_returns, alpha=0.05, beta=0.005, reference=0)
+print(result.decisions)       # 每列在指定水平下是否拒绝 μ≤0
+print(result.interval_bounds) # 参数集合的保守外包
+print(result.phi1_retained)   # 保留单位根端点时，本方法全部不拒绝
+```
+
+这是明确模型下的另一项检验，使用 GLS 均值而非 HAC。返回固定水平决定，不提供伪造的连续 p 值；计算预算不足时不拒绝。数学分布保证针对理想 Gaussian 模型，机器符号证书针对给定浮点输入，二者与测量舍入误差的界限见[完整证明](docs/parameter-uncertainty.md)。
+
+正式协议使用 **16,000 份独立阶段噪声**、31,000 份含信号位移的数据及 **114,000 条方法记录**，把置信预算代价与参数集合的最不利检验代价分开。包括部分策略有信号时的强 FWER、正负横截面相关和不同尺度，以及保证外的异质 AR 诊断。在 `T=512、φ=.9、K=20、δ=3` 下，已知参数功效 **58.9%**，本构造仅 **1.1%**。这是一项保守研究构造，尚不是有竞争力的实用筛选方法；完整损失和失败结果均保留。
+
+[研究报告与三张图](https://studyer-tang.github.io/strategy-inference/research/uncertainty/) · [结果解读](docs/uncertainty-results.md) · [方法与证明](docs/parameter-uncertainty.md) · [冻结协议](experiments/parameter-uncertainty-protocol.json) · [独立审计](results/research/uncertainty/full/audit.json)
+
+```bash
+# 一次重建三张图和报告，不重新计算模拟：
+python scripts/uncertainty_report.py --output results/research/uncertainty/full
+# 重新计算用新的空目录：
+python scripts/parameter_uncertainty.py --profile full --output results/research/uncertainty/reproduced
+python scripts/verify_parameter_uncertainty.py --output results/research/uncertainty/reproduced
+python scripts/uncertainty_report.py --output results/research/uncertainty/reproduced
+```
+
+置信集合反演及最不利检验的基本原理已有 Dufour（1990）、Dufour–Neifar（2002）等前例；[Glazer–Stark（2026）](https://doi.org/10.1080/10618600.2025.2526416)讨论保守置信集合的可靠计算。本轮贡献定位为具体模型的可核验实现与功效成本研究，不把已有理论包装成新推断原理。
+
 ## 推断边界
 
-检验依赖平稳性、弱时间依赖、适当矩条件和一致的尺度估计；理论讨论固定候选数 `K`。默认带宽与块长是事前启发式，有限样本效果需要另行检验。这里的去均值 max Bootstrap 不是 Hansen SPA，也不提供有限样本精确保证。
+原 bootstrap 审计接口依赖平稳性、弱时间依赖、适当矩条件和一致的尺度估计；其理论讨论固定候选数 `K`。默认带宽与块长是事前启发式，有限样本效果需要另行检验。这里的去均值 max Bootstrap 不是 Hansen SPA，也不提供有限样本精确保证。新增 `uncertainty_test` 的有限样本保证采用上节明确的共同 Gaussian AR 模型，不能移用到原审计接口。
 
 外层模拟的 Wilson 区间描述每个误报率估计的不确定性；预设评价使用 19 个零均值场景的同时单侧 Clopper–Pearson 上界。未达到该门槛表示证据不足，并不等于这些场景的真实误报率必然超过门槛。API 中候选均值的同时置信区间属于另一类统计对象。
 
@@ -124,6 +154,7 @@ python -m pytest
 ruff check .
 python scripts/sync_protocols.py --check
 python scripts/build_site.py --check
+python scripts/build_uncertainty_site.py --check
 ```
 
 - [方法说明](docs/methods.md)：统计目标、公式、假设、实现和数值范围。

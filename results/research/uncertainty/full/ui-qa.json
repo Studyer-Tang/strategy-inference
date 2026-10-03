@@ -1,0 +1,562 @@
+{
+  "metadata_sha256": "d7c15f004054154158176f5a48443ca1a6776659f88b9c189fa29f5a3bd55e31",
+  "presentation_sha256": "30b20656ebc608cf8c9cd65a618ed2896474d1249888a71f1d14475c3dbdcf46",
+  "checks": [
+    {
+      "route": "results/research/uncertainty/full/report.html",
+      "surface": "desktop",
+      "title": "未知时间参数与检验功效 · strategy-inference",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "images": [
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-1-uncertainty-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-1-uncertainty-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-2-uncertainty-boundary.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-2-uncertainty-boundary.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-3-uncertainty-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-3-uncertainty-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/parameter-uncertainty.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/uncertainty-results.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/experiments/parameter-uncertainty-protocol.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/references.bib",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g07.csv.gz",
+          "status": 200
+        }
+      ],
+      "signalResult": true,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "route": "results/research/uncertainty/full/report.html",
+      "surface": "mobile",
+      "title": "未知时间参数与检验功效 · strategy-inference",
+      "width": 390,
+      "scrollWidth": 390,
+      "images": [
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-1-uncertainty-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-1-uncertainty-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-2-uncertainty-boundary.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-2-uncertainty-boundary.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-3-uncertainty-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/figure-3-uncertainty-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/parameter-uncertainty.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/uncertainty-results.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/experiments/parameter-uncertainty-protocol.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/references.bib",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/uncertainty/full/p3-g07.csv.gz",
+          "status": 200
+        }
+      ],
+      "signalResult": true,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "route": "docs/research/uncertainty/index.html",
+      "surface": "desktop",
+      "title": "未知时间参数与检验功效 · strategy-inference",
+      "width": 1280,
+      "scrollWidth": 1280,
+      "images": [
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-1-uncertainty-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-1-uncertainty-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-2-uncertainty-boundary.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-2-uncertainty-boundary.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-3-uncertainty-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-3-uncertainty-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g07.csv.gz",
+          "status": 200
+        }
+      ],
+      "signalResult": true,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "route": "docs/research/uncertainty/index.html",
+      "surface": "mobile",
+      "title": "未知时间参数与检验功效 · strategy-inference",
+      "width": 390,
+      "scrollWidth": 390,
+      "images": [
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        },
+        {
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-1-uncertainty-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-1-uncertainty-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-2-uncertainty-boundary.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-2-uncertainty-boundary.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-3-uncertainty-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/figure-3-uncertainty-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/uncertainty/p3-g07.csv.gz",
+          "status": 200
+        }
+      ],
+      "signalResult": true,
+      "errors": [],
+      "passed": true
+    }
+  ]
+}

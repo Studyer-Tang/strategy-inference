@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "records_checked": 114000,
+  "datasets_and_certificates_regenerated": 93,
+  "summary_rows_checked": 435,
+  "paired_rows_checked": 104,
+  "metadata_sha256": "d7c15f004054154158176f5a48443ca1a6776659f88b9c189fa29f5a3bd55e31",
+  "auditor_sha256": "334bccc3a30eb1975abf821113aa2410a4e6a5d7600c6bdc5ad28a38d0f4dd1a",
+  "scope": "All hashes, masks, confidence intervals, rate intervals and paired arithmetic; three independent datasets per cell with every mean shift and exact certificates regenerated. Other certificates are not all rerun."
+}

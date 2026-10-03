@@ -1,0 +1,17 @@
+{
+  "evidence_metadata_sha256": "d7c15f004054154158176f5a48443ca1a6776659f88b9c189fa29f5a3bd55e31",
+  "audit_sha256": "87a9872c188e2495be7251746f5ffc9f1a08836a667a1c75d02e13fa64d78b91",
+  "renderer_sha256": "126874de5f93d0bbdc9d5fbf44ea3951ea587ac6585bf2cca5895a6224c22098",
+  "output_hashes": {
+    "report.html": "6094040b84d920996f2e617c2140a23c5f3a41f2111a5c4f7ac0e0589d286661",
+    "figure-1-uncertainty-size.png": "8bb18c68013da72953219b2907ca1325c9b7083e1ff0cce754df1cdb7526cb64",
+    "figure-1-uncertainty-size.svg": "922c03d3841b10e480e83ec4db964ab340dd6950d1d51bc628c849f29a018016",
+    "figure-1-uncertainty-size.pdf": "9a86cd68f2c3ac81a59903afcb28b20b4d1bd845c74aca927dff9bf109715450",
+    "figure-2-uncertainty-boundary.png": "157e75d0070948611689d51d36eb35144a01056c9632ede8a36ee8699153507b",
+    "figure-2-uncertainty-boundary.svg": "712fc7861a72906848bfd3608affc598f140a7e5e965bf8e1b686bc61f69d7cd",
+    "figure-2-uncertainty-boundary.pdf": "2866b48bbaf253666e8126d5a2cb5f000f365321033496cd6a6e281e762d7aaf",
+    "figure-3-uncertainty-power.png": "64c05f21a9654a6edd60e5ff5c71d5356fca69a62bbf6ad36ff9353f4974fe37",
+    "figure-3-uncertainty-power.svg": "6b75c8de60e06a39d81578979eb070fccc13b8402dd13ac9551f117d4a458da7",
+    "figure-3-uncertainty-power.pdf": "d2b43905c392c9073ca02cf6ccae2795c3d634e498738b90d23bb26d0c4ff933"
+  }
+}

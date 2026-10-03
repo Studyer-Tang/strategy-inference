@@ -68,11 +68,11 @@ def verify(output: Path) -> dict:
     checked, regenerated, seen_summaries, seen_pairs = 0, 0, set(), set()
     for cell in metadata["cells"]:
         phase, group, total = cell["phase"], groups[cell["group"]], cell["n"]
-        label = {1: "null", 2: "power", 3: "partial"}[phase]
+        phase_label = {1: "null", 2: "power", 3: "partial"}[phase]
         deltas_expected = protocol["power"]["standardized_mean_shifts"] if phase == 2 else (
             [protocol["partial_null"]["standardized_mean_shift"]] if phase == 3 else [0.0])
         methods_expected = METHODS if group["in_scope"] else ("gls_fitted", "uncertainty")
-        if total != settings[f"{label}_replicates"] or cell["key"] != f"p{phase}-g{group['id']:02d}" or cell["in_scope"] != group["in_scope"]:
+        if total != settings[f"{phase_label}_replicates"] or cell["key"] != f"p{phase}-g{group['id']:02d}" or cell["in_scope"] != group["in_scope"]:
             raise ValueError("Cell settings differ from the protocol.")
         rows = _read(output / f"{cell['key']}.csv.gz")
         if len(rows) != cell["records"]:
@@ -90,7 +90,7 @@ def verify(output: Path) -> dict:
                 raise ValueError("Duplicate or invalid record.")
             if key != expected_key:
                 raise ValueError("Record order differs from the canonical paired design.")
-            if delta not in deltas_expected or method not in methods_expected or int(row["seed"]) != settings[f"{label}_seed"]:
+            if delta not in deltas_expected or method not in methods_expected or int(row["seed"]) != settings[f"{phase_label}_seed"]:
                 raise ValueError("Wrong prespecified shift, method or seed.")
             unique.add(key)
             diagnostic = {name: value for name, value in row.items() if name not in (

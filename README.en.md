@@ -1,6 +1,6 @@
 # strategy-inference
 
-Mean-return inference under time dependence and strategy selection. Version 0.2.0.
+Mean-return inference under time dependence and strategy selection. Version 0.3.0.
 
 [中文说明](README.md) · [Methods](docs/methods.md) · [Results](docs/results.md) · [References](docs/references.bib)
 
@@ -20,10 +20,10 @@ python -m pip install .
 python -m pip install '.[figures]'
 ```
 
-For a GitHub release installation, download the 0.2.0 wheel from the [release page](https://github.com/Studyer-Tang/strategy-inference/releases), then run:
+Install the tagged GitHub source directly:
 
 ```bash
-python -m pip install ./strategy_inference-0.2.0-py3-none-any.whl
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.3.0'
 ```
 
 These instructions use source or release artifacts; no PyPI publication is assumed. Use a source checkout for the example CSV, documentation and saved experiment outputs.
@@ -105,7 +105,7 @@ Run from a source checkout with the `figures` extra installed, using an empty ou
 
 ## Fitted replay and finite Monte Carlo resolution
 
-The research branch now implements full parametric replay within a common Gaussian AR model, separating temporal fitting, correlation fitting and correction-factor refitting. The [proofs](docs/parametric-replay.md) establish conditional validity for fixed K under mild persistence and path limits for the specific estimator and statistic in a local-unit sequence. Finite B can also impose a power ceiling on the prespecified jitter-based, independently size-matched simulation comparison.
+A separate study implements full parametric replay within a common Gaussian AR model, separating temporal fitting, correlation fitting and correction-factor refitting. The [proofs](docs/parametric-replay.md) establish conditional validity for fixed K under mild persistence and path limits for the specific estimator and statistic in a local-unit sequence. Finite B can also impose a power ceiling on the prespecified jitter-based, independently size-matched simulation comparison.
 
 The frozen study uses 13,000 outer datasets across independent calibration, null evaluation and power stages, 199 inner draws, and 147,000 method records. With 100 correlated candidates, fitted replay reduces rejection from **19.4% to 6.4%**; strong persistence still yields **16.6%**, and heterogeneous temporal structure yields **30.0%**. Only one correctly specified cell clears the prespecified six-cell size screen. These research helpers do not change the public audit rule.
 
@@ -120,13 +120,39 @@ python scripts/replay_report.py --output results/research/replay/reproduced
 python scripts/verify_parametric_replay.py --output results/research/replay/reproduced
 ```
 
+## Unknown temporal parameters and their power cost
+
+`uncertainty_test` provides fixed-level simultaneous mean decisions under a stationary Gaussian AR model with one unknown common coefficient in `[0,1)`, unknown marginal scales and unrestricted contemporaneous covariance. A prespecified reference column supplies an exact innovation F confidence set. Integer/rational Bernstein certificates verify rejection over its entire continuous outer enclosure. A shared coverage budget plus Bonferroni gives strong FWER; the reference column may itself carry signal.
+
+```python
+from strategy_inference import uncertainty_test
+
+result = uncertainty_test(excess_returns, alpha=0.05, beta=0.005, reference=0)
+print(result.decisions, result.interval_bounds, result.phi1_retained)
+```
+
+This procedure uses a GLS mean target and returns decisions at a specified level, rather than continuous p-values. Unresolved certificates and empty confidence sets do not reject. The ideal Gaussian distribution guarantee and exact algebra on supplied binary64 inputs are distinct; measurement-rounding error is outside the proof.
+
+The frozen experiment uses 16,000 independent stage-noise datasets, 31,000 datasets including shared mean shifts, and 114,000 method records. At `T=512, phi=.9, K=20, delta=3`, known-parameter power is **58.9%**, while this construction achieves **1.1%**. It is a reproducible conservative research procedure, not a practically competitive strategy selector. The power loss and model-misspecification results remain public.
+
+[Report and three figures](https://studyer-tang.github.io/strategy-inference/research/uncertainty/) · [Results](docs/uncertainty-results.md) · [Proofs and prior work](docs/parameter-uncertainty.md) · [Protocol](experiments/parameter-uncertainty-protocol.json) · [Audit](results/research/uncertainty/full/audit.json)
+
+```bash
+python scripts/uncertainty_report.py --output results/research/uncertainty/full
+python scripts/parameter_uncertainty.py --profile full --output results/research/uncertainty/reproduced
+python scripts/verify_parameter_uncertainty.py --output results/research/uncertainty/reproduced
+python scripts/uncertainty_report.py --output results/research/uncertainty/reproduced
+```
+
+Confidence-set inversion and nuisance projection follow Dufour (1990), Dufour–Neifar (2002), and Berger–Boos; Glazer–Stark (2026) provides recent work on conservative computation. The contribution is the scoped, verifiable implementation and power-cost study, not a new general inference principle.
+
 ## Uncertainty and scope
 
 Bootstrap p values use `(1 + exceedances)/(B + 1)`. This avoids zero estimates and sets the numerical resolution; it is not an exact randomization-test guarantee. A conditional bootstrap-tail interval describes uncertainty from a finite number of draws for the observed data.
 
 Outer Monte Carlo Wilson intervals describe simulation uncertainty in each estimated rejection rate and are pointwise. The benchmark assessment uses simultaneous one-sided Clopper–Pearson upper bounds over 19 prespecified null cells. Those bounds concern Monte Carlo rejection rates, whereas the API's simultaneous confidence intervals concern candidate means. An upper bound above 7% fails to establish the benchmark limit; it does not alone prove that the true rate exceeds 7%. Passing the finite benchmark would not establish validity for all financial series.
 
-The inference requires stationarity, weak dependence, suitable moments and consistent scale estimation. The theoretical scope keeps `K` fixed. Degenerate resamples and unsupported floating-point scales fail explicitly. Strong persistence, short samples, nonstationarity and heavy tails can still impair approximation quality.
+The bootstrap audit requires stationarity, weak dependence, suitable moments and consistent scale estimation; its theoretical scope keeps `K` fixed. Degenerate resamples and unsupported floating-point scales fail explicitly. Strong persistence, short samples, nonstationarity and heavy tails can still impair approximation quality. The finite-sample result for `uncertainty_test` uses its separate common Gaussian AR model and does not validate the bootstrap interface.
 
 Adjustment covers the supplied family. A return matrix cannot recover omitted trials, validate transaction costs, detect every form of leakage, or justify strategies generated adaptively after repeatedly examining the same data. Rejecting the family null does not establish future profitability. The project implements established methods and studies their limits; it does not claim a new theorem.
 
@@ -136,6 +162,9 @@ Adjustment covers the supplied family. A return matrix cannot recover omitted tr
 python -m pip install -e '.[figures,dev]'
 python -m pytest
 ruff check .
+python scripts/sync_protocols.py --check
+python scripts/build_site.py --check
+python scripts/build_uncertainty_site.py --check
 ```
 
-The [method notes](docs/methods.md) derive the statistics and connect them to the implementation. The [next-stage research plan](docs/research-plan.md) (Chinese) connects recent papers to proposed questions and proof obligations; it does not report new validated methods. Source methods and software references are recorded in [references.bib](docs/references.bib). Code is licensed under BSD-3-Clause.
+The [method notes](docs/methods.md) derive the statistics and connect them to the implementation. The [research plan](docs/research-plan.md) (Chinese) connects recent papers to completed work, remaining questions and proof obligations. Source methods and software references are recorded in [references.bib](docs/references.bib). Code is licensed under BSD-3-Clause.

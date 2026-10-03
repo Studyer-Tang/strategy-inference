@@ -5,6 +5,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -96,3 +97,40 @@ def test_existing_evidence_is_not_overwritten(runner, tmp_path):
     with pytest.raises(ValueError, match="never overwritten"):
         runner.run("quick", existing)
     assert saved.read_text() == "frozen"
+
+
+def test_small_run_audits_all_phases_and_binds_metadata(runner, protocol, tmp_path, monkeypatch):
+    snapshot = tmp_path / "snapshot"
+    files = ("scripts/parameter_uncertainty.py", "scripts/parametric_replay.py",
+             "scripts/verify_parameter_uncertainty.py", *(
+                 f"src/strategy_inference/{name}" for name in
+                 ("uncertainty.py", "parametric.py", "reference.py", "_validation.py", "experiments.py", "inference.py")))
+    for name in files:
+        destination = snapshot / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes((ROOT / name).read_bytes())
+    protocol["profiles"]["quick"] = dict(null_replicates=3, power_replicates=3, partial_replicates=3,
+                                         null_seed=9940301, power_seed=9940302, partial_seed=9940303)
+    protocol["groups"] = [dict(group, n_obs=16, k=4) for group in protocol["groups"] if group["id"] in (3, 8)]
+    protocol["power"]["groups"] = [3, 8]
+    protocol["power"]["standardized_mean_shifts"] = [1.0, 3.0]
+    protocol["partial_null"]["groups"] = [3]
+    saved_protocol = snapshot / "experiments/parameter-uncertainty-protocol.json"
+    saved_protocol.parent.mkdir()
+    saved_protocol.write_text(json.dumps(protocol))
+    monkeypatch.setattr(runner, "ROOT", snapshot)
+    monkeypatch.setattr(runner, "__file__", str(snapshot / "scripts/parameter_uncertainty.py"))
+    monkeypatch.setattr(runner.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(stdout="c" * 40))
+    output = tmp_path / "evidence"
+    runner.run("quick", output)
+    sys.modules.pop("verify_parameter_uncertainty", None)
+    auditor = importlib.import_module("verify_parameter_uncertainty")
+    monkeypatch.setattr(auditor, "ROOT", snapshot)
+    result = auditor.verify(output)
+    assert result["status"] == "passed" and result["records_checked"] == 66
+    assert result["metadata_sha256"] == runner._sha(output / "metadata.json")
+    metadata = json.loads((output / "metadata.json").read_text())
+    metadata["cells"].pop()
+    (output / "metadata.json").write_text(json.dumps(metadata))
+    with pytest.raises(ValueError, match="Missing or duplicated"):
+        auditor.verify(output)

@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased research
+## 0.3.0
+
+- Add `uncertainty_test`: fixed-level simultaneous mean decisions for stationary Gaussian AR columns with a common unknown coefficient in `[0,1)`, unknown marginal scales and unrestricted contemporaneous covariance. Use an exact innovation F confidence set and a shared coverage budget; document strong FWER and every model condition.
+- Certify the continuous parameter domain with exact integer/rational projection, Beta/Student critical values and Bernstein bounds. Retain unresolved intervals and suppress unresolved or empty-set decisions. Distinguish input-float algebraic certificates from ideal Gaussian distribution guarantees.
+- Freeze a separate independent power-cost experiment with global/partial nulls, signed correlations, unequal scales and heterogeneous-persistence diagnostics. Compare the same GLS mean target, isolate budget versus envelope costs and retain near-unit-root power losses.
+- Complete the parametric-replay study, fixed-K mild-persistence proof, local-unit mechanism and finite-rank resolution diagnosis. Publish saved raw evidence, independent audits and reproducible scientific figures.
 
 - Independently implement fixed-bandwidth AR(1) tail factors from Liu–Chan (JASA 2026), including their finite-sample target. Cross-check 48 scalar results against original author functions running in R; retain execution provenance without vendoring GPL source.
 - Compute exact first and second moments of centered Gaussian Bartlett HAC through quadratic forms, with stable AR covariance and bounded matrix calculations.
 - Freeze and complete a separate 12-cell, 5000-replicate mechanism study. Retain paired decisions, winners, scale errors, seeds and hashes; reproduce three scientific figures from verified evidence. Known-correlation and mean-unbiased references diagnose failures rather than providing practical unknown-parameter guarantees.
-- Add scoped proofs and result notes. Keep the package version, public audit defaults and previously published studies unchanged.
+- Add scoped proofs and result notes. Preserve public bootstrap-audit defaults and previously published studies.
 
 ## 0.2.0
 
