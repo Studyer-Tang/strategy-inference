@@ -9,10 +9,12 @@ import html
 import json
 import math
 import statistics
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.5.0"
+RELEASE_COMMIT = "da5d8cbf9bd69ff092d92576cd4b3f905c337ad2"
 TAG_ROOT = f"https://github.com/Studyer-Tang/strategy-inference/blob/v{VERSION}"
 FILES = {"index.html", "benchmark.json"}
 
@@ -38,6 +40,73 @@ def _source_hashes() -> dict[str, str]:
     if not paths or any(path.is_symlink() or not path.is_file() for path in paths):
         raise ValueError("Library source must contain ordinary Python files.")
     return {path.name: _sha(path.read_bytes()) for path in paths}
+
+
+def _git_bytes(*arguments: str) -> bytes:
+    """Read an immutable release object without importing or executing it."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), *arguments], capture_output=True, check=False,
+        )
+    except OSError as exc:
+        raise ValueError(f"Cannot read frozen release {RELEASE_COMMIT}: Git is unavailable.") from exc
+    if result.returncode:
+        raise ValueError(
+            f"Cannot read frozen release {RELEASE_COMMIT}; fetch this commit and its Git objects."
+        )
+    return result.stdout
+
+
+def _release_sources() -> tuple[dict[str, str], bytes, bytes]:
+    """Bind the old report to its release, allowing small non-Git v0.5 fixtures."""
+    if not (ROOT / ".git").exists():
+        package = ROOT / "src/strategy_inference"
+        init = package / "__init__.py"
+        if init.is_symlink() or not init.is_file():
+            raise ValueError("Release __init__.py must be an ordinary Python file.")
+        init_contents = init.read_bytes()
+        if _literal(init_contents.decode("utf-8"), "__version__") != VERSION:
+            raise ValueError(
+                f"Frozen release {RELEASE_COMMIT} is unavailable outside Git; "
+                f"current-source validation requires version {VERSION}."
+            )
+        runner = ROOT / "benchmarks/run.py"
+        if runner.is_symlink() or not runner.is_file():
+            raise ValueError("The release benchmark runner must be an ordinary file.")
+        return _source_hashes(), init_contents, runner.read_bytes()
+
+    if _git_bytes("cat-file", "-t", RELEASE_COMMIT).strip() != b"commit":
+        raise ValueError(f"Frozen release {RELEASE_COMMIT} must identify a Git commit.")
+    tree = _git_bytes(
+        "ls-tree", "-r", "-z", "--full-tree", RELEASE_COMMIT, "--",
+        "src/strategy_inference", "benchmarks/run.py",
+    )
+    package_prefix = "src/strategy_inference/"
+    hashes, init_contents, runner_contents = {}, None, None
+    for entry in tree.split(b"\0"):
+        if not entry:
+            continue
+        metadata, encoded_path = entry.split(b"\t", 1)
+        mode, kind, _ = metadata.split()
+        path = encoded_path.decode("utf-8")
+        is_source = (
+            path.startswith(package_prefix) and path.endswith(".py")
+            and "/" not in path[len(package_prefix):]
+        )
+        if not is_source and path != "benchmarks/run.py":
+            continue
+        if kind != b"blob" or mode not in (b"100644", b"100755"):
+            raise ValueError("Frozen release source and runner must be ordinary Git files.")
+        contents = _git_bytes("show", f"{RELEASE_COMMIT}:{path}")
+        if is_source:
+            hashes[path[len(package_prefix):]] = _sha(contents)
+            if path == package_prefix + "__init__.py":
+                init_contents = contents
+        else:
+            runner_contents = contents
+    if not hashes or init_contents is None or runner_contents is None:
+        raise ValueError(f"Frozen release {RELEASE_COMMIT} lacks source or benchmark objects.")
+    return hashes, init_contents, runner_contents
 
 
 def _number(value, *, positive: bool = False) -> float:
@@ -160,16 +229,15 @@ def _snapshot(source: Path):
     report = json.loads(raw, object_pairs_hook=_unique_object, parse_constant=_invalid_constant)
     if not isinstance(report, dict) or report.get("schema_version") != 1:
         raise ValueError("Benchmark schema version 1 is required.")
-    hashes = _source_hashes()
+    hashes, init_contents, runner_contents = _release_sources()
     if report.get("candidate_source_sha256") != hashes:
         raise ValueError("Candidate source SHA-256 differs from the saved benchmark.")
-    version = _literal((ROOT / "src/strategy_inference/__init__.py").read_text(), "__version__")
+    version = _literal(init_contents.decode("utf-8"), "__version__")
     if version != VERSION:
-        raise ValueError(f"Current library version must be {VERSION}.")
-    runner = ROOT / "benchmarks/run.py"
-    if runner.is_symlink() or report.get("benchmark_source_sha256") != _sha(runner.read_bytes()):
+        raise ValueError(f"Frozen release library version must be {VERSION}.")
+    if report.get("benchmark_source_sha256") != _sha(runner_contents):
         raise ValueError("Benchmark runner SHA-256 differs from the saved benchmark.")
-    cases = _literal(runner.read_text(), "CASES")
+    cases = _literal(runner_contents.decode("utf-8"), "CASES")
     if not isinstance(cases, dict) or len(cases) != 6:
         raise ValueError("The benchmark manifest must contain six cases.")
     baseline, candidate, comparisons = (report.get(name) for name in ("baseline", "candidate", "comparisons"))
@@ -340,7 +408,7 @@ strategy-inference test returns.csv --method gaussian_ar --output gaussian-ar.js
 <p>首次使用是一次“包导入＋接口加载＋首次核心调用”。NumPy 已用于构造输入，因此该列不含 Python/NumPy 启动及数据生成；也不代表完整新进程总耗时。暖调用不含导入和首次证书缓存成本。</p>
 <p>环境：{escape(str(report['platform']))}；Python {escape(str(report['python']).split()[0])}；NumPy {escape(str(report['numpy']))}；SciPy {escape(str(report['scipy']))}；BLAS 线程 {escape(str(report['blas_threads']))}。</p>
 <p>这些是指定输入、本机串行数据，不是普遍速度或统计校准保证。指纹对照保留 p 值、决定与 Gaussian 证书的一致性检查；浮点区间比较允许已记录的舍入误差。进程峰值 RSS 包含解释器、导入、输入与输出；调用分配峰值也不是同一对象，详见 <a href="{TAG_ROOT}/docs/performance.md">性能说明</a>。</p>
-<p><a href="benchmark.json" download>下载完整基准记录</a>。生成前已核对当前 Python 源码与基准脚本哈希；来源绑定不等于对计时数据的可信签名。</p>
+<p><a href="benchmark.json" download>下载完整基准记录</a>。生成前已核对 v{VERSION} 冻结 commit <code>{RELEASE_COMMIT}</code> 的 Python 源码与基准脚本哈希；来源绑定不等于对计时数据的可信签名。</p>
 </section>
 </main>
 <footer>
@@ -369,9 +437,10 @@ def build_site(source: Path, destination: Path, *, check: bool = False):
                 raise ValueError("The managed site contains unexpected files.")
             if path.is_symlink() or not path.is_file() or path.stat().st_nlink != 1:
                 raise ValueError("Managed site files must not be symlinks, hardlinks or directories.")
-    if source.read_bytes() != raw or _source_hashes() != hashes:
+    verified_hashes, _, runner_contents = _release_sources()
+    if source.read_bytes() != raw or verified_hashes != hashes:
         raise ValueError("Benchmark evidence or source changed during generation.")
-    if report["benchmark_source_sha256"] != _sha((ROOT / "benchmarks/run.py").read_bytes()):
+    if report["benchmark_source_sha256"] != _sha(runner_contents):
         raise ValueError("Benchmark runner changed during generation.")
     if check:
         if any(
@@ -388,7 +457,7 @@ def build_site(source: Path, destination: Path, *, check: bool = False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "benchmarks/results/library-0.5.json")
-    parser.add_argument("--destination", type=Path, default=ROOT / "docs/library")
+    parser.add_argument("--destination", type=Path, default=ROOT / f"docs/library/v{VERSION}")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     try:

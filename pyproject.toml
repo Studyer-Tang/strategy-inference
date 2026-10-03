@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strategy-inference"
-version = "0.5.0"
-description = "Mean-return inference after strategy selection in dependent time series."
+version = "0.6.0"
+description = "Time-series evaluation, forecast comparison and online uncertainty."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"
@@ -13,7 +13,7 @@ dependencies = ["numpy>=1.26", "scipy>=1.11"]
 
 [project.urls]
 Repository = "https://github.com/Studyer-Tang/strategy-inference"
-Documentation = "https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/api.md"
+Documentation = "https://studyer-tang.github.io/strategy-inference/library/"
 Issues = "https://github.com/Studyer-Tang/strategy-inference/issues"
 
 [project.optional-dependencies]

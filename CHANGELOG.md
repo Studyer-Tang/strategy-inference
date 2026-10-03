@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+
+- Add rolling-origin evaluation with explicit gaps, bounded or expanding training windows, isolated training copies and a model-agnostic callable interface. Retain every origin, lead and forecast, including overlapping targets. Include naive, seasonal-naive and drift baselines.
+- Add vectorized squared, absolute, pinball and interval scores. Keep lead-specific loss summaries and compare a prespecified family against one baseline at one lead using shared-row stationary bootstrap. Preserve nonstationarity, overlap and incomplete-search limitations.
+- Add one-step adaptive conformal intervals based on Angelopoulos–Barber–Bates (ICML 2024). Use a fixed-scale bounded residual score, explicit empty/unbounded sets and ordered predict-then-feedback updates. Distinguish retrospective average coverage from conditional or delayed-feedback coverage; retain binary64 limitations.
+- Document a broader toolbox roadmap with verified recent papers and separate implemented capabilities from planned research. Archive v0.5 runtime evidence against its frozen release source instead of treating future unrelated modules as part of that historical benchmark.
+
 ## 0.5.0
 
 - Add `test_returns` and `TestResult` for consistent array/DataFrame/CSV input, column decisions, JSON records and optional pandas tables. Keep legacy interfaces and their defaults; the new bootstrap entry uses resampled HAC scales explicitly.

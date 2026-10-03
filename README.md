@@ -1,31 +1,91 @@
 # strategy-inference
 
-用于时间依赖数据和候选策略筛选的 Python 均值推断库。输入同期收益矩阵，返回全族检验、列级决定和诊断信息。
+面向预测评估、在线不确定性与策略均值推断的 Python 时序工具箱。v0.6.0 提供第一阶段工作流：滚动预测、逐步损失评估、固定候选比较和单步在线区间；原有收益均值接口继续可用。
 
-[English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [API](docs/api.md) · [性能](docs/performance.md) · [方法说明](docs/methods.md) · [研究与复现](docs/research.md)
+[English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
 
 ## 安装
 
-需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。直接安装 GitHub v0.5.0 release 的 wheel，无需 clone：
+需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone；尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.5.0/strategy_inference-0.5.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.6.0/strategy_inference-0.6.0-py3-none-any.whl
 ```
 
-也可从对应标签安装源码；开发或绘图时使用 checkout：
+对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.5.0'
-
-# 开发与绘图：
-git clone --branch v0.5.0 https://github.com/Studyer-Tang/strategy-inference.git
-cd strategy-inference
-python -m pip install -e '.[figures,dev]'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.6.0'
 ```
 
-尚未发布到 PyPI。示例 CSV、研究脚本与保存的实验结果在源码仓库中。
+开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
 
-## 最小可运行例子
+## 从预测到比较与区间
+
+下面的例子生成模拟序列，预先确定模型和比较步长，不需要下载数据：
+
+```python
+import numpy as np
+from strategy_inference import (
+    backtest, evaluate_forecasts, compare_forecasts, adaptive_intervals,
+    naive_forecast, drift_forecast, SeasonalNaive,
+)
+
+rng = np.random.default_rng(17)
+y = np.empty(384)
+y[0] = rng.normal()
+for t in range(1, len(y)):
+    y[t] = 0.6 * y[t - 1] + 0.8 * rng.normal()
+
+models = {
+    "naive": naive_forecast,
+    "seasonal": SeasonalNaive(period=12),
+    "drift": drift_forecast,
+}
+run = backtest(
+    y, models, initial_train_size=120, window=120, horizon=3,
+)
+scores = evaluate_forecasts(run, loss="squared")
+comparison = compare_forecasts(
+    run, baseline="naive", lead_time=1, loss="squared",
+    n_resamples=1999, seed=17, search_complete=True,
+)
+# 单步、连续 origin：先发出 naive 预测，再用该步真实值更新。
+intervals = adaptive_intervals(
+    run.actuals[:, 0], run.forecasts[:, 0, 0], alpha=0.1, scale=1.0,
+)
+
+print(run.forecasts.shape)        # (262, 3, 3): origin × lead × model
+print(scores.mean_loss)           # (3, 3): 每个 lead、model 的平均损失
+print(comparison.records())       # 相对 naive 的改善、调整 p 值与拒绝决定
+print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
+```
+
+`mean_improvement > 0` 表示候选损失低于 baseline。拒绝决定检验期望改善是否大于零，不能仅按平均损失最小选择后再解释未经调整的 p 值。该示例演示接口，实际平均覆盖也不是每个时点的覆盖概率。
+
+## 已实现的接口
+
+| 接口 | 输入与输出 |
+| --- | --- |
+| `rolling_splits(...)`、`backtest(y, forecasters, ...)` | 有限、等间隔的一维序列；保存训练/测试位置、每个 origin 的预测、真实值和目标索引。`window=None` 为扩展窗，整数为滚动窗上限 |
+| `naive_forecast`、`SeasonalNaive(period)`、`drift_forecast` | 三种透明 baseline；也可提供 `callback(train, lead_times)`，返回指定 lead 的一维预测 |
+| `forecast_loss(...)`、`evaluate_forecasts(run, ...)` | 平方、绝对、pinball 损失；保留 origin × lead × model 损失，按 lead 分别汇总。Pinball 预测须对应指定分位数 |
+| `interval_score(actual, lower, upper, alpha=...)` | 中心区间评分，包含宽度与漏覆盖距离惩罚；全域区间评分为无穷，空集不支持 |
+| `compare_forecasts(run, baseline=..., lead_time=...)` | 一个预先指定 baseline、一个 lead、固定候选集的共享时间索引 max bootstrap，返回全族/候选决定及诊断 |
+| `AdaptiveConformal`、`adaptive_intervals(...)` | 单步、有序完整反馈的递减步长 quantile tracker，返回区间、空集/全域状态和实际覆盖 |
+| `test_returns(...)`、`infer_mean(...)` | 原有同期收益矩阵的同时或逐列均值推断 |
+
+`run.to_dict()` 保存完整回测数组与 splits；`scores.losses` 保留逐 origin 损失，`scores.to_dict()` 导出汇总；比较和在线区间也提供 `to_dict()`。导出候选表或回测长表可使用 `to_frame()`，需要 pandas。详细参数、数组形状和结果语义见[时序 API](docs/time-series.md)。
+
+## 方法与适用条件
+
+回测按照输入顺序使用当前训练窗。每次 callback 得到独立的只读训练数据与 lead 数组；使用者仍须避免 callback 通过闭包、外部状态或数据源读取未来信息。缺失、非有限输入和无效预测会报错；软件不自动重排日期、填补或重新采样。
+
+预测比较使用 baseline 损失减去候选损失。Bootstrap 近似需要损失差序列平稳、弱依赖、适当矩及非退化方差，渐近讨论固定候选数。重叠预测保留 origin 顺序；多步回测必须指定 `lead_time`，不会把多个 lead 当作独立样本。默认 HAC lag 和块长同时考虑重叠与样本量，仍是启发式；rolling/expanding 切分本身不建立统计条件。常数损失差会报错。候选、baseline、损失和 lead 应事先确定，跨 lead 联合检验、隐藏搜索和反复查看后停止需要另外处理。
+
+在线区间实现 [Angelopoulos–Barber–Bates（ICML 2024）](https://proceedings.mlr.press/v235/angelopoulos24a.html) 的递减步长更新，采用固定尺度有界残差映射。理想递推的保证是时间平均覆盖；逐时、条件覆盖和延迟多步反馈不属于当前方法保证。空集与全域区间显式保留，阈值不截断。实际实现使用普通浮点运算，反馈按返回闭区间计算；详见[时序 API](docs/time-series.md)中的理论范围和数值边界。
+
+## 收益均值推断
 
 ```python
 import numpy as np
@@ -33,91 +93,35 @@ from strategy_inference import test_returns
 
 rng = np.random.default_rng(17)
 returns = rng.normal(0.0, 0.01, size=(512, 3))
-returns[:, 0] += 0.0005
-
-result = test_returns(
-    returns,
-    method="bootstrap",
-    names=["strategy_a", "strategy_b", "strategy_c"],
-    n_resamples=1999,
-    seed=17,
-    search_complete=True,  # 本例的候选集在生成数据前已确定。
-)
-print(result.global_pvalue)    # 全部候选均值均不大于零的全族检验。
-print(result.adjusted_pvalue)  # 长度 K 的列级调整 p 值。
-print(result.decisions)        # 指定 alpha 下的列级拒绝决定。
+result = test_returns(returns, n_resamples=1999, seed=17)
+print(result.global_pvalue, result.adjusted_pvalue)
 ```
 
-数据为模拟的单期收益，单位是小数。默认 bootstrap 每轮重新估计 HAC 尺度；结果依赖重抽样近似。这个例子演示调用，不为任意金融序列提供有限样本保证。
+`test_returns` 支持 NumPy、可选 DataFrame 和 `read_returns_csv` 返回的表，行是时间、列是候选。要求 `T >= 8`、同期等间隔、有限值与正样本方差。输入保持单期单位；检验基准调整收益时须先扣基准与成本。
 
-## 核心接口
+默认 `method="bootstrap"` 使用共享 stationary-bootstrap 时间索引与每轮重新估计的 HAC 尺度，适用条件同样包含平稳、弱依赖与适当矩。`method="gaussian_ar"` 提供共同平稳 Gaussian AR(1)、`0 <= phi < 1`、事先固定候选与信息配置下的保守强 FWER 决定，返回参数集合而不提供连续 p 值；信息退化或认证未完成时保守不拒绝。完整限制见[均值 API](docs/api.md)和[联合方法证明](docs/joint-uncertainty.md)。
 
-```text
-test_returns(returns, *, method="bootstrap", alpha=0.05, names=None, **options)
-```
-
-输入支持 NumPy 数组、数值 array-like、可选 pandas DataFrame，以及 `read_returns_csv` 返回的 `ReturnTable`。行是时间、列是候选，形状为 `(T, K)`；一维输入按单列处理。要求 `T >= 8`、各列方差为正、所有值有限。DataFrame 与 CSV 自动提供列名。
-
-观测须等间隔、同期对齐。检验基准调整收益时，应先减去基准并扣除交易成本。缺失值、非有限值和恒定列会报错，程序不会自动删行。输出均值与区间沿用输入的单期单位，不自动年化。
-
-统一返回 `TestResult`：
-
-| 属性 | 含义 |
-| --- | --- |
-| `names`、`mean` | 候选名与原样本均值 |
-| `decisions`、`global_reject` | 列级拒绝决定及是否至少拒绝一列 |
-| `adjusted_pvalue`、`global_pvalue` | bootstrap 调整 p 值；Gaussian AR 方法为 `None` |
-| `parameter_intervals` | Gaussian AR 方法的时间参数集合外包；bootstrap 为 `None` |
-| `diagnostics`、`details` | 方法诊断及原始底层结果 |
-
-`result.to_dict()` 生成 JSON 可序列化记录；`result.to_frame()` 返回候选结果表，可通过 `python -m pip install 'pandas>=2'` 安装所需的可选依赖。完整参数与诊断见 [API 说明](docs/api.md)。
-
-## 方法选择
-
-| 方法 | 用途 | 适用条件和边界 |
-| --- | --- | --- |
-| `test_returns(..., method="bootstrap")` | 事先给定的有限候选集，联合检验均值是否全部不大于零 | 平稳、弱时间依赖、适当矩条件和一致尺度估计；渐近讨论固定 `K`，短样本或高持久性可能失准 |
-| `test_returns(..., method="gaussian_ar")` | 共同未知时间参数下的保守同时决定 | 共同平稳 Gaussian AR(1)、`0 <= phi < 1`、未知边际尺度与同期协方差；模型内强 FWER 控制，可能明显保守 |
-| `infer_mean(..., method="hac")` 或 `"iid"` | 事先固定候选的逐列比较 | 不调整筛选；HAC 依赖渐近条件，IID t 检验仅在独立 Gaussian 观测下有限样本精确 |
-
-Bootstrap 默认 `studentization="resampled"`、`n_resamples=999`，列间共享 stationary-bootstrap 时间索引。可指定 `lags`、`block_length`、`n_resamples`、`seed` 与 `batch_size`；批次参数控制计算批量。默认带宽和块长是样本量启发式，重新学生化不自动消除有限样本误差。该接口不等同于 Hansen SPA。
-
-`"gaussian_ar"` 调用 `wilks_uncertainty_test`，使用 GLS 推断，并在整个参数集合上认证决定。要求 `0 < beta < alpha < 0.5`；用于参数信息的前 `min(K, max_dimension)` 列及时间块尺度须事先确定。认证预算不足、单位根端点保留或信息退化时，方法保守地不拒绝。理想 Gaussian 分布保证与给定浮点输入的代数认证范围见[联合方法证明](docs/joint-uncertainty.md)；测量舍入误差不在该分布定理内。
-
-原接口 `audit_returns`、`uncertainty_test`、`wilks_uncertainty_test`、`infer_mean` 和 `long_run_variance` 继续可用。`audit_returns` 为兼容历史版本仍默认 `studentization="fixed"`；统一入口的 bootstrap 默认值为 `"resampled"`。`uncertainty_test` 用事先指定的参考列构造参数集合，详见[参数不确定性方法](docs/parameter-uncertainty.md)。
-
-调整只覆盖输入候选集。软件不能从收益矩阵确认隐藏试验、策略自适应生成、反复查看后的停止规则或搜索完整性。全族拒绝也不保证所选策略未来可盈利。
-
-## CSV 与命令行
-
-```python
-from strategy_inference import read_returns_csv, test_returns
-
-table = read_returns_csv("examples/demo_returns.csv")
-result = test_returns(table, method="bootstrap", n_resamples=1999, seed=17)
-print(result.to_dict())
-```
-
-CSV 可含一个 `date` 列，其余列为候选收益。`read_returns_csv(..., benchmark="benchmark")` 会减去指定基准列。重复表头、无效日期顺序及缺失数据会报错。示例 CSV 是模拟数据。
+`audit_returns`、`uncertainty_test`、`wilks_uncertainty_test`、`infer_mean` 和 `long_run_variance` 保留；兼容接口 `audit_returns` 默认 `studentization="fixed"`，`test_returns` 默认 `"resampled"`。CLI 保留收益检验与报告：
 
 ```bash
 strategy-inference test examples/demo_returns.csv \
   --method bootstrap --n-resamples 1999 --seed 17 --output result.json
-
-strategy-inference test examples/demo_returns.csv \
-  --method gaussian_ar --output gaussian-ar.json
 ```
 
-旧 `audit` 命令保留 JSON 与 HTML 报告功能。
+## 文档、研究与性能
 
-## 研究与开发
+[路线图](docs/toolbox-roadmap.md)区分已实现功能与待核验扩展；[研究索引](docs/research.md)保留历史评价、失败边界、冻结协议和原始证据。基础预测、bootstrap 与 conformal 算法的实现不作为算法创新主张。
 
-[研究索引](docs/research.md)集中保留各阶段评价、失败边界、功效代价、冻结协议、原始数据和复现命令。已知参数补尾与拟合参数重放属于研究模块，未接入统一检验入口。推导见[方法说明](docs/methods.md)，来源见[文献表](docs/references.bib)。
+v0.6 的[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存运行条件、五次热调用与源码哈希。本机 958 个起点的三基线滚动评估约 19 ms，两个候选、999 次重抽样比较约 24 ms，10 万步流式区间更新约 123 ms；输入生成与导入不计时，比较耗时也不包含已有回测。数值是本机工程测量，不是通用速度保证。
+
+历史证据保留在 [v0.5 页面与完整 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)和[v0.5 性能说明](docs/performance.md)。该版本的计时不代表 v0.6 新接口。历史正式研究应在 metadata 指定的冻结 commit/tag 下复核。
 
 ```bash
 python -m pytest
 ruff check .
 python scripts/sync_protocols.py --check
+python scripts/build_library_site.py --check
+python scripts/build_toolbox_site.py --check
 ```
 
 BSD-3-Clause 许可证。

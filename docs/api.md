@@ -1,6 +1,6 @@
 # 公共 API
 
-本文说明 `v0.5.0` 的统一接口。安装与最小例子见[首页](../README.md)，公式及统计条件见[方法说明](methods.md)，研究证据见[研究索引](research.md)。
+本文说明 `v0.6.0` 保留的收益均值统一接口。新增滚动预测、损失比较与在线区间见[时序 API](time-series.md)；安装与例子见[首页](../README.md)，公式及统计条件见[方法说明](methods.md)，研究证据见[研究索引](research.md)。
 
 ## test_returns
 

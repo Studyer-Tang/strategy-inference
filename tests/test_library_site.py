@@ -2,6 +2,8 @@
 
 import importlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -81,6 +83,23 @@ def _files(directory):
             for path in directory.rglob("*") if path.is_file()}
 
 
+def _git(root, *arguments):
+    return subprocess.run(
+        ["git", "-C", str(root), *arguments], check=True, capture_output=True,
+    ).stdout.decode().strip()
+
+
+@pytest.fixture
+def frozen_evidence(builder, evidence, monkeypatch):
+    """Use actual local Git objects, without touching the production checkout."""
+    _git(builder.ROOT, "init")
+    _git(builder.ROOT, "add", "src", "benchmarks/run.py")
+    _git(builder.ROOT, "-c", "user.name=Library fixture", "-c",
+         "user.email=fixture@example.invalid", "commit", "-m", "Frozen v0.5 fixture")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD"))
+    return evidence
+
+
 def test_verified_build_and_checks_are_read_only(builder, evidence, tmp_path):
     source, _ = evidence
     destination = tmp_path / "site"
@@ -135,6 +154,92 @@ def test_source_and_release_bindings_are_required(builder, evidence, tmp_path, c
     _save(source, report)
     with pytest.raises(ValueError):
         builder.build_site(source, tmp_path / "site")
+
+
+def test_frozen_git_release_ignores_new_current_modules_version_and_runner(
+    builder, frozen_evidence, tmp_path,
+):
+    source, _ = frozen_evidence
+    destination = tmp_path / "archive"
+    builder.build_site(source, destination)
+    archive_before = _files(destination)
+    package = builder.ROOT / "src/strategy_inference"
+    (package / "forecasting.py").write_text("# New module, outside the frozen release.\n")
+    (package / "inference.py").write_text("# Changed current implementation.\n")
+    (package / "__init__.py").write_text('__version__ = "0.6.0"\n')
+    (builder.ROOT / "benchmarks/run.py").write_text("# New benchmark protocol.\n")
+    current_before = _files(builder.ROOT)
+    builder.build_site(source, destination, check=True)
+    assert _files(destination) == archive_before
+    assert _files(builder.ROOT) == current_before
+    builder.build_site(source, destination)
+    assert {key: value[0] for key, value in _files(destination).items()} == {
+        key: value[0] for key, value in archive_before.items()
+    }
+
+
+@pytest.mark.parametrize("changed", ["source", "runner"])
+def test_report_rejects_different_frozen_git_objects(
+    builder, frozen_evidence, monkeypatch, tmp_path, changed,
+):
+    source, _ = frozen_evidence
+    path = builder.ROOT / (
+        "src/strategy_inference/inference.py" if changed == "source" else "benchmarks/run.py"
+    )
+    path.write_text(path.read_text() + "# Altered release fixture.\n")
+    _git(builder.ROOT, "add", str(path.relative_to(builder.ROOT)))
+    _git(builder.ROOT, "-c", "user.name=Library fixture", "-c",
+         "user.email=fixture@example.invalid", "commit", "-m", "Different release objects")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD"))
+    before = _files(builder.ROOT)
+    with pytest.raises(ValueError, match="SHA-256"):
+        builder.build_site(source, tmp_path / "archive")
+    assert not (tmp_path / "archive").exists()
+    assert _files(builder.ROOT) == before
+
+
+def test_frozen_git_release_version_is_checked_independently_of_current_version(
+    builder, frozen_evidence, monkeypatch, tmp_path,
+):
+    source, report = frozen_evidence
+    init = builder.ROOT / "src/strategy_inference/__init__.py"
+    init.write_text('__version__ = "0.6.0"\n')
+    _git(builder.ROOT, "add", "src/strategy_inference/__init__.py")
+    _git(builder.ROOT, "-c", "user.name=Library fixture", "-c",
+         "user.email=fixture@example.invalid", "commit", "-m", "Wrong release version")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD"))
+    report["candidate_source_sha256"] = builder._source_hashes()
+    _save(source, report)
+    init.write_text('__version__ = "0.5.0"\n')
+    with pytest.raises(ValueError, match="Frozen release library version"):
+        builder.build_site(source, tmp_path / "archive")
+
+
+def test_missing_frozen_commit_fails_clearly_and_without_writes(
+    builder, frozen_evidence, monkeypatch, tmp_path,
+):
+    source, _ = frozen_evidence
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", "f" * 40)
+    before = _files(builder.ROOT)
+    with pytest.raises(ValueError, match="fetch this commit and its Git objects"):
+        builder.build_site(source, tmp_path / "archive", check=True)
+    assert not (tmp_path / "archive").exists()
+    assert _files(builder.ROOT) == before
+
+
+def test_check_cli_defaults_to_versioned_archive_and_preserves_landing(
+    builder, frozen_evidence, monkeypatch,
+):
+    source, _ = frozen_evidence
+    landing = builder.ROOT / "docs/library"
+    landing.mkdir(parents=True)
+    (landing / "index.html").write_text("Current toolbox landing, retained.\n")
+    (landing / "benchmark.json").write_text("Old snapshot, retained.\n")
+    builder.build_site(source, landing / "v0.5.0")
+    before = _files(builder.ROOT)
+    monkeypatch.setattr(sys, "argv", ["build_library_site.py", "--check"])
+    builder.main()
+    assert _files(builder.ROOT) == before
 
 
 @pytest.mark.parametrize("change", ["truncate", "append", "reorder", "duplicate", "shape"])
@@ -246,4 +351,5 @@ def test_saved_release_schema_renders_without_running_benchmarks(builder):
     page = builder._render(report, builder._sha(raw))
     assert page.count(b"<tr>") == 7
     assert b"strategy_inference-0.5.0-py3-none-any.whl" in page
+    assert builder.RELEASE_COMMIT.encode() in page
     assert (source.read_bytes(), source.stat().st_mtime_ns) == before

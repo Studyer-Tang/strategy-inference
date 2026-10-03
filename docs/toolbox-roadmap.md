@@ -1,0 +1,57 @@
+# 时序工具箱：范围与路线图
+
+`strategy-inference` 保留现有包名。v0.6.0 是向时序工具箱扩展的第一阶段：以预测数据对齐、损失评估、统计比较和在线区间组成可复核工作流。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
+
+安装与例子见[首页](../README.md)，详细新接口见[时序 API](time-series.md)，原收益推断见[均值 API](api.md)。本项目的增量主要是接口整合、实现、验证和计算效率；已知预测、MCS、bootstrap 与 conformal 基础算法不作为算法创新主张。
+
+## v0.6.0 已实现
+
+| 能力 | 公共接口与当前边界 |
+| --- | --- |
+| 滚动与扩展窗回测 | `rolling_splits`、`backtest`；单变量数值序列、完整 horizon、可设 step/gap/window。保留 origin、目标位置和重叠预测；回调只得到当前训练数据与 lead 的独立只读副本 |
+| 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`；支持 `callback(train, lead_times)` 接入使用者预测器，外部状态的未来信息须由使用者约束 |
+| 逐预测损失 | `forecast_loss`、`evaluate_forecasts`；平方、绝对、pinball，保留 origin × lead × model 数组并按 lead 汇总。`interval_score` 单独评价中心区间，不能凭评分推断覆盖保证 |
+| 固定候选预测比较 | `compare_forecasts`；预先指定 baseline 与单个 lead，共享时间索引的 max bootstrap。正改善为 baseline 损失减去候选损失；依赖固定族、平稳弱依赖、适当矩和非退化方差等条件 |
+| 单步在线区间 | `AdaptiveConformal`、`adaptive_intervals`；递减步长 quantile tracker，固定尺度有界残差映射，单个 pending prediction 与有序完整反馈。保留空集/全域，不截断阈值；理想递推为长期平均覆盖，普通浮点实现不提供舍入证书 |
+| 收益均值推断 | `test_returns` 与既有高级接口保留；bootstrap 近似和共同平稳 Gaussian AR(1) 模型内的保守决定各自沿用原条件 |
+| 结果保存 | 回测数组、逐预测损失、候选比较与在线区间结果可读取；JSON/记录表接口，部分 `to_frame()` 需可选 pandas。类型和导出范围见 API |
+
+上述回测功能并不自动保证损失平稳；多步预测、单个 lead 的统计比较与单步在线区间也是不同能力。当前比较不会把 lead 展平成独立样本，当前在线 tracker 没有延迟多步反馈保证。
+
+## 后续模块及验收目标
+
+这些模块尚未实现，不是 v0.6.0 的可用功能清单；顺序表示依赖关系，不承诺发布日期。
+
+| 方向 | 计划范围 | 进入公共接口前的验证 |
+| --- | --- | --- |
+| 数据、频率与变换 | 显式频率/日期对齐、缺失策略、差分和标准化、训练窗内拟合的变换与逆变换 | 未来数据扰动不改变过去结果；不静默删行；变换参数只用训练数据；日期/频率语义有往返测试 |
+| 经典模型接入 | 与 sktime、StatsForecast 等预测器连接；明确 refit/update、季节周期和预测时点可用的外生变量 | 对同一训练窗与底层库输出对照；固定种子、失败处理和重估语义；避免复制成熟模型库后误称新算法 |
+| 多模型集合与序贯比较 | 经典 MCS 消除法参考，Fast MCS 实验路径，随后独立实现具时间一致目标的 SMCS | 相同 loss 与 bootstrap 索引下核对 ranks/p 值、ties 和纳入集合；Fast MCS 记录有限样本差异/回退；序贯版本另验 e-process 条件与停止规则 |
+| 多 lead 联合比较 | 预声明加权风险、模型 × lead 同时置信带，以及单独的联合 Wald 比较 | 使用完整跨 lead 与时间协方差；不把同一目标的多次预测当独立重复；对参考实现、相关 DGP 和有限样本覆盖做评估 |
+| 条件在线 conformal | 核验 2025 条件分位数建模/在线优化方法，区别 adversarial 平均覆盖与结构化 stochastic 条件结论 | 明确条件分位数结构、设计变量、更新顺序和理论假设；独立复现，不能沿用当前 tracker 的平均覆盖说明代替新定理 |
+| 延迟多步 conformal | 研究 2026 AcMCP/多步 PID，显式维护每个预测的目标成熟时间和可用反馈 | 未成熟 label 无法进入校准；逐 horizon 与整条轨迹覆盖分别报告；核验饱和函数、scorecaster 和长 horizon 有限样本偏差 |
+| 漂移、changepoint 与稳健诊断 | 描述性漂移/依赖诊断、块长敏感性，随后考虑具有明确检测错误控制的方法 | 区分描述性告警与正式检验；多次监测与调参另控误差；验证重尾、结构变化与模型失配下的适用边界 |
+| 性能与 panel | 批量多序列、内存约束、流式结果、适配器与完整工作流 benchmark | 不将多个序列拼接成同一时间样本；固定数据和环境，校对结果；暖核心、首次使用与完整流程成本分别记录 |
+
+## 近期主源与可继承的范围
+
+- **2024，Angelopoulos–Barber–Bates：[Online conformal prediction with decaying step sizes](https://proceedings.mlr.press/v235/angelopoulos24a.html)。** 当前 tracker 的来源。Theorem 1 对有界 score、正递减步长和初始阈值给出任意序列的回顾平均覆盖界。IID 量化收敛还需要固定/稳定 score、分位数与连续性等额外条件，不能解释成任意依赖序列的逐时条件覆盖。当前固定尺度有界映射是实现选择。
+- **2024 首稿、2026 修订，Arnold 等：[Sequential model confidence sets](https://arxiv.org/abs/2404.18678)。** 采用 e-process 和 confidence sequence，§3 区分逐时与累计条件风险目标；相应构造要求有界、条件有界损失差或合适的尾部条件。普通固定样本 MCS 反复运行不能继承时间一致保证。缩放损失差可能改变 superiority 的目标。
+- **2025，Areces–Mohri–Hashimoto–Duchi：[Online Conformal Prediction via Online Optimization](https://proceedings.mlr.press/v267/areces25a.html)。** 分别提供 adversarial 平均保证和 stochastic 条件结论；后者使用条件误差分位数由过去数据线性表达等结构假设。它不支持任意非平稳序列逐时条件覆盖，也不是当前 `AdaptiveConformal` 的已实现能力。
+- **2025 首稿，Bauer–Kazak：[Conditional Method Confidence Set](https://arxiv.org/abs/2505.21278)。** 按预测时点已知的离散状态比较方法。§2 使用有限训练窗、混合/矩条件、状态内稳定排名和一致方差估计；不能把事后挑选 regime 或 expanding-window 搜索直接当作已获保证。
+- **2026（online 2025），Barde：[Large-scale model comparison with fast model confidence sets](https://doi.org/10.1016/j.jeconom.2025.106123)。** R-rule 两遍更新算法减少论文所比较实现的模型维度时间与工作内存阶数。**Proposition 1 的 ranking/output 等价结论是样本量增大时的渐近结果**；有限样本实验一致不等于任意输入严格相等。未来实现须保留经典消除法参考、共享抽样索引及差异记录/回退；一遍版本不能冒充两遍算法。添加模型的计算能力也不自动处理自适应搜索。[作者说明](https://sylvain-barde.github.io/projects/fast_mcs/)明确此渐近限制。
+- **2026，Grant–Mrazik–Satchell：[Evaluating Forecasts at Multiple Horizons](https://doi.org/10.1002/for.70150)。** §3 对多步损失差向量及其长期协方差做联合比较；需要联合 CLT 与一致协方差估计。向量差异检验与预声明加权平均改善是不同统计目标，均不是当前单 lead 比较自动提供的结果。
+- **2026，Pohle–Zahn–Lerch：[Uncertainty Quantification in Forecast Comparisons](https://arxiv.org/abs/2605.03997)。** 为 expected scores/skill scores 构造联合带；§3、Proposition 1 使用多元 CLT、一致长期协方差与有效 bootstrap。比值型 skill score 还要求基准期望 score 为正。其有限样本研究也报告强依赖和高维时的欠覆盖，不能由此宣称普遍精确或任意增长维数有效；已有[作者实现](https://github.com/TanjaZahn/UQforecasts)可作对照。
+- **2026 修订（首稿 2024），Wang–Hyndman：[Online conformal inference for multi-step time series forecasting](https://arxiv.org/html/2410.13115v2)。** AcMCP/多步 PID 使用已经成熟的多步误差。长期保证涉及指定饱和函数、可容许次线性函数及 bounded scorecaster 等条件；各 horizon 的长期覆盖不能改称整条预测轨迹同时覆盖。一般非线性 AR 的误差结构推导使用 Taylor 近似，不能泛称精确 MA(h−1)。当前单步模块没有实现该延迟反馈方法。
+
+## 与成熟库衔接
+
+[sktime](https://www.sktime.org/en/latest/examples/01_forecasting.html) 提供统一预测、时间交叉验证和概率预测接口；[StatsForecast](https://nixtlaverse.nixtla.io/statsforecast/src/core/core.html) 提供高效模型、多序列与滚动评估。它们适合作为预测器来源，本库着重保留评估位置、损失和推断结果。
+
+[arch MCS](https://arch.readthedocs.io/en/latest/multiple-comparison/generated/arch.bootstrap.MCS.html) 已支持 R/max 消除法与多种 block bootstrap，并包含 SPA/StepM 等方法；[dieboldmariano](https://github.com/edoannunziata/dieboldmariano) 提供轻量配对 DM。本库新增接口须解释自己的统计目标和对照差异，不把这些已有功能表述为首次提出。
+
+## 版本证据
+
+[v0.5 归档页面及 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)绑定固定发布 commit，原数据保留；[性能说明](performance.md)描述的是该版六格实验。新模块的速度须用新版本 benchmark 验证，不沿用旧版倍数。
+
+历史正式研究须在 metadata 指定的冻结 commit/对应 tag 下完整复核；新 API 和计算优化不改写旧协议与证据。报告和图可直接读取，带 source-hash 锁的旧 auditor 不应直接配合更新后的 core 重跑。完整索引见[研究与复现](research.md)。

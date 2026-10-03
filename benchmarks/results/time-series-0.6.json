@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-03T10:44:01.924471+00:00",
+  "package_version": "0.6.0",
+  "git_head_at_run": "da5d8cbf9bd69ff092d92576cd4b3f905c337ad2",
+  "candidate_source_sha256": {
+    "__init__.py": "7f08727689cdb089bdd3ff739b89f9c7ebca112c72dd056214e35b4cbcb7f927",
+    "__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+    "_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "audit.py": "b25a62e3d71dc288a1ae93bad664f520d8d664b758e22e48aea73aaad1964ea3",
+    "bootstrap.py": "1327414db04305731bb46fea31e5183d4133c689e4a78164725759a02ed1764f",
+    "calibration.py": "9a125e62a19fc3c05a22b83c60dc9c78605aafe81fc798d58416980c04a18cde",
+    "calibration_plotting.py": "b0c1c55d26deb8888bd54e8d97787c4d23dd6fe727f06d49927403cb9eef71dd",
+    "calibration_report.py": "30ffd021af48ed89c893205cf4d39cf23d9341dbf7656eabe01dcfbf67612f7f",
+    "cli.py": "072114bfb0d890351e448688689c677fb7b8848b2d3d77d613cc80da7a57c3f7",
+    "conformal.py": "61548a9c1aa13280c3928d7b6450a28d7ed3aebd26ebc5d5eaf761ca3175f174",
+    "evaluation.py": "350b4fe399d08c2b79424332c5c30b6edb598f7485a754f531487893062e6c8f",
+    "experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9",
+    "inference.py": "a9f441571d948cfcca594457e1caa86f7683bfa97236786e1417e1ffd13267b7",
+    "io.py": "fe039fc9e0367bed25f1b8532493afcfc134cbeb5350b8222b10fe5ac5668614",
+    "model_selection.py": "f9e06b04915be8849b3a82a1eda6a70b0d71cfea72d046a3509fcfca5532ef17",
+    "parametric.py": "9f60708f9fa1dd1e6cc6ed9093d3fd6b19af0ea102f7d26e8eaa9b194f0729ca",
+    "plotting.py": "994546ec43c5b5f8b0cd358546d62a3e9f31b3d54fd7e5ed956ee7f1f929bae6",
+    "quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "report.py": "b19d6180f9c2472960175faa5ab94a597aef90577dd2dd983871ac6c8b5eb3af",
+    "simulations.py": "83807e027a03da778ae12b75caa8d4db7e73052592278a133165c23b0b16303e",
+    "tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "testing.py": "eeb84ad292032a9d9b1f822aca76886b22b27ddfc5dc67aedd91d8c9c26c4773",
+    "uncertainty.py": "1b4a3618f8eee4fa9c079bef189318986bbab9980d1fe877e6c7b5f5da565c93",
+    "wilks.py": "efc21f375f1bcf375a6ec91014403bba1196c82f2de0e2863a06364036b2f999"
+  },
+  "benchmark_source_sha256": "9257f36a7e2ec429cb1b3d3bb7a8e3ca6e61a6a9c6f4ffdebcd379ac64bc0f50",
+  "python": "3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]",
+  "platform": "macOS-26.4-arm64-arm-64bit-Mach-O",
+  "processor": "arm",
+  "numpy": "2.5.3",
+  "repeats": 5,
+  "warmup_calls": 1,
+  "scope": "Serial local engineering measurements, not calibration or universal performance.",
+  "timing_scope": "Imports, input generation, fingerprints and the existing comparison backtest are excluded.",
+  "memory_scope": "One separate warmed tracemalloc call; includes newly allocated output, excludes imports and pre-existing input.",
+  "blas_thread_environment": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1"
+  },
+  "cases": [
+    {
+      "case": "squared_loss_10000x20",
+      "settings": {
+        "n_obs": 10000,
+        "n_models": 20,
+        "seed": 20261220,
+        "prediction_noise_seed": 20261221,
+        "loss": "squared",
+        "inputs": {
+          "actual": {
+            "shape": [
+              10000
+            ],
+            "dtype": "float64",
+            "sha256": "45f2cae452edc3458b94467249e564d02ae598a5ba8f11b0d804637ade2029bd"
+          },
+          "predicted": {
+            "shape": [
+              10000,
+              20
+            ],
+            "dtype": "float64",
+            "sha256": "cefe867e7ec4ca1f55e11dc9b51218f0a56cf12540d70f710deb4120f89766fc"
+          }
+        }
+      },
+      "warm_seconds": [
+        0.00010845798533409834,
+        0.00010524998651817441,
+        0.00010274996748194098,
+        0.00010220799595117569,
+        0.00010970799485221505
+      ],
+      "warm_median_seconds": 0.00010524998651817441,
+      "traced_current_bytes": 1600096,
+      "traced_peak_bytes": 3200800,
+      "result_sha256": "8039f44c52298e1209527a066cab9befa7eb0d60b9d546ac280e7aea414fb235",
+      "terminal_state": null,
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "backtest_4096",
+      "settings": {
+        "n_obs": 4096,
+        "seed": 20261221,
+        "models": [
+          "naive",
+          "drift",
+          "seasonal_naive_12"
+        ],
+        "backtest_options": {
+          "initial_train_size": 256,
+          "window": 256,
+          "horizon": 12,
+          "step": 4
+        },
+        "input": {
+          "shape": [
+            4096
+          ],
+          "dtype": "float64",
+          "sha256": "9a67eb4b3b6d9c42dba909c3f75f6e1c56ca27a7bb1206dd443ccb0292a8147f"
+        }
+      },
+      "warm_seconds": [
+        0.01914029201725498,
+        0.019089250010438263,
+        0.018901375005953014,
+        0.019010749994777143,
+        0.019118874974083155
+      ],
+      "warm_median_seconds": 0.019089250010438263,
+      "traced_current_bytes": 726661,
+      "traced_peak_bytes": 772350,
+      "result_sha256": "330bf98f3330745488ad1f91c8988da08b637714d24df4aa3619438df412ca5f",
+      "terminal_state": null,
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "compare_forecasts_958x2",
+      "settings": {
+        "n_obs": 4096,
+        "seed": 20261221,
+        "models": [
+          "naive",
+          "drift",
+          "seasonal_naive_12"
+        ],
+        "backtest_options": {
+          "initial_train_size": 256,
+          "window": 256,
+          "horizon": 12,
+          "step": 4
+        },
+        "input": {
+          "shape": [
+            4096
+          ],
+          "dtype": "float64",
+          "sha256": "9a67eb4b3b6d9c42dba909c3f75f6e1c56ca27a7bb1206dd443ccb0292a8147f"
+        },
+        "n_origins": 958,
+        "n_candidates": 2,
+        "comparison_options": {
+          "baseline": "naive",
+          "lead_time": 1,
+          "n_resamples": 999,
+          "seed": 17
+        },
+        "loss_difference_variances": [
+          0.00041197520913731746,
+          12.156841036025561
+        ],
+        "existing_backtest_excluded": true
+      },
+      "warm_seconds": [
+        0.024293708032928407,
+        0.024169959011487663,
+        0.024214249977376312,
+        0.024432792037259787,
+        0.02421395800774917
+      ],
+      "warm_median_seconds": 0.024214249977376312,
+      "traced_current_bytes": 29622,
+      "traced_peak_bytes": 1344252,
+      "result_sha256": "52d84d146a9c0978d89914442d4fd1e13c33f1f3234b0765cf7a71fab66615d4",
+      "terminal_state": null,
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "adaptive_intervals_100000",
+      "settings": {
+        "n_obs": 100000,
+        "seed": 20261222,
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.6,
+          "scale": 1.0,
+          "initial_quantile": 0.5
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              100000
+            ],
+            "dtype": "float64",
+            "sha256": "664c8332ec0c63b22174a7739c0f6752e0fe246e62553dbafd9f1e3c39252270"
+          },
+          "predicted": {
+            "shape": [
+              100000
+            ],
+            "dtype": "float64",
+            "sha256": "7624893dfee9c86ac3065b8104ca9162ee7ead38496338068296edf90d09dabb"
+          }
+        },
+        "retained_output": "Arrays for every observation."
+      },
+      "warm_seconds": [
+        0.14583541598403826,
+        0.14260641700820997,
+        0.1437134169973433,
+        0.14441037504002452,
+        0.14355899998918176
+      ],
+      "warm_median_seconds": 0.1437134169973433,
+      "traced_current_bytes": 5101769,
+      "traced_peak_bytes": 5102377,
+      "result_sha256": "13ab439a657e7d120f3bb26cfa6141ba020fd883f6fad4674ac5bea9aebed2c4",
+      "terminal_state": null,
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "adaptive_stream_100000",
+      "settings": {
+        "n_obs": 100000,
+        "seed": 20261222,
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.6,
+          "scale": 1.0,
+          "initial_quantile": 0.5
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              100000
+            ],
+            "dtype": "float64",
+            "sha256": "664c8332ec0c63b22174a7739c0f6752e0fe246e62553dbafd9f1e3c39252270"
+          },
+          "predicted": {
+            "shape": [
+              100000
+            ],
+            "dtype": "float64",
+            "sha256": "7624893dfee9c86ac3065b8104ca9162ee7ead38496338068296edf90d09dabb"
+          }
+        },
+        "retained_output": "One tracker and its terminal scalar summary; no trajectory.",
+        "purpose": "Streaming timing and memory."
+      },
+      "warm_seconds": [
+        0.12412425002548844,
+        0.12379858299391344,
+        0.12316191697027534,
+        0.12225212500197813,
+        0.12202529201749712
+      ],
+      "warm_median_seconds": 0.12316191697027534,
+      "traced_current_bytes": 208,
+      "traced_peak_bytes": 848,
+      "result_sha256": "2dd958f0ed5d04c5c707aedb4ef74861abd8a7e9d00fca84ead919501cb1035b",
+      "terminal_state": {
+        "n_updates": 100000,
+        "misses": 10014,
+        "next_quantile": 0.555787780357879,
+        "coverage": 0.89986,
+        "pending": false
+      },
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    },
+    {
+      "case": "adaptive_stream_1000",
+      "settings": {
+        "n_obs": 1000,
+        "seed": 20261222,
+        "options": {
+          "alpha": 0.1,
+          "step_size": 0.1,
+          "decay": 0.6,
+          "scale": 1.0,
+          "initial_quantile": 0.5
+        },
+        "inputs": {
+          "actual": {
+            "shape": [
+              1000
+            ],
+            "dtype": "float64",
+            "sha256": "600a1bf7c50feddfb36fc6f078e97ff9747a839fec6352e79ea4d791f77598a2"
+          },
+          "predicted": {
+            "shape": [
+              1000
+            ],
+            "dtype": "float64",
+            "sha256": "c8c29eeae30462986c013bb99d8b569dab9fb4af32b518161593cc89c788ae67"
+          }
+        },
+        "retained_output": "One tracker and its terminal scalar summary; no trajectory.",
+        "purpose": "Memory-scaling probe."
+      },
+      "warm_seconds": [
+        0.0012243749806657434,
+        0.0012731670285575092,
+        0.0012252919841557741,
+        0.0012155830045230687,
+        0.0012182919890619814
+      ],
+      "warm_median_seconds": 0.0012243749806657434,
+      "traced_current_bytes": 176,
+      "traced_peak_bytes": 816,
+      "result_sha256": "0ab90954d0c909b82d9ca96a8e9cb5ad3a05ab90868cd660f764c4232775e747",
+      "terminal_state": {
+        "n_updates": 1000,
+        "misses": 97,
+        "next_quantile": 0.5459354830936469,
+        "coverage": 0.903,
+        "pending": false
+      },
+      "package_version": "0.6.0",
+      "numpy_version": "2.5.3",
+      "thread_environment": {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1",
+        "BLIS_NUM_THREADS": "1"
+      },
+      "numpy_runtime": "WARNING: `threadpoolctl` not found in system! Install it by `pip install threadpoolctl`. Once installed, try `np.show_runtime` again for more detailed build information\n[{'numpy_version': '2.5.3',\n  'python': '3.13.15 (main, Sep  1 2026, 14:05:45) [Clang 22.1.3 ]',\n  'uname': uname_result(system='Darwin', node='192.168.1.3', release='25.4.0', version='Darwin Kernel Version 25.4.0: Thu Mar 19 19:33:43 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T8142', machine='arm64')},\n {'simd_extensions': {'baseline': ['NEON', 'NEON_FP16', 'NEON_VFPV4', 'ASIMD'],\n                      'found': ['ASIMDHP', 'ASIMDDP'],\n                      'not_found': ['ASIMDFHM']}},\n {'ignore_floating_point_errors_in_matmul': True}]\n"
+    }
+  ],
+  "streaming_memory_comparison": {
+    "short_n_obs": 1000,
+    "long_n_obs": 100000,
+    "short_peak_bytes": 816,
+    "long_peak_bytes": 848,
+    "scope": "Two measured lengths supplement inspection of the single-tracker implementation; they do not prove an asymptotic memory law."
+  }
+}
