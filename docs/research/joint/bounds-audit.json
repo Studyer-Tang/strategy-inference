@@ -1,0 +1,21 @@
+{
+  "certificates_sha256": "42460699c7c2c1b50b10f3ca464f096833b66677d8c19751ab229365f13fe41e",
+  "computation_revision": "7f9073d18b14a329264c5508204231c72cc5262f",
+  "exact_lower_bounds_checked": 678,
+  "exact_upper_bounds_checked": 564,
+  "metadata_sha256": "a496e108ad1603c352eb46e4b25f390de2b23446722319b5babddb1a77de4c22",
+  "per_scale_beta": "5764607523034235/3458764513820540928",
+  "predeclared_scale_count": 3,
+  "scales_checked": 684,
+  "scope": "Saved Wilks scale dimensions, dyadic roots and exact Chernoff probability bounds; no Monte Carlo rerun or raw-summary verification.",
+  "shared_beta": "5764607523034235/1152921504606846976",
+  "singular_scales_checked": 36,
+  "snapshot_bases_checked": 66,
+  "snapshot_datasets_checked": 114,
+  "status": "passed",
+  "trivial_upper_bounds_checked": 114,
+  "unusable_scales_checked": 6,
+  "usable_scales_checked": 678,
+  "verifier_sha256": "a85ee670fdb2ae837dba42921bf6272f1360918619ae9b7cb7f25a996a8419c0",
+  "verifier_source": "scripts/verify_joint_bounds.py"
+}

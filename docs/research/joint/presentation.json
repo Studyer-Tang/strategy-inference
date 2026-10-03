@@ -1,0 +1,18 @@
+{
+  "evidence_metadata_sha256": "a496e108ad1603c352eb46e4b25f390de2b23446722319b5babddb1a77de4c22",
+  "audit_sha256": "3d21b623067a017a5aadcaf3bb2e76713c72eac68b11a8e528ee795bf9e59674",
+  "bounds_audit_sha256": "6313add7f173da7557279cb1a316e69fe65c9a9c10b4694f5e0e6dbd26a2da74",
+  "renderer_sha256": "6197cc56937f3eba9847ef08811214f6d08ead64e6d5c2ba98f2ae22a2cb4f7c",
+  "output_hashes": {
+    "report.html": "abeb3793e92ad3d72f9a80e717273227964a9a726635fd3c098af08fc45720d1",
+    "figure-1-joint-size.png": "72b96a0be9efb67295827be43ffbd89be555d1f3b3a5658cb97db78651a0b437",
+    "figure-1-joint-size.svg": "7a30de25f4aa66c216847ce861755e4c59ac794aa3af70e6fe082e532df116bf",
+    "figure-1-joint-size.pdf": "3f174a1fb3b95c8c413ca33d3a0e8530b3ca4b471f5ec055e5a69bb3dc28138c",
+    "figure-2-joint-information.png": "1e8dc295495f853565a0ea8dd2377579fc1b77ea8905eb409fc83cd725e23213",
+    "figure-2-joint-information.svg": "cc4af89470e2d971358ae6366eaa51f7ef533a37bb185e76d6028ef4b63af8cb",
+    "figure-2-joint-information.pdf": "4e10db8698f79f7d968584af15e41cccf12d975bf9bab32dea1291f16a4421d7",
+    "figure-3-joint-power.png": "d804402c09d2e5d78a3d0c39930bdf7ddcedac50b77895aa476baea3c6308665",
+    "figure-3-joint-power.svg": "05b0f8be99b2cd9ae1a234473caf74e8b92cf6e2b67f71347aebbf703c08ec0f",
+    "figure-3-joint-power.pdf": "4020a33ecb4e196f3663e83c45b07cde035fd7e20558afb229e94f8ebe43cb80"
+  }
+}

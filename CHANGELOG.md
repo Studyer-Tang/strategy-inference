@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- Add `wilks_uncertainty_test`: fixed multiscale innovation contrasts and up to eight prespecified columns inform the common AR parameter. Independent Wishart scatters remove unknown contemporaneous covariance; exact integer moments and outward rational roots preserve the coverage budget. Singular selected covariance supplies no information and conservatively retains the full parameter domain.
+- Certify degree-at-most-16 determinant inequalities over continuous parameter intervals, then reuse the fixed-level GLS strong-FWER argument. Preserve unresolved intervals and nonrejections; do not estimate effective rank or claim a general power ordering.
+- Freeze a new paired evaluation of temporal and cross-column information, including partial nulls, severe correlation, duplicate columns, near-unit persistence and model misspecification. Save complete records, audit selected full certificates, and provide three reproducible scientific figures.
+
+
 ## 0.3.0
 
 - Add `uncertainty_test`: fixed-level simultaneous mean decisions for stationary Gaussian AR columns with a common unknown coefficient in `[0,1)`, unknown marginal scales and unrestricted contemporaneous covariance. Use an exact innovation F confidence set and a shared coverage budget; document strong FWER and every model condition.

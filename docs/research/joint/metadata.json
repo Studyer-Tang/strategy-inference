@@ -1,0 +1,430 @@
+{
+  "status": "complete",
+  "profile": "full",
+  "settings": {
+    "null_replicates": 1000,
+    "power_replicates": 1000,
+    "partial_replicates": 1000,
+    "null_seed": 20261120,
+    "power_seed": 20261121,
+    "partial_seed": 20261122
+  },
+  "protocol": {
+    "study": "joint-uncertainty",
+    "protocol_version": 1,
+    "alpha": 0.05,
+    "beta": 0.005,
+    "scope": "Common stationary Gaussian AR(1) coefficient in [0,1), arbitrary positive-semidefinite contemporaneous covariance. Fixed first min(K,8) columns; singular selected covariance gives a conservative full-set fallback. Heterogeneous persistence is outside the model.",
+    "procedure": {
+      "max_dimension": 8,
+      "block_lengths": [
+        4,
+        16,
+        64
+      ],
+      "ci_depth": 16,
+      "certificate_depth": 20,
+      "max_nodes": 4096,
+      "critical_bits": 40
+    },
+    "profiles": {
+      "quick": {
+        "null_replicates": 4,
+        "power_replicates": 4,
+        "partial_replicates": 4,
+        "null_seed": 20261110,
+        "power_seed": 20261111,
+        "partial_seed": 20261112
+      },
+      "full": {
+        "null_replicates": 1000,
+        "power_replicates": 1000,
+        "partial_replicates": 1000,
+        "null_seed": 20261120,
+        "power_seed": 20261121,
+        "partial_seed": 20261122
+      }
+    },
+    "groups": [
+      {
+        "id": 1,
+        "n_obs": 128,
+        "k": 20,
+        "phi_factor": 0.0,
+        "phi_idio": 0.0,
+        "rho": 0.0,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 2,
+        "n_obs": 256,
+        "k": 20,
+        "phi_factor": 0.5,
+        "phi_idio": 0.5,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 3,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 4,
+        "n_obs": 512,
+        "k": 100,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 5,
+        "n_obs": 1024,
+        "k": 20,
+        "phi_factor": 0.96875,
+        "phi_idio": 0.96875,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 6,
+        "n_obs": 200,
+        "k": 1,
+        "phi_factor": 0.99,
+        "phi_idio": 0.99,
+        "rho": 0.0,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 7,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.6,
+        "signed_scaled": true,
+        "in_scope": true
+      },
+      {
+        "id": 8,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.98,
+        "phi_idio": 0.3,
+        "rho": 0.35,
+        "signed_scaled": false,
+        "in_scope": false
+      },
+      {
+        "id": 9,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 0.995,
+        "signed_scaled": false,
+        "in_scope": true
+      },
+      {
+        "id": 10,
+        "n_obs": 512,
+        "k": 20,
+        "phi_factor": 0.9,
+        "phi_idio": 0.9,
+        "rho": 1.0,
+        "signed_scaled": false,
+        "in_scope": true
+      }
+    ],
+    "power": {
+      "groups": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10
+      ],
+      "standardized_mean_shifts": [
+        2.0,
+        3.0,
+        6.0
+      ],
+      "target": "Only column 0 has positive mean, delta times its true sample-mean standard deviation. Primary power is rejection of column 0, not rejection of any column."
+    },
+    "partial_null": {
+      "groups": [
+        3,
+        4,
+        7,
+        9
+      ],
+      "standardized_mean_shift": 3.0,
+      "target": "Even columns have positive means; odd columns are true nulls. Strong FWER counts rejection of an odd column only."
+    },
+    "methods": [
+      "gls_known",
+      "gls_known_budget",
+      "gls_fitted",
+      "uncertainty",
+      "wilks_scalar",
+      "wilks_joint"
+    ],
+    "comparisons": [
+      "gls_known",
+      "gls_known_budget",
+      "uncertainty",
+      "wilks_scalar"
+    ],
+    "reference": "wilks_joint",
+    "information_comparison": "Old single-column cosine F set versus single-column multiscale Wilks set distinguishes temporal contrasts. Wilks scalar versus joint first-eight-column set distinguishes use of the common parameter across columns. Both keep the same alpha, beta and certified GLS cutoff. Neither pathwise nesting nor a universal power improvement is asserted.",
+    "calibration": "Independent Wishart determinant ratio; integer positive/negative moments and Markov bounds. Moment search depends only on dimensions and beta. No Monte Carlo calibration, estimated covariance threshold, or formal-data tuning.",
+    "development": "Conditional Gaussian predictive mixture and angular likelihood mixture were examined on separate development seeds 20261101/02 and not retained as improvements. Block Wilks feasibility used 20261103/04/05. Formal seeds are new; development results are exploratory.",
+    "uncertainty_reporting": "Pointwise 95% Wilson intervals; paired normal intervals and exact McNemar p-values. Descriptive intervals are not simultaneous. Record CI widths, true-parameter coverage, boundary retention, singular fallback and certificate failures separately. G8 checks the factor coefficient only and is not a common-parameter coverage claim.",
+    "rng": "NumPy SeedSequence([phase_seed,43,phase,group_id,replicate,0]); stationary Gaussian initial observations. Workers change execution order only. No invalid replicates are discarded.",
+    "snapshots": "Replicates 0, floor(R/2), R-1, all shifts, each cell: regenerate data, decision masks, rational intervals and determinant-polynomial certificates. Other records receive hash, design and arithmetic verification."
+  },
+  "git_revision": "7f9073d18b14a329264c5508204231c72cc5262f",
+  "workers": 4,
+  "environment": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.3.0"
+  },
+  "cells": [
+    {
+      "key": "p1-g01",
+      "group": 1,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g02",
+      "group": 2,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g03",
+      "group": 3,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g04",
+      "group": 4,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g05",
+      "group": 5,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g06",
+      "group": 6,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g07",
+      "group": 7,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g08",
+      "group": 8,
+      "phase": 1,
+      "n": 1000,
+      "records": 4000,
+      "in_scope": false
+    },
+    {
+      "key": "p1-g09",
+      "group": 9,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p1-g10",
+      "group": 10,
+      "phase": 1,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g02",
+      "group": 2,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g03",
+      "group": 3,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g04",
+      "group": 4,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g05",
+      "group": 5,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g06",
+      "group": 6,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g08",
+      "group": 8,
+      "phase": 2,
+      "n": 1000,
+      "records": 12000,
+      "in_scope": false
+    },
+    {
+      "key": "p2-g09",
+      "group": 9,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p2-g10",
+      "group": 10,
+      "phase": 2,
+      "n": 1000,
+      "records": 18000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g03",
+      "group": 3,
+      "phase": 3,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g04",
+      "group": 4,
+      "phase": 3,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g07",
+      "group": 7,
+      "phase": 3,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    },
+    {
+      "key": "p3-g09",
+      "group": 9,
+      "phase": 3,
+      "n": 1000,
+      "records": 6000,
+      "in_scope": true
+    }
+  ],
+  "source_hashes": {
+    "experiments/joint-uncertainty-protocol.json": "887a1615e67d44aa52d71d5cf77d622338df960e2a1a8c91b3ea1f4c532448ff",
+    "scripts/joint_uncertainty.py": "7877316226a1cca3792a547157cbe8606bb3c783cac6f488a003ecd74be2da09",
+    "scripts/parameter_uncertainty.py": "49185014fc067d1d2d5f8ba675bc1679e8490719bb8b0195bec67a335fe45ba3",
+    "scripts/parametric_replay.py": "2f590935e310df4e61f53750d3c40e2e0c37f1a15791d97c0bbac6f9dcfbad4d",
+    "src/strategy_inference/wilks.py": "5598f3656051731aa0eb57ddbcb79aab2a8575f2a7791e6a0b5d209adf744d82",
+    "src/strategy_inference/uncertainty.py": "4a719571fc9323e21a90a0cffe3053d84f9ee18aa39788d88d6d41134005be3e",
+    "src/strategy_inference/parametric.py": "9f60708f9fa1dd1e6cc6ed9093d3fd6b19af0ea102f7d26e8eaa9b194f0729ca",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f"
+  },
+  "elapsed_seconds": 707.8070441659656,
+  "records": 220000,
+  "output_hashes": {
+    "certificates.json": "42460699c7c2c1b50b10f3ca464f096833b66677d8c19751ab229365f13fe41e",
+    "geometry.csv": "e387546d26934412d94a339c53376584f98d3ed46dc41c0d1c9e551222a291ac",
+    "p1-g01.csv.gz": "8aebaa17a716a8604d6e44831190ded0d3cc5edadb1a889230052deb9c2160fb",
+    "p1-g02.csv.gz": "4d8fe53e2f115c5c3439ba2ba20a9995ef321176d80d12b542c31696e57f7def",
+    "p1-g03.csv.gz": "553581e4bad9ce1e30d09aed44556d26a896a4f75e9ff3838ad54bb6a4f97a5b",
+    "p1-g04.csv.gz": "76fc46d27778f4931ec26cc3ceff4b9d2953a01dfe512346320d2c1eaf5fe1e2",
+    "p1-g05.csv.gz": "566af3e5bc52a61925b9b1d7902f19736f1f5f87166ccf2b06e92cf2be08eb70",
+    "p1-g06.csv.gz": "244980813ddd42771bae53979ca967f2d9fa54aa094bf583eb2cb13f2c853b30",
+    "p1-g07.csv.gz": "fafe22afe0d24b4389c723ee0228d4d2f7570b8df6c44170972e440a7d7c4423",
+    "p1-g08.csv.gz": "03e982e420e03a8e00ea14f464e197ea65bcd945dda0aec0c82cb47a4be62523",
+    "p1-g09.csv.gz": "7c3c83b443b52d4ffd0e2ecea3e48437a312d7eae26accce9bfd4b60421895ee",
+    "p1-g10.csv.gz": "793fb61df79e2e8002c824c6598929c46ae6e0ad54247c814060615389daa77e",
+    "p2-g02.csv.gz": "cc0721ad1234af80b916486137e95d2c85856dbf5f92d6d7040183ff66383d30",
+    "p2-g03.csv.gz": "3468508cd6be115385242c270a445d63dca67b5cdf9f40df7a372ef4361342cc",
+    "p2-g04.csv.gz": "fd65d00983df099581d7d888eb954b93c21ccaef1f2d1a1f58c3620d34b2c1a5",
+    "p2-g05.csv.gz": "9562afe285b328d3dc2f50d0ef33c4afa4ef48d38d19cf0c828078c6b8510388",
+    "p2-g06.csv.gz": "ded599f1baf2093b77866150d6fc7a6f7bc5e160044706149a5e28a648012a31",
+    "p2-g08.csv.gz": "bb359ef8a138e3234922d92808472517a313c2801986c8c4a0b358820ce84a0c",
+    "p2-g09.csv.gz": "f6e15f709f4f332477aa09d4dee8e35d4b8b1e91984e4858ec072042379dadc5",
+    "p2-g10.csv.gz": "501dfa9ced1ad280208177e25035b883d25ebde0d0da04b562854f8fb4a7b630",
+    "p3-g03.csv.gz": "68b5e7eae303bff6ec7f152c9098537107c7c45f2d242024e81cc145966ca3e3",
+    "p3-g04.csv.gz": "dc0813363892aa54b73ed386568fd2c430fd3cdfdfade150a5fcf0fe15106e4a",
+    "p3-g07.csv.gz": "78b1c5ca6e339ce182fcad8801c3a53347f468b8d097758e460e1a22d6865031",
+    "p3-g09.csv.gz": "4dd41c0095c950c68acc9bcf6ee33ff38cd6e04a1c7ce47f28edec90f360b64e",
+    "paired.csv": "57228b094a821c5760725ba55ad0d08a1e9989d53c2cf62bb0bbb966aa90165c",
+    "summary.csv": "eb812e4a655eff204d6e54bf93ca5235728f5c343f468ba5df2958080d7fca92"
+  }
+}

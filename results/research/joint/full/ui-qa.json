@@ -1,0 +1,745 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "kind": "raw",
+      "device": "desktop",
+      "url": "http://127.0.0.1:8769/results/research/joint/full/report.html",
+      "status": 200,
+      "title": "共同时间参数的信息利用",
+      "overflow": false,
+      "images": [
+        {
+          "src": "figure-1-joint-size.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-joint-information.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-joint-power.png",
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/joint-uncertainty.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/joint-results.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/experiments/joint-uncertainty-protocol.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/references.bib",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/geometry.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/bounds-audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g09.csv.gz",
+          "status": 200
+        }
+      ],
+      "errors": []
+    },
+    {
+      "kind": "raw",
+      "device": "mobile",
+      "url": "http://127.0.0.1:8769/results/research/joint/full/report.html",
+      "status": 200,
+      "title": "共同时间参数的信息利用",
+      "overflow": false,
+      "images": [
+        {
+          "src": "figure-1-joint-size.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-joint-information.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-joint-power.png",
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-1-joint-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-2-joint-information.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/figure-3-joint-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/joint-uncertainty.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/joint-results.md",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/experiments/joint-uncertainty-protocol.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/references.bib",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/geometry.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/bounds-audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p1-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p2-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/results/research/joint/full/p3-g09.csv.gz",
+          "status": 200
+        }
+      ],
+      "errors": []
+    },
+    {
+      "kind": "pages",
+      "device": "desktop",
+      "url": "http://127.0.0.1:8769/docs/research/joint/index.html",
+      "status": 200,
+      "title": "共同时间参数的信息利用",
+      "overflow": false,
+      "images": [
+        {
+          "src": "figure-1-joint-size.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-joint-information.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-joint-power.png",
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/geometry.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/bounds-audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g09.csv.gz",
+          "status": 200
+        }
+      ],
+      "errors": []
+    },
+    {
+      "kind": "pages",
+      "device": "mobile",
+      "url": "http://127.0.0.1:8769/docs/research/joint/index.html",
+      "status": 200,
+      "title": "共同时间参数的信息利用",
+      "overflow": false,
+      "images": [
+        {
+          "src": "figure-1-joint-size.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-joint-information.png",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-joint-power.png",
+          "loaded": true
+        }
+      ],
+      "links": [
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-1-joint-size.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-2-joint-information.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.svg",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.png",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/figure-3-joint-power.pdf",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/summary.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/paired.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/geometry.csv",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/metadata.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/certificates.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/bounds-audit.json",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g01.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p1-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g02.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g05.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g06.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g08.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g09.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p2-g10.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g03.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g04.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g07.csv.gz",
+          "status": 200
+        },
+        {
+          "url": "http://127.0.0.1:8769/docs/research/joint/p3-g09.csv.gz",
+          "status": 200
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

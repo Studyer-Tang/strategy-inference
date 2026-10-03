@@ -1,8 +1,8 @@
 # strategy-inference
 
-Mean-return inference under time dependence and strategy selection. Version 0.3.0.
+Mean-return inference under time dependence and strategy selection. Version 0.4.0.
 
-[中文说明](README.md) · [Methods](docs/methods.md) · [Results](docs/results.md) · [References](docs/references.bib)
+[中文说明](README.md) · [Methods](docs/methods.md) · [Results](docs/results.md) · [Joint information study](https://studyer-tang.github.io/strategy-inference/research/joint/) · [References](docs/references.bib)
 
 A positive sample mean is not sufficient evidence of a positive expected return. Serial dependence changes the uncertainty of the mean; choosing a strategy from the same history changes what a single-strategy p value can establish. This package makes both effects explicit and compares their consequences in reproducible simulations.
 
@@ -23,7 +23,7 @@ python -m pip install '.[figures]'
 Install the tagged GitHub source directly:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.3.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.4.0'
 ```
 
 These instructions use source or release artifacts; no PyPI publication is assumed. Use a source checkout for the example CSV, documentation and saved experiment outputs.
@@ -146,6 +146,32 @@ python scripts/uncertainty_report.py --output results/research/uncertainty/repro
 
 Confidence-set inversion and nuisance projection follow Dufour (1990), Dufour–Neifar (2002), and Berger–Boos; Glazer–Stark (2026) provides recent work on conservative computation. The contribution is the scoped, verifiable implementation and power-cost study, not a new general inference principle.
 
+## Information about the common temporal parameter
+
+`wilks_uncertainty_test` uses the first prespecified `min(K,8)` columns and fixed block lengths 4, 16 and 64 in the same common stationary Gaussian AR model. Independent within-block and between-block Wishart scatters give a Wilks determinant ratio that removes unknown contemporaneous covariance. Exact integer moments, conservative outward cutoffs and continuous determinant certificates retain the shared coverage budget and GLS strong-FWER argument.
+
+```python
+from strategy_inference import wilks_uncertainty_test
+
+result = wilks_uncertainty_test(excess_returns, alpha=0.05, beta=0.005)
+print(result.decisions, result.interval_bounds)
+print(result.dimension, result.phi1_retained, result.singular_fallback)
+```
+
+Singular selected covariance conservatively removes shape information; duplicate candidates do not become additional directions. The interface returns fixed-level decisions, not p-values. Wilks, moment bounds and nuisance projection are established principles. The contribution is the scoped combination, numerical certificates and frozen paired evaluation, without a universal power or optimality claim.
+
+The fresh evaluation uses 22,000 independent noise datasets and 220,000 method records. At `T=512, phi=.9, K=20`, true-signal power improves from **1.3% to 9.4%** at delta=3 and **12.2% to 88.0%** at delta=6; G2 improves from **0.4% to 27.5%** at delta=3. Gains primarily come from joint directions. The single-column near-unit case remains ineffective, duplicate columns trigger fallback, and heterogeneous persistence produces **7.5%** false positives. The release remains a scoped conservative research baseline.
+
+[Three figures](https://studyer-tang.github.io/strategy-inference/research/joint/) · [Proofs](docs/joint-uncertainty.md) · [Results](docs/joint-results.md) · [Protocol](experiments/joint-uncertainty-protocol.json)
+
+```bash
+python scripts/joint_report.py --output results/research/joint/full
+python scripts/joint_uncertainty.py --profile full --workers 4 --output results/research/joint/reproduced
+python scripts/verify_joint_uncertainty.py --output results/research/joint/reproduced
+python scripts/verify_joint_bounds.py --output results/research/joint/reproduced
+python scripts/joint_report.py --output results/research/joint/reproduced
+```
+
 ## Uncertainty and scope
 
 Bootstrap p values use `(1 + exceedances)/(B + 1)`. This avoids zero estimates and sets the numerical resolution; it is not an exact randomization-test guarantee. A conditional bootstrap-tail interval describes uncertainty from a finite number of draws for the observed data.
@@ -165,6 +191,7 @@ ruff check .
 python scripts/sync_protocols.py --check
 python scripts/build_site.py --check
 python scripts/build_uncertainty_site.py --check
+python scripts/build_joint_site.py --check
 ```
 
 The [method notes](docs/methods.md) derive the statistics and connect them to the implementation. The [research plan](docs/research-plan.md) (Chinese) connects recent papers to completed work, remaining questions and proof obligations. Source methods and software references are recorded in [references.bib](docs/references.bib). Code is licensed under BSD-3-Clause.

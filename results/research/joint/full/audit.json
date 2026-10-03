@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "records_checked": 220000,
+  "shifted_datasets_regenerated": 114,
+  "complete_ci_calls_regenerated": 342,
+  "summaries_checked": 1116,
+  "paired_checked": 432,
+  "geometry_checked": 114,
+  "scope": "Every record: hash, canonical design, masks, intervals and arithmetic. Prespecified snapshots: complete data and rational determinant/GLS certificate regeneration. Other numerical certificates are not rerun.",
+  "metadata_sha256": "a496e108ad1603c352eb46e4b25f390de2b23446722319b5babddb1a77de4c22",
+  "auditor_sha256": "e24fd9e3c5ef722b7520c006c8a69e489719dbc883d20bcd813b90aaaca4abc7"
+}

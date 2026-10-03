@@ -1,8 +1,8 @@
 # strategy-inference
 
-时间依赖与策略筛选之后的平均收益推断。版本 0.3.0。
+时间依赖与策略筛选之后的平均收益推断。版本 0.4.0。
 
-[English](README.en.md) · [方法说明](docs/methods.md) · [结果解读](docs/results.md) · [实验报告](https://studyer-tang.github.io/strategy-inference/) · [参数不确定性研究](https://studyer-tang.github.io/strategy-inference/research/uncertainty/)
+[English](README.en.md) · [方法说明](docs/methods.md) · [实验报告](https://studyer-tang.github.io/strategy-inference/) · [联合参数信息研究](https://studyer-tang.github.io/strategy-inference/research/joint/) · [上一轮参数不确定性](https://studyer-tang.github.io/strategy-inference/research/uncertainty/)
 
 一个策略的样本平均收益为正，并不意味着它的期望收益为正。连续观测的相关性会改变均值的标准误；从多条策略中选出表现最好的一条，又会改变检验的含义。这个项目将两种影响分开做实验，比较不同推断方法，并保留它们失效的情形。
 
@@ -23,7 +23,7 @@ python -m pip install '.[figures]'
 也可以直接安装本轮 GitHub 标签：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.3.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.4.0'
 ```
 
 尚未发布到 PyPI。示例数据、说明文档和保存的实验结果在源码仓库中；安装后的命令行可直接运行两个实验协议。
@@ -138,6 +138,33 @@ python scripts/uncertainty_report.py --output results/research/uncertainty/repro
 
 置信集合反演及最不利检验的基本原理已有 Dufour（1990）、Dufour–Neifar（2002）等前例；[Glazer–Stark（2026）](https://doi.org/10.1080/10618600.2025.2526416)讨论保守置信集合的可靠计算。本轮贡献定位为具体模型的可核验实现与功效成本研究，不把已有理论包装成新推断原理。
 
+## 共同参数的信息利用
+
+`wilks_uncertainty_test` 在同一共同 Gaussian AR 模型下，用事先指定的前 `min(K,8)` 列和长度 4、16、64 的时间块构造参数集合。真实参数处，块内与块均值创新的独立 Wishart 散布矩阵给出 Wilks 行列式比，消去未知横截面协方差；多尺度共用覆盖预算，随后认证整个集合上的 GLS 决策。临界值采用精确矩的保守界，不使用拟合参数或 Monte Carlo 分位数。
+
+```python
+from strategy_inference import wilks_uncertainty_test
+
+result = wilks_uncertainty_test(excess_returns, alpha=0.05, beta=0.005)
+print(result.decisions, result.interval_bounds)
+print(result.dimension, result.phi1_retained, result.singular_fallback)
+```
+
+固定列的奇异协方差会保守回退，不能把重复策略算成额外信息。返回固定水平下的同时决定；理论和观测舍入的界限与上一轮相同。联合 Wilks、矩界及投影推断属于已有原理，贡献在于具体构造、连续证书和冻结配对评价。
+
+新冻结评价包含 **22,000 份独立噪声、220,000 条方法记录**。`T=512、φ=.9、K=20` 时，δ=3 的真实信号检出率由旧方法 **1.3%** 提高到 **9.4%**，δ=6 由 **12.2%** 提高到 **88.0%**；G2 的 δ=3 则由 **0.4%** 到 **27.5%**。这些收益主要来自联合方向，单列多尺度并不普遍更强。单列近单位根仍几乎没有功效，完全重复列触发保守回退，异质 AR 的误报为 **7.5%**；仍定位为有明确范围的保守研究基线。
+
+[三张实验图](https://studyer-tang.github.io/strategy-inference/research/joint/) · [完整证明](docs/joint-uncertainty.md) · [结果解读](docs/joint-results.md) · [冻结协议](experiments/joint-uncertainty-protocol.json)
+
+```bash
+python scripts/joint_report.py --output results/research/joint/full
+# 完整重算使用新的空目录；workers 只改变执行顺序：
+python scripts/joint_uncertainty.py --profile full --workers 4 --output results/research/joint/reproduced
+python scripts/verify_joint_uncertainty.py --output results/research/joint/reproduced
+python scripts/verify_joint_bounds.py --output results/research/joint/reproduced
+python scripts/joint_report.py --output results/research/joint/reproduced
+```
+
 ## 推断边界
 
 原 bootstrap 审计接口依赖平稳性、弱时间依赖、适当矩条件和一致的尺度估计；其理论讨论固定候选数 `K`。默认带宽与块长是事前启发式，有限样本效果需要另行检验。这里的去均值 max Bootstrap 不是 Hansen SPA，也不提供有限样本精确保证。新增 `uncertainty_test` 的有限样本保证采用上节明确的共同 Gaussian AR 模型，不能移用到原审计接口。
@@ -155,6 +182,7 @@ ruff check .
 python scripts/sync_protocols.py --check
 python scripts/build_site.py --check
 python scripts/build_uncertainty_site.py --check
+python scripts/build_joint_site.py --check
 ```
 
 - [方法说明](docs/methods.md)：统计目标、公式、假设、实现和数值范围。
