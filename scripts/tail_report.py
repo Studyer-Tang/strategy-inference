@@ -149,6 +149,18 @@ def build(output: Path) -> None:
         "流程检查：每格只有 64 轮，不用于研究结论。" if metadata["profile"] == "quick" else
         "固定协议的机制诊断：每格 5000 轮。全部方法使用已知相关矩阵的 Gaussian 最大值临界值；只有真实方差参照拥有相应的精确尺度。"
     )
+    finding = ""
+    if metadata["profile"] == "full":
+        unbiased = next(row for row in summary if row["cell"] == "g05-k100-r00"
+                        and row["method"] == "mean_unbiased_oracle")
+        finding = (
+            "<p>T=512、φ=0.9、K=100、ρ=0 时，即使使用真实参数使每列尺度的期望精确无偏，"
+            f"误报率仍为 <strong>{100*float(unbiased['rate']):.2f}%</strong>"
+            f"（点态 95% 区间 {100*float(unbiased['ci_low']):.2f}–{100*float(unbiased['ci_high']):.2f}%）。"
+            f"全列平均尺度比为 {float(unbiased['column_mean_variance_ratio']):.5f}，"
+            f"被选列的平均尺度比为 {float(unbiased['selected_variance_ratio_mean']):.5f}。"
+            "<a href=\"../../../../docs/tail-results.md\">完整结果解读</a>。</p>"
+        )
     figures = (
         ("figure-1-tail-bias", "1. 偏差修正与随机尺度", "左图由 Gaussian 二次型恒等式精确计算期望；右图显示相对随机波动。确定性的乘法修正不会改变变异系数。使用 T=200、固定带宽。"),
         ("figure-2-tail-selection", "2. 策略筛选后的误报", "T=512、自相关系数 0.9。误差条为点态 95% Wilson 区间，虚线为 5%。K=1 的分布与共同相关参数无关，因此两栏共用该参照格点。"),
@@ -170,10 +182,10 @@ def build(output: Path) -> None:
             table += f'<td>{100*float(row["rate"]):.2f}%<small>{100*float(row["ci_low"]):.2f}–{100*float(row["ci_high"]):.2f}</small></td>'
         table += "</tr>"
     labels_html = ["真实方差", "Bartlett", "已知 φ·LRV", "估计 φ·LRV", "已知 φ·有限 T", "估计 φ·有限 T", "均值无偏参照"]
-    document = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{heading}</title>
+    document = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>{heading}</title>
 <style>body{{margin:0;background:#f7f5ef;color:#282621;font:17px/1.8 Georgia,"Songti SC",serif}}main{{max-width:1030px;margin:38px auto;padding:42px 46px;background:#fffefb}}h1{{font-size:29px;font-weight:500;line-height:1.5}}h2{{font-size:22px;font-weight:500;margin-top:40px}}a{{color:#35586a;text-underline-offset:3px}}figure{{margin:20px 0}}img{{width:100%;height:auto}}figcaption,small,.downloads{{font-size:14px;color:#655f54}}small{{display:block;white-space:nowrap}}.table{{overflow:auto}}table{{border-collapse:collapse;font-size:13px;width:100%}}th,td{{padding:9px 8px;border-bottom:1px solid #ddd7ca;text-align:right}}th:first-child{{text-align:left;font-weight:400;white-space:nowrap}}footer{{border-top:1px solid #ccc4b4;margin-top:35px;padding-top:18px;font-size:14px}}@media(max-width:650px){{main{{margin:0;padding:24px 18px}}h1{{font-size:24px}}body{{font-size:16px}}}}</style></head><body><main><h1>{heading}</h1>
 <p>{warning}</p><p>这里复现 Liu–Chan 的固定带宽 AR(1) 尾部修正公式，并将总体截断、有限样本中心化、参数拟合与候选筛选分开诊断。修正估计量的期望，不等于校准随机分母统计量的尾部。</p>
-<p>本报告没有使用未知参数的可实施联合临界值，未复现作者的自动带宽实验，也未建立新方法的普遍有效性。已知参数与均值无偏参照用于辨认误差来源。</p>{sections}
+<p>本报告没有使用未知参数的可实施联合临界值，未复现作者的自动带宽实验，也未建立新方法的普遍有效性。已知参数与均值无偏参照用于辨认误差来源。</p>{finding}{sections}
 <section><h2>完整零均值结果</h2><p>数值下方为点态 95% Monte Carlo 区间；行标题可下载该格点的逐轮记录。成对拒绝差异另存，未经多重比较调整，不用于确认性显著声明。</p><div class="table"><table><thead><tr><th>生成模型</th>{''.join(f'<th>{label}</th>' for label in labels_html)}</tr></thead><tbody>{table}</tbody></table></div></section>
 <footer><p><a href="summary.csv">误报汇总</a> · <a href="paired.csv">配对比较</a> · <a href="moments.csv">精确矩</a> · <a href="metadata.json">运行与哈希记录</a></p><p>公式来源：<a href="https://arxiv.org/html/2605.15596v1">Liu–Chan，JASA 2026</a>。<a href="../../../../docs/tail-mechanism.md">机制命题与证明</a>。原 v0.2.0 结果继续保留。</p><p>冻结计算版本：<code>{html.escape(metadata['git_revision'][:12])}</code>；图由保存的原始记录生成。</p></footer></main></body></html>'''
     (output / "report.html").write_text(document)

@@ -1,0 +1,19 @@
+{
+  "status": "complete",
+  "input_hashes": {
+    "metadata.json": "00f18c62a3f1fbf214a88297cebd0c1ac99bf3c33115d4c73c95f5e84ef7d03a",
+    "render_script": "1ac8c34f58cacee0e6047527092aa5086106bd36a92c6c3d129ba89048b47ef0"
+  },
+  "output_hashes": {
+    "figure-1-tail-bias.pdf": "bf25c0f4245302c1990c5c09a49aa423386eee7f85f3f6afe6edc6516ef37715",
+    "figure-1-tail-bias.png": "3fe1d35eb481558c6b6977a4db6dc74b11796d134f1407b63fcb5e90fdb2b38c",
+    "figure-1-tail-bias.svg": "f36a19795280e648ff5245a0c408b6843d09cbada798f951bd6669c262624106",
+    "figure-2-tail-selection.pdf": "41ec1cb00e8d62181f487d817350b289e4aea9cea11245c70737c13031069b86",
+    "figure-2-tail-selection.png": "a3fd7f8d9be4ecebb774b92557f5b5050e3dcd7228d044f945eb8958c2954f31",
+    "figure-2-tail-selection.svg": "96cd01598e670aff068a8ebdc60b7dfdaafdec157d0bd487027291279c1fed4b",
+    "figure-3-tail-winner.pdf": "79d8765c4f420d1445c7daca86471e1622b547f093b5ed4b992b7d80d9e75738",
+    "figure-3-tail-winner.png": "9e3a723faeeb9c1d6cbda713b8d7cd791d55d9db0138599793099f0e4c294447",
+    "figure-3-tail-winner.svg": "dff03818d131043a2803752ce7d48c1c3ba45cd7d5e22a36bd77749eeb65b517",
+    "report.html": "8631084fe45a8e41106c8f10d53d332a2978ff7b00442456c0e5523182f09e96"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "study": "fixed-bandwidth tail postcoloring: finite-sample mechanism diagnostics",
+  "status": "diagnostic, not a new calibrated audit method",
+  "root_seed": 20261005,
+  "random_address": "SeedSequence([root_seed, 21, group_id, replicate, 0]); independently addressed replicates",
+  "alpha": 0.05,
+  "profiles": {"quick": 64, "full": 5000},
+  "lags_rule": "floor(4 * (T / 100) ** (2 / 9)); paper bandwidth ell = lags + 1",
+  "critical_value": "known-correlation Gaussian maximum, with exact finite-T mean variance; shared by all diagnostic scales",
+  "estimators": ["oracle", "bartlett", "tail_known_lrv", "tail_plugin_lrv", "tail_known_finite", "tail_plugin_finite", "mean_unbiased_oracle"],
+  "parameter_estimator": "centered lag-1 autocovariance / centered lag-0 autocovariance, both with divisor T, matching paper Example 3.1; not the authors' tseries::arma wrapper",
+  "groups": [
+    {"id": 1, "n_obs": 200, "phi": 0.0, "k": [1], "rho": [0.0]},
+    {"id": 2, "n_obs": 200, "phi": 0.7, "k": [1], "rho": [0.0]},
+    {"id": 3, "n_obs": 200, "phi": 0.9, "k": [1], "rho": [0.0]},
+    {"id": 4, "n_obs": 200, "phi": 0.99, "k": [1], "rho": [0.0]},
+    {"id": 5, "n_obs": 512, "phi": 0.9, "k": [1, 20, 100], "rho": [0.0, 0.35], "skip_duplicate_single": true},
+    {"id": 6, "n_obs": 256, "phi": 0.9375, "k": [20], "rho": [0.35]},
+    {"id": 7, "n_obs": 1024, "phi": 0.96875, "k": [20], "rho": [0.35]},
+    {"id": 8, "n_obs": 2048, "phi": 0.9779029130879204, "k": [20], "rho": [0.35]}
+  ],
+  "null": "stationary zero-mean Gaussian AR(1), marginal variance one, common AR parameter; independent common and idiosyncratic AR components",
+  "pairing": "same underlying component draws within each group, across rho and nested K; same data across all estimators",
+  "invalid_estimates": "abort and preserve incomplete status; never drop a replicate",
+  "outputs": "all replicate statistics, decisions, selected indices, selected finite-T variance ratios and fitted AR parameters; paired discordant counts; source/protocol/output hashes",
+  "intervals": "pointwise Wilson rejection intervals and descriptive normal paired-risk-difference intervals; McNemar p-values are unadjusted and not confirmatory claims",
+  "scope": "known rho in every comparison; only oracle has exact Gaussian scaling. Other Gaussian-tail scores are diagnostics, not valid p-values. Fixed bandwidth; does not reproduce adaptive paper Table B.7. No size-matched power or plug-in covariance validity claimed."
+}

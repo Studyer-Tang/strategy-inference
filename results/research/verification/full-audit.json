@@ -1,0 +1,1181 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-10-03T01:52:16.706743+00:00",
+  "evidence_directory": "results/research/tail/full",
+  "frozen_revision": "769e5ff60a2f6e0705bdf630d7bd0ea59127695a",
+  "root_seed": 20261007,
+  "profile": "full",
+  "n_mc_per_cell": 5000,
+  "source_hashes_match_frozen_git_blobs": true,
+  "source_hashes_match_current_files": true,
+  "source_hashes": {
+    "scripts/tail_diagnostics.py": "ec9d1f17a3b4dd07dbd8e5419e0aa45bfee347c59b7333e4994580e84f875a25",
+    "experiments/tail-diagnostic-protocol.json": "8e589f1b4974d0592ab0de6a3010dfa9cd3b16bc0fba69b3a5fcdcdaf1981e0d",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "src/strategy_inference/quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9"
+  },
+  "output_hashes_match_saved_metadata": true,
+  "output_hashes": {
+    "g01-k001-r00.csv.gz": "5c912ae3016dcd47297cd4cc745f13910d4c22e19ba9f6de29a9cb81b2ce91e7",
+    "g02-k001-r00.csv.gz": "b21f2bee0b06c0fe5c78c34ed0c479f8935bbca79d8293496f8503fd92d53f14",
+    "g03-k001-r00.csv.gz": "ed915e03a0764b794d9b18221f0307f7e161e3f98d7d7acec01c2f779fad6bd1",
+    "g04-k001-r00.csv.gz": "bdf71beb1727eaa42affac8a415319c532db50d25b424a9a0d0b85673077ccc8",
+    "g05-k001-r00.csv.gz": "611f9255856d9dce7af6771eab4196dc8f30b15aede7f9f6d59143e4bf09cd39",
+    "g05-k020-r00.csv.gz": "2b3eb99fbbb3ff6daf27cc4adf09cd3392a99b617c98240fa8182dc6b4f8e325",
+    "g05-k020-r35.csv.gz": "183e90646d1ca66f971b3ea29e01010c679613060456516ee922da8000492821",
+    "g05-k100-r00.csv.gz": "51646152f7196884ce62671f0af024d6e824306c17bce18a3d40cef79b73ed36",
+    "g05-k100-r35.csv.gz": "bfff9322fc02c1f3c20be2e53a49a921ec3df8a511cf71bd21d675d8c4573f2b",
+    "g06-k020-r35.csv.gz": "55a62aa1824d65e5661655e02170bc08140c6d7ee079d3f4ad5c16b5e5e85082",
+    "g07-k020-r35.csv.gz": "0b58f5e37f3f6917d6caf6c67d89ccbc5081e3ca05de61fe44611e7e365bb98a",
+    "g08-k020-r35.csv.gz": "61ffce2ccf1ffb716deec6d63b9f8a8c60eab9bd60cf6ba46fba22522abeed7a",
+    "moments.csv": "65bdea7ef730291d3abaec663fac21cab43896feef9fc3ccf48f04b309136a93",
+    "paired.csv": "c4e9e8fb60f14872ec889014505aa2972eb53328135868b8b12bd86dd61db38c",
+    "summary.csv": "6a41b77ef87b011714c34936969099547d589cc5c40d768c91fa6e1daa82e1fe"
+  },
+  "metadata_sha256": "476fcdfb54f74a82fcdbbada311d346b4dc6f10411078934bd7832a7edfd2157",
+  "counts": {
+    "source_hashes": 8,
+    "output_hashes": 15,
+    "cells": 12,
+    "records": 60000,
+    "method_decisions": 420000,
+    "summaries": 84,
+    "paired_rows": 72
+  },
+  "checks": {
+    "replicate_addresses": "Every cell contains each integer replicate 0..4999 exactly once and the frozen root seed/group/K/rho.",
+    "finite_values_and_indices": "All scores, positive scale ratios, fitted |phi|<1, and winner indices are valid.",
+    "saved_decisions": "All 420000 saved decisions equal saved statistic >= saved critical.",
+    "critical_values": "K=1 uses the univariate normal CDF; rho=0 uses Phi(c)^K; positive rho uses independently integrated conditional Gaussian maximum CDF.",
+    "summary_counts_and_rates": "All 84 rejection counts and rates recomputed exactly.",
+    "summary_scale_means": "All selected and column mean ratios recomputed exactly using math.fsum in replicate order.",
+    "wilson_intervals": "All 84 pointwise 95% Wilson intervals recomputed from the formula.",
+    "paired_counts": "All 72 paired rows recomputed from per-replicate {-1,0,1} decision differences.",
+    "paired_standard_errors": "SE independently recomputed as std(decision difference, ddof=1)/sqrt(R).",
+    "mcnemar_pvalues": "Unadjusted two-sided probabilities independently recomputed using 2*BinomialCDF(min(discordant counts); n_discordant, .5), capped at 1.",
+    "true_numerator_consistency": "Every reconstructed selected true-Z is <= the oracle maximum; equal oracle winner gives equal true-Z.",
+    "deterministic_scale_consistency": "Known-LRV, known-finite, and mean-unbiased scales have the Bartlett winner and the correct constant scale/score ratios.",
+    "finite_sample_units": "T Var(mean) and population Bartlett mass independently recomputed from AR autocovariance sums."
+  },
+  "numerical_verification_tolerances": {
+    "critical_cdf_probability_abs": 3e-11,
+    "wilson_endpoint_abs": 2e-15,
+    "paired_endpoint_abs": 2e-15,
+    "mcnemar_p_abs": 1e-15,
+    "mcnemar_p_relative": 3e-13,
+    "summary_rates_and_scale_means": "exact equality"
+  },
+  "critical_cdf_checks": [
+    {
+      "cell": "g01-k001-r00",
+      "k": 1,
+      "rho": 0.0,
+      "critical": 1.644853626951472,
+      "independent_cdf": 0.95,
+      "target_cdf": 0.95,
+      "absolute_error": 0.0,
+      "passed": true
+    },
+    {
+      "cell": "g02-k001-r00",
+      "k": 1,
+      "rho": 0.0,
+      "critical": 1.644853626951472,
+      "independent_cdf": 0.95,
+      "target_cdf": 0.95,
+      "absolute_error": 0.0,
+      "passed": true
+    },
+    {
+      "cell": "g03-k001-r00",
+      "k": 1,
+      "rho": 0.0,
+      "critical": 1.644853626951472,
+      "independent_cdf": 0.95,
+      "target_cdf": 0.95,
+      "absolute_error": 0.0,
+      "passed": true
+    },
+    {
+      "cell": "g04-k001-r00",
+      "k": 1,
+      "rho": 0.0,
+      "critical": 1.644853626951472,
+      "independent_cdf": 0.95,
+      "target_cdf": 0.95,
+      "absolute_error": 0.0,
+      "passed": true
+    },
+    {
+      "cell": "g05-k001-r00",
+      "k": 1,
+      "rho": 0.0,
+      "critical": 1.644853626951472,
+      "independent_cdf": 0.95,
+      "target_cdf": 0.95,
+      "absolute_error": 0.0,
+      "passed": true
+    },
+    {
+      "cell": "g05-k020-r00",
+      "k": 20,
+      "rho": 0.0,
+      "critical": 2.799211472482397,
+      "independent_cdf": 0.9499999999999998,
+      "target_cdf": 0.95,
+      "absolute_error": 1.1102230246251565e-16,
+      "passed": true
+    },
+    {
+      "cell": "g05-k020-r35",
+      "k": 20,
+      "rho": 0.35,
+      "critical": 2.721084225826772,
+      "independent_cdf": 0.9499999999998568,
+      "target_cdf": 0.95,
+      "absolute_error": 1.4310774787418268e-13,
+      "passed": true
+    },
+    {
+      "cell": "g05-k100-r00",
+      "k": 100,
+      "rho": 0.0,
+      "critical": 3.2834075352739047,
+      "independent_cdf": 0.9499999999999983,
+      "target_cdf": 0.95,
+      "absolute_error": 1.6653345369377348e-15,
+      "passed": true
+    },
+    {
+      "cell": "g05-k100-r35",
+      "k": 100,
+      "rho": 0.35,
+      "critical": 3.1640688001424984,
+      "independent_cdf": 0.9500000000000016,
+      "target_cdf": 0.95,
+      "absolute_error": 1.6653345369377348e-15,
+      "passed": true
+    },
+    {
+      "cell": "g06-k020-r35",
+      "k": 20,
+      "rho": 0.35,
+      "critical": 2.721084225826772,
+      "independent_cdf": 0.9499999999998568,
+      "target_cdf": 0.95,
+      "absolute_error": 1.4310774787418268e-13,
+      "passed": true
+    },
+    {
+      "cell": "g07-k020-r35",
+      "k": 20,
+      "rho": 0.35,
+      "critical": 2.721084225826772,
+      "independent_cdf": 0.9499999999998568,
+      "target_cdf": 0.95,
+      "absolute_error": 1.4310774787418268e-13,
+      "passed": true
+    },
+    {
+      "cell": "g08-k020-r35",
+      "k": 20,
+      "rho": 0.35,
+      "critical": 2.721084225826772,
+      "independent_cdf": 0.9499999999998568,
+      "target_cdf": 0.95,
+      "absolute_error": 1.4310774787418268e-13,
+      "passed": true
+    }
+  ],
+  "key_numbers": [
+    {
+      "cell": "g04-k001-r00",
+      "method": "oracle",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 248,
+      "rate": 0.0496,
+      "pointwise_wilson95": [
+        0.04392008579235035,
+        0.05597146011975712
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "bartlett",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 2078,
+      "rate": 0.4156,
+      "pointwise_wilson95": [
+        0.40200971926571155,
+        0.42931986882261425
+      ],
+      "selected_variance_ratio_mean": 0.018145093836836323,
+      "column_mean_variance_ratio": 0.018145093836836323
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "tail_known_finite",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 855,
+      "rate": 0.171,
+      "pointwise_wilson95": [
+        0.16081741923937043,
+        0.18168772864047722
+      ],
+      "selected_variance_ratio_mean": 0.4176699361665093,
+      "column_mean_variance_ratio": 0.4176699361665093
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "tail_plugin_lrv",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 1184,
+      "rate": 0.2368,
+      "pointwise_wilson95": [
+        0.22522138237278885,
+        0.24878273593108932
+      ],
+      "selected_variance_ratio_mean": 0.31773807012009025,
+      "column_mean_variance_ratio": 0.31773807012009025
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "tail_plugin_finite",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 1271,
+      "rate": 0.2542,
+      "pointwise_wilson95": [
+        0.2423231155891033,
+        0.26645428668708676
+      ],
+      "selected_variance_ratio_mean": 0.23835037498274256,
+      "column_mean_variance_ratio": 0.23835037498274256
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 420,
+      "rate": 0.084,
+      "pointwise_wilson95": [
+        0.07662702679404382,
+        0.09201170122424374
+      ],
+      "selected_variance_ratio_mean": 0.996583443241313,
+      "column_mean_variance_ratio": 0.996583443241313
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 253,
+      "rate": 0.0506,
+      "pointwise_wilson95": [
+        0.044862312290198145,
+        0.0570276982180192
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "bartlett",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 1013,
+      "rate": 0.2026,
+      "pointwise_wilson95": [
+        0.1916893350667882,
+        0.21396729405013182
+      ],
+      "selected_variance_ratio_mean": 0.25273149211296064,
+      "column_mean_variance_ratio": 0.25273149211296064
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "tail_known_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 278,
+      "rate": 0.0556,
+      "pointwise_wilson95": [
+        0.049582913854809285,
+        0.06229941963395749
+      ],
+      "selected_variance_ratio_mean": 0.9534347855451375,
+      "column_mean_variance_ratio": 0.9534347855451375
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "tail_plugin_lrv",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 319,
+      "rate": 0.0638,
+      "pointwise_wilson95": [
+        0.0573550015033846,
+        0.07091474167348322
+      ],
+      "selected_variance_ratio_mean": 0.9637558603748888,
+      "column_mean_variance_ratio": 0.9637558603748888
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "tail_plugin_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 328,
+      "rate": 0.0656,
+      "pointwise_wilson95": [
+        0.05906553769029381,
+        0.07280144175957183
+      ],
+      "selected_variance_ratio_mean": 0.9455001459771957,
+      "column_mean_variance_ratio": 0.9455001459771957
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 264,
+      "rate": 0.0528,
+      "pointwise_wilson95": [
+        0.04693748851677059,
+        0.05934914410288852
+      ],
+      "selected_variance_ratio_mean": 1.001057222645306,
+      "column_mean_variance_ratio": 1.001057222645306
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 270,
+      "rate": 0.054,
+      "pointwise_wilson95": [
+        0.048070671178201296,
+        0.06061411895678967
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "bartlett",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 4987,
+      "rate": 0.9974,
+      "pointwise_wilson95": [
+        0.9955564171048898,
+        0.9984798730001674
+      ],
+      "selected_variance_ratio_mean": 0.22040549616644453,
+      "column_mean_variance_ratio": 0.25250248224958793
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "tail_known_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 645,
+      "rate": 0.129,
+      "pointwise_wilson95": [
+        0.11999292074718372,
+        0.13857671409604871
+      ],
+      "selected_variance_ratio_mean": 0.8314842966878803,
+      "column_mean_variance_ratio": 0.9525708410950534
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "tail_plugin_lrv",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 1221,
+      "rate": 0.2442,
+      "pointwise_wilson95": [
+        0.2324913154552801,
+        0.2563014408598112
+      ],
+      "selected_variance_ratio_mean": 0.6742602618774208,
+      "column_mean_variance_ratio": 0.9610112705161313
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "tail_plugin_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 1265,
+      "rate": 0.253,
+      "pointwise_wilson95": [
+        0.24114285040842556,
+        0.2652363943524327
+      ],
+      "selected_variance_ratio_mean": 0.6648805132910791,
+      "column_mean_variance_ratio": 0.9428748193939757
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 526,
+      "rate": 0.1052,
+      "pointwise_wilson95": [
+        0.0969967429047616,
+        0.11400943455105553
+      ],
+      "selected_variance_ratio_mean": 0.873015515413193,
+      "column_mean_variance_ratio": 1.0001501256473437
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 256,
+      "rate": 0.0512,
+      "pointwise_wilson95": [
+        0.045427963397957266,
+        0.05766112586792603
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "bartlett",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 3814,
+      "rate": 0.7628,
+      "pointwise_wilson95": [
+        0.7508107229188387,
+        0.7743857729388394
+      ],
+      "selected_variance_ratio_mean": 0.22461839995195187,
+      "column_mean_variance_ratio": 0.2522953258975821
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "tail_known_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 512,
+      "rate": 0.1024,
+      "pointwise_wilson95": [
+        0.09429953122956898,
+        0.11111094535714046
+      ],
+      "selected_variance_ratio_mean": 0.8473775634259336,
+      "column_mean_variance_ratio": 0.951789339468969
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "tail_plugin_lrv",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 905,
+      "rate": 0.181,
+      "pointwise_wilson95": [
+        0.17057422013148837,
+        0.1919155737094581
+      ],
+      "selected_variance_ratio_mean": 0.6992083421972416,
+      "column_mean_variance_ratio": 0.9603166144977042
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "tail_plugin_finite",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 930,
+      "rate": 0.186,
+      "pointwise_wilson95": [
+        0.1754572161248639,
+        0.197024900696632
+      ],
+      "selected_variance_ratio_mean": 0.6891741827595667,
+      "column_mean_variance_ratio": 0.9421898708502471
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 444,
+      "rate": 0.0888,
+      "pointwise_wilson95": [
+        0.08122784547465063,
+        0.09700351260496436
+      ],
+      "selected_variance_ratio_mean": 0.8897026236462534,
+      "column_mean_variance_ratio": 0.9993295893514569
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "oracle",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 227,
+      "rate": 0.0454,
+      "pointwise_wilson95": [
+        0.039970320043562504,
+        0.051527674564883455
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0000000000000002
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "bartlett",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 3842,
+      "rate": 0.7684,
+      "pointwise_wilson95": [
+        0.7565036194300018,
+        0.7798842781658916
+      ],
+      "selected_variance_ratio_mean": 0.11559481285342868,
+      "column_mean_variance_ratio": 0.13493726685361002
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "tail_known_finite",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 726,
+      "rate": 0.1452,
+      "pointwise_wilson95": [
+        0.13570718619095035,
+        0.15523757510926223
+      ],
+      "selected_variance_ratio_mean": 0.7443742844545235,
+      "column_mean_variance_ratio": 0.8689302658222674
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "tail_plugin_lrv",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 1382,
+      "rate": 0.2764,
+      "pointwise_wilson95": [
+        0.26417923347902966,
+        0.28896408283079994
+      ],
+      "selected_variance_ratio_mean": 0.5691667336818408,
+      "column_mean_variance_ratio": 0.8736191891079464
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "tail_plugin_finite",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 1422,
+      "rate": 0.2844,
+      "pointwise_wilson95": [
+        0.27206481591481774,
+        0.297066217163891
+      ],
+      "selected_variance_ratio_mean": 0.5454511453040329,
+      "column_mean_variance_ratio": 0.8188716703630837
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 511,
+      "rate": 0.1022,
+      "pointwise_wilson95": [
+        0.09410694680069476,
+        0.1109038368667927
+      ],
+      "selected_variance_ratio_mean": 0.8571295269725957,
+      "column_mean_variance_ratio": 1.0005528176758418
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "oracle",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 256,
+      "rate": 0.0512,
+      "pointwise_wilson95": [
+        0.045427963397957266,
+        0.05766112586792603
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "bartlett",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 4047,
+      "rate": 0.8094,
+      "pointwise_wilson95": [
+        0.7982771132555532,
+        0.8200478327808455
+      ],
+      "selected_variance_ratio_mean": 0.0929062283694741,
+      "column_mean_variance_ratio": 0.0999454210504706
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "tail_known_finite",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 480,
+      "rate": 0.096,
+      "pointwise_wilson95": [
+        0.08814189353368367,
+        0.1044784096379225
+      ],
+      "selected_variance_ratio_mean": 0.8702320289512694,
+      "column_mean_variance_ratio": 0.9361665850781353
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "tail_plugin_lrv",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 865,
+      "rate": 0.173,
+      "pointwise_wilson95": [
+        0.16276777066156622,
+        0.18373430641050115
+      ],
+      "selected_variance_ratio_mean": 0.7409899627781686,
+      "column_mean_variance_ratio": 0.9413885090106286
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "tail_plugin_finite",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 898,
+      "rate": 0.1796,
+      "pointwise_wilson95": [
+        0.16920752000010725,
+        0.1904844234062854
+      ],
+      "selected_variance_ratio_mean": 0.7228247154148262,
+      "column_mean_variance_ratio": 0.9116350179813874
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 397,
+      "rate": 0.0794,
+      "pointwise_wilson95": [
+        0.07222490060832917,
+        0.08722089026785287
+      ],
+      "selected_variance_ratio_mean": 0.9318910555162302,
+      "column_mean_variance_ratio": 1.0024973088600724
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "oracle",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 243,
+      "rate": 0.0486,
+      "pointwise_wilson95": [
+        0.042978532307529155,
+        0.05491454900846843
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "bartlett",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 4182,
+      "rate": 0.8364,
+      "pointwise_wilson95": [
+        0.8258891735847778,
+        0.8463943165465879
+      ],
+      "selected_variance_ratio_mean": 0.07795480090976899,
+      "column_mean_variance_ratio": 0.08216058754521198
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "tail_known_finite",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 397,
+      "rate": 0.0794,
+      "pointwise_wilson95": [
+        0.07222490060832917,
+        0.08722089026785287
+      ],
+      "selected_variance_ratio_mean": 0.9038852412707201,
+      "column_mean_variance_ratio": 0.952651300876347
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "tail_plugin_lrv",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 655,
+      "rate": 0.131,
+      "pointwise_wilson95": [
+        0.12193049257152744,
+        0.14063607146392476
+      ],
+      "selected_variance_ratio_mean": 0.7999479479971281,
+      "column_mean_variance_ratio": 0.9541359812491453
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "tail_plugin_finite",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 687,
+      "rate": 0.1374,
+      "pointwise_wilson95": [
+        0.12813549307766525,
+        0.1472212443728902
+      ],
+      "selected_variance_ratio_mean": 0.7851533701042696,
+      "column_mean_variance_ratio": 0.9328994779366793
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "mean_unbiased_oracle",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 350,
+      "rate": 0.07,
+      "pointwise_wilson95": [
+        0.06325293934676168,
+        0.07740728432598745
+      ],
+      "selected_variance_ratio_mean": 0.9479973074506319,
+      "column_mean_variance_ratio": 0.9991432838315705
+    }
+  ],
+  "oracle_pointwise_results": [
+    {
+      "cell": "g01-k001-r00",
+      "method": "oracle",
+      "n_obs": 200,
+      "phi": 0.0,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 232,
+      "rate": 0.0464,
+      "pointwise_wilson95": [
+        0.040909582282313894,
+        0.052586876922241926
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g02-k001-r00",
+      "method": "oracle",
+      "n_obs": 200,
+      "phi": 0.7,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 225,
+      "rate": 0.045,
+      "pointwise_wilson95": [
+        0.03959482746331551,
+        0.05110378130668648
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g03-k001-r00",
+      "method": "oracle",
+      "n_obs": 200,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 231,
+      "rate": 0.0462,
+      "pointwise_wilson95": [
+        0.0407216699236964,
+        0.05237509636163745
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g04-k001-r00",
+      "method": "oracle",
+      "n_obs": 200,
+      "phi": 0.99,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 248,
+      "rate": 0.0496,
+      "pointwise_wilson95": [
+        0.04392008579235035,
+        0.05597146011975712
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k001-r00",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 1,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 253,
+      "rate": 0.0506,
+      "pointwise_wilson95": [
+        0.044862312290198145,
+        0.0570276982180192
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k020-r00",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 20,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 281,
+      "rate": 0.0562,
+      "pointwise_wilson95": [
+        0.05015038614349224,
+        0.06293102610294048
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k100-r00",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.0,
+      "n_mc": 5000,
+      "reject_count": 270,
+      "rate": 0.054,
+      "pointwise_wilson95": [
+        0.048070671178201296,
+        0.06061411895678967
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k020-r35",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 254,
+      "rate": 0.0508,
+      "pointwise_wilson95": [
+        0.04505083668536068,
+        0.05723886674207865
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g05-k100-r35",
+      "method": "oracle",
+      "n_obs": 512,
+      "phi": 0.9,
+      "k": 100,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 256,
+      "rate": 0.0512,
+      "pointwise_wilson95": [
+        0.045427963397957266,
+        0.05766112586792603
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g06-k020-r35",
+      "method": "oracle",
+      "n_obs": 256,
+      "phi": 0.9375,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 227,
+      "rate": 0.0454,
+      "pointwise_wilson95": [
+        0.039970320043562504,
+        0.051527674564883455
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0000000000000002
+    },
+    {
+      "cell": "g07-k020-r35",
+      "method": "oracle",
+      "n_obs": 1024,
+      "phi": 0.96875,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 256,
+      "rate": 0.0512,
+      "pointwise_wilson95": [
+        0.045427963397957266,
+        0.05766112586792603
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    },
+    {
+      "cell": "g08-k020-r35",
+      "method": "oracle",
+      "n_obs": 2048,
+      "phi": 0.9779029130879204,
+      "k": 20,
+      "rho": 0.35,
+      "n_mc": 5000,
+      "reject_count": 243,
+      "rate": 0.0486,
+      "pointwise_wilson95": [
+        0.042978532307529155,
+        0.05491454900846843
+      ],
+      "selected_variance_ratio_mean": 1.0,
+      "column_mean_variance_ratio": 1.0
+    }
+  ],
+  "oracle_pointwise_intervals_containing_nominal": 11,
+  "descriptive_cross_rho_paired_comparisons": [
+    {
+      "method": "oracle",
+      "left_cell": "g05-k100-r00",
+      "right_cell": "g05-k100-r35",
+      "only_left_rejects": 187,
+      "only_right_rejects": 173,
+      "risk_difference": 0.0028,
+      "descriptive_normal95": [
+        -0.004638015944284974,
+        0.010238015944284974
+      ],
+      "scope": "Additional read-only descriptive paired comparison, not a multiplicity-adjusted confirmatory claim."
+    },
+    {
+      "method": "tail_plugin_lrv",
+      "left_cell": "g05-k100-r00",
+      "right_cell": "g05-k100-r35",
+      "only_left_rejects": 799,
+      "only_right_rejects": 483,
+      "risk_difference": 0.0632,
+      "descriptive_normal95": [
+        0.049272789692095836,
+        0.07712721030790418
+      ],
+      "scope": "Additional read-only descriptive paired comparison, not a multiplicity-adjusted confirmatory claim."
+    },
+    {
+      "method": "tail_plugin_finite",
+      "left_cell": "g05-k100-r00",
+      "right_cell": "g05-k100-r35",
+      "only_left_rejects": 826,
+      "only_right_rejects": 491,
+      "risk_difference": 0.067,
+      "descriptive_normal95": [
+        0.0528944587917175,
+        0.0811055412082825
+      ],
+      "scope": "Additional read-only descriptive paired comparison, not a multiplicity-adjusted confirmatory claim."
+    },
+    {
+      "method": "mean_unbiased_oracle",
+      "left_cell": "g05-k100-r00",
+      "right_cell": "g05-k100-r35",
+      "only_left_rejects": 365,
+      "only_right_rejects": 283,
+      "risk_difference": 0.0164,
+      "descriptive_normal95": [
+        0.006430671930705128,
+        0.026369328069294873
+      ],
+      "scope": "Additional read-only descriptive paired comparison, not a multiplicity-adjusted confirmatory claim."
+    }
+  ],
+  "limitations": [
+    "This audits saved calculation evidence. It does not independently regenerate all 60000 underlying datasets.",
+    "All rejection intervals are pointwise Monte Carlo intervals, not simultaneous confidence statements across cells or methods.",
+    "11 of 12 oracle pointwise intervals contain 5%; K=20, rho=0 has rate 5.62% and lower endpoint 5.015%. This Monte Carlo realization does not contradict the exact known-model Gaussian oracle law.",
+    "Paired normal intervals are descriptive. McNemar probabilities are unadjusted; no familywide confirmatory significance claim is made.",
+    "Known rho and DGP parameters are used for reference critical values and oracle scale corrections. Random-denominator methods are diagnostic scores, not calibrated p-values.",
+    "Fixed bandwidth is used; author adaptive fitting and Table B.7 are not reproduced. No size-matched power or general plug-in joint covariance validity is established.",
+    "Source/output hash checks do not establish a new theorem. Gaussian AR mechanism identities and boundary arguments are basic references, not a novelty claim.",
+    "Presentation artifacts and browser layout are outside this calculation audit."
+  ]
+}

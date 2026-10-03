@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "scope": "unpublished local research wheel; loaded directly from zip, not checkout; no release replacement",
+  "wheel_sha256": "aa9733b7a9099e9d37f5f8beff234c039d23b1807372d8923bddd30c81b6e52c",
+  "new_modules_imported": true,
+  "public_default": "fixed",
+  "protocol_resource_identical": true,
+  "moment_check": 2.0622314178523995,
+  "package_version": "0.2.0"
+}

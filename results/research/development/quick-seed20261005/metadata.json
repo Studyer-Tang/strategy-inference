@@ -1,0 +1,44 @@
+{
+  "status": "complete",
+  "profile": "quick",
+  "n_mc": 64,
+  "interpretation": "Development smoke run with superseded protocol; no confirmation claim. Retained source snapshot; formal study uses a fresh root seed.",
+  "protocol_sha256": "a1d869c70967eb6c8a65dd7d3ebb4d2b46484121d69799e9c453bee85d00c726",
+  "git_revision": "efbdd1978f0cc9bf737b7520a43d398d47ce8905",
+  "environment": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.2.0"
+  },
+  "source_hashes": {
+    "scripts/tail_diagnostics.py": "95b5fe63e8b428c784896af1e43ee60192fc38fc949e67f02fd76d288a6b7d5c",
+    "experiments/tail-diagnostic-protocol.json": "a1d869c70967eb6c8a65dd7d3ebb4d2b46484121d69799e9c453bee85d00c726",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "src/strategy_inference/quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9"
+  },
+  "batch_size": 32,
+  "elapsed_seconds": 0.26657795801293105,
+  "output_hashes": {
+    "g01-k001-r00.csv.gz": "744717072f06c980eaaa2effc8af5bfbb61e46d3af2c9dc1aac938fdaa5a7f33",
+    "g02-k001-r00.csv.gz": "3c5c852a463c11e29aebfa6fd7c44c85d7155b564b727b65546560d1aede87db",
+    "g03-k001-r00.csv.gz": "6ad2ef94d12b45bf6904fc43af7cf179bf63a748b97f4363798fa85b2f66f01e",
+    "g04-k001-r00.csv.gz": "6aca05c929aa0240242fc0bd48153e2943e23c6478023c87d7ebc7604848dbbf",
+    "g05-k001-r00.csv.gz": "0520cd7c6623eb1f13f6a9933445802c54749c58f145c7f0752eba7337b875c7",
+    "g05-k020-r00.csv.gz": "a63992e014b5fa847297debff29553d37291ac308156bd15054c3c40c87cd65b",
+    "g05-k020-r35.csv.gz": "88e865f633908594c90d54c7eff0a10fcce69bb8e29f26f7e5fdd5aa4a1c22f3",
+    "g05-k100-r00.csv.gz": "2a4690806a8ebc26cf56f3525026fcc003d16f4f2e58a5296bf0915d2ae2b117",
+    "g05-k100-r35.csv.gz": "daeabc32dbc1bbed0f98aa50fd9deb5835751cf13ade4333fb04dc284a889e80",
+    "g06-k020-r35.csv.gz": "57de4fa776d7b3eef4f20bdb15b2fdee8a521cb1e5fb24079eda549e5b8d86d5",
+    "g07-k020-r35.csv.gz": "fe13e94533c7a23d3bd91bfe544144066b71bc0b6fac2323cf30d2dce837da89",
+    "g08-k020-r35.csv.gz": "3daad8fc83a280db6a3fd9efac6036711966dd447fe49b101fe8a3f597f2c82a",
+    "moments.csv": "65bdea7ef730291d3abaec663fac21cab43896feef9fc3ccf48f04b309136a93",
+    "paired.csv": "41ef4ee2d8fd5fa64d044d58328e62fcf546815e69ae41e210d2ccd539b18f2c",
+    "summary.csv": "4aa530f42d1f197f2a7e89d735ef418c25ae85ac7be42020326c4a07f00f8ef1"
+  }
+}

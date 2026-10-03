@@ -1,0 +1,59 @@
+{
+  "status": "complete",
+  "scope": "isolated local browser rendering and all internal report links",
+  "browser": "Microsoft Edge, headless Playwright",
+  "views": [
+    {
+      "name": "desktop",
+      "title": "有限样本尺度、尾部修正与策略筛选",
+      "pageWidth": 1440,
+      "viewport": 1440,
+      "images": [
+        {
+          "src": "figure-1-tail-bias.svg",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-tail-selection.svg",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-tail-winner.svg",
+          "loaded": true
+        }
+      ],
+      "rows": 12,
+      "columns": 8,
+      "tableScroll": false,
+      "keyFinding": true,
+      "errors": [],
+      "internalLinksChecked": 27
+    },
+    {
+      "name": "mobile",
+      "title": "有限样本尺度、尾部修正与策略筛选",
+      "pageWidth": 390,
+      "viewport": 390,
+      "images": [
+        {
+          "src": "figure-1-tail-bias.svg",
+          "loaded": true
+        },
+        {
+          "src": "figure-2-tail-selection.svg",
+          "loaded": true
+        },
+        {
+          "src": "figure-3-tail-winner.svg",
+          "loaded": true
+        }
+      ],
+      "rows": 12,
+      "columns": 8,
+      "tableScroll": true,
+      "keyFinding": true,
+      "errors": [],
+      "internalLinksChecked": 27
+    }
+  ]
+}

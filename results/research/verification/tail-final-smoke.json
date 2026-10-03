@@ -1,0 +1,19 @@
+{
+  "status": "complete",
+  "profile": "quick",
+  "root_seed": 20261006,
+  "replicates_per_cell": 64,
+  "source_hashes": {
+    "scripts/tail_diagnostics.py": "ec9d1f17a3b4dd07dbd8e5419e0aa45bfee347c59b7333e4994580e84f875a25",
+    "experiments/tail-diagnostic-protocol.json": "8e589f1b4974d0592ab0de6a3010dfa9cd3b16bc0fba69b3a5fcdcdaf1981e0d",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "src/strategy_inference/quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9"
+  },
+  "calculation_outputs_hash_verified": 15,
+  "presentation_outputs_hash_verified": 10,
+  "scope": "final one-command execution smoke, not research estimates; temporary generated files removed after verification"
+}

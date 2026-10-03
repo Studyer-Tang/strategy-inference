@@ -1,0 +1,45 @@
+{
+  "status": "complete",
+  "profile": "quick",
+  "n_mc": 64,
+  "root_seed": 20261006,
+  "interpretation": "known rho in every comparison; only oracle has exact Gaussian scaling. Other Gaussian-tail scores are diagnostics, not valid p-values. Fixed bandwidth; does not reproduce adaptive paper Table B.7. No size-matched power or plug-in covariance validity claimed.",
+  "protocol_sha256": "8e589f1b4974d0592ab0de6a3010dfa9cd3b16bc0fba69b3a5fcdcdaf1981e0d",
+  "git_revision": "efbdd1978f0cc9bf737b7520a43d398d47ce8905",
+  "environment": {
+    "python": "3.13.15",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "strategy-inference": "0.2.0"
+  },
+  "source_hashes": {
+    "scripts/tail_diagnostics.py": "8ec9e5a37427d85489cbde3803c2e2868a2f8db1a2c841e427192708669b42a1",
+    "experiments/tail-diagnostic-protocol.json": "8e589f1b4974d0592ab0de6a3010dfa9cd3b16bc0fba69b3a5fcdcdaf1981e0d",
+    "src/strategy_inference/tail.py": "73d2c9e8af32c49c9d5894a999a00791a028e82833e03bff3ab96acb1e1544c6",
+    "src/strategy_inference/quadratic_reference.py": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+    "src/strategy_inference/reference.py": "872ef3446400228f9babcd708c4d2e72d23e50d30bd8a0675e04f80efd453e41",
+    "src/strategy_inference/inference.py": "498c1027c484c286fb2f485a089877bee33a6e8c3225c892fa82dd456095672f",
+    "src/strategy_inference/_validation.py": "77d69ac26804bb03255b2498d650db4654cd0a56fc7929a807527de1008ec134",
+    "src/strategy_inference/experiments.py": "a324b0fae28e018d9d2e6730001b2606a113a07faa5f909fd2ab8463abcc86b9"
+  },
+  "batch_size": 32,
+  "elapsed_seconds": 0.27293824998196214,
+  "output_hashes": {
+    "g01-k001-r00.csv.gz": "76d53f4fb49d6054b030d961d59b2081b53e14d9088e9255ac05cfad4427415e",
+    "g02-k001-r00.csv.gz": "d85cc1ccaf996c91b8e95b5b8e722ac30d39f0da3b5c9d3bffbe2b7a99037fea",
+    "g03-k001-r00.csv.gz": "82a5d139064346d8549d4f7021dadc2b2af3331ae20121c82c2992b4f4e73eb7",
+    "g04-k001-r00.csv.gz": "3770e65bcf820d19d268aa99a2db9b695672368624a5c8b65b6b14dccada37d7",
+    "g05-k001-r00.csv.gz": "4fa0116fa7a3d0bab7b38dd19689d1aea41a53b6d65a88d271196f00e660f6f8",
+    "g05-k020-r00.csv.gz": "ee55aa52746010bbf11f2268f1d0629844321f3c6d139f3b3890637e25bb6a00",
+    "g05-k020-r35.csv.gz": "d2feadcafc6b8788dccf4e35c5c715e16f880a82d8474a513daf2b62ad5ca9df",
+    "g05-k100-r00.csv.gz": "1add323905be5dae70465d95445159c983a784ff976d3969671a10522ef0b96a",
+    "g05-k100-r35.csv.gz": "70abadd76167233d7c4b06f53487ae54682b58e72be10ae47db8d491bb16edf5",
+    "g06-k020-r35.csv.gz": "7d865f55523a0fc0146ad284024f6328c95e31e0d93348fe39982edc90eaa2a2",
+    "g07-k020-r35.csv.gz": "e286dee754fe6753ce0abe7fb2a203e7034e8ba5bfa9c5cd3e898f88b25ec5fd",
+    "g08-k020-r35.csv.gz": "6979aaf5697cfdab47a5266c762f071de9a22dd641f8d8ac295c1c8f675e1fb5",
+    "moments.csv": "65bdea7ef730291d3abaec663fac21cab43896feef9fc3ccf48f04b309136a93",
+    "paired.csv": "0a7ffaa2a4e19a909a35276c6abd9877d9875a7fcea892eac3746313cd04a74a",
+    "summary.csv": "1a91db5cb8a4839300a95adcad34b0f5c1cf7870acd345034283d7df4a26a16a"
+  }
+}

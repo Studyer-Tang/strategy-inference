@@ -77,6 +77,20 @@ strategy-inference reproduce --study baseline --profile full
 
 ![候选筛选的误报率](results/calibration/full/figure-2-calibration-selection.png)
 
+## 新研究：方差修正以后，筛选检验为何仍失准
+
+以 Liu–Chan 的 [JASA 2026 尾部修正](https://doi.org/10.1080/01621459.2026.2676715)为基线，新增固定带宽 AR(1) 公式复现、中心化 Gaussian 二次型的精确矩，以及 12 个格点、每格 5000 轮的独立机制实验。公式与作者原始 R 函数的 48 项对照通过。
+
+在 `T=512, φ=0.9, K=100, ρ=0` 下，使用真实参数使每列方差估计的期望精确无偏，筛选后误报率仍为 **10.52%**（9.70%–11.40%）。全列平均尺度比为 **1.00015**，胜出列却为 **0.87302**。这使研究问题落到随机分母及其与筛选的关系，而不只是单列方差的平均偏差。
+
+[结果解读](docs/tail-results.md) · [命题与证明](docs/tail-mechanism.md) · [候选规模充分界](docs/oracle-selection-bound.md) · [三张图与逐轮记录](results/research/tail/full/report.html) · [冻结协议](experiments/tail-diagnostic-protocol.json)
+
+```bash
+python scripts/tail_diagnostics.py --profile full --output results/research/tail/reproduced
+```
+
+以上命令从源码运行，需安装 `figures` 依赖；输出目录必须为空。全部比较使用已知候选相关结构，属于机制诊断。未知相关矩阵下的可实施联合方法尚未完成；实验模块未接入公共审计接口。
+
 ## 推断边界
 
 检验依赖平稳性、弱时间依赖、适当矩条件和一致的尺度估计；理论讨论固定候选数 `K`。默认带宽与块长是事前启发式，有限样本效果需要另行检验。这里的去均值 max Bootstrap 不是 Hansen SPA，也不提供有限样本精确保证。
@@ -98,7 +112,8 @@ python scripts/build_site.py --check
 - [方法说明](docs/methods.md)：统计目标、公式、假设、实现和数值范围。
 - [结果解读](docs/results.md)：本轮模拟的发现及未解决的问题。
 - [项目讨论](docs/interview-notes.md)：围绕方法与研究设计的讨论。
-- [下一阶段研究方案](docs/research-plan.md)：2026 年相关论文、拟研究的问题与待验证的边界。
+- [研究方案](docs/research-plan.md)：2026 年相关论文、研究问题与后续证明义务。
+- [尾部修正机制研究](docs/tail-results.md)：冻结评价、精确矩与尺度无偏以后仍存在的失准。
 - [文献](docs/references.bib)：统计方法及软件来源。本项目是实现与模拟研究，不声明原创定理。
 
 BSD-3-Clause 许可证。

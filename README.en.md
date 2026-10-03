@@ -89,6 +89,20 @@ Each full study saves CSV counts and rates, PNG/SVG/PDF figures, and a run recor
 
 The completed calibration run used frozen revision `579697d`. Later guards, installed-resource lookup and numerical-domain checks account for some differences between its recorded source hashes and the final repository. The original run record is preserved; a [comparison](results/verification/frozen-source-comparison.json) found byte-identical CSVs across all seven quick-study tables. This comparison does not represent a second full run.
 
+## Tail-scale mechanism study
+
+A separate research study implements the fixed-bandwidth AR(1) formulas from [Liu and Chan, JASA 2026](https://doi.org/10.1080/01621459.2026.2676715), computes exact centered Gaussian quadratic-form moments, and evaluates 12 frozen null cells with 5000 replicates per cell. Independent execution of the authors' original R functions agrees on 48 scalar comparisons.
+
+For `T=512, phi=0.9, K=100, rho=0`, a reference that uses true parameters to make every marginal scale exactly unbiased still rejects **10.52%** of the time (pointwise 95% interval **9.70%–11.40%**). Its average scale ratio across all columns is **1.00015**, whereas the selected column's ratio averages **0.87302**. Correct scale expectation alone does not calibrate the tail of a selected statistic with a random denominator.
+
+Read the [results](docs/tail-results.md), [mechanism proofs](docs/tail-mechanism.md), [oracle selection bound](docs/oracle-selection-bound.md), and [three-figure report with replicate records](results/research/tail/full/report.html). The [protocol](experiments/tail-diagnostic-protocol.json) and computation revision were frozen before evaluation.
+
+```bash
+python scripts/tail_diagnostics.py --profile full --output results/research/tail/reproduced
+```
+
+Run from a source checkout with the `figures` extra installed, using an empty output directory. Every comparison uses a known correlation matrix; only the true-variance reference has the exact Gaussian scale. This is a mechanism study, not an implementable joint test with unknown covariance. The new research modules do not alter `audit_returns`.
+
 ## Uncertainty and scope
 
 Bootstrap p values use `(1 + exceedances)/(B + 1)`. This avoids zero estimates and sets the numerical resolution; it is not an exact randomization-test guarantee. A conditional bootstrap-tail interval describes uncertainty from a finite number of draws for the observed data.

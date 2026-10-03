@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased research
+
+- Independently implement fixed-bandwidth AR(1) tail factors from Liu–Chan (JASA 2026), including their finite-sample target. Cross-check 48 scalar results against original author functions running in R; retain execution provenance without vendoring GPL source.
+- Compute exact first and second moments of centered Gaussian Bartlett HAC through quadratic forms, with stable AR covariance and bounded matrix calculations.
+- Freeze and complete a separate 12-cell, 5000-replicate mechanism study. Retain paired decisions, winners, scale errors, seeds and hashes; reproduce three scientific figures from verified evidence. Known-correlation and mean-unbiased references diagnose failures rather than providing practical unknown-parameter guarantees.
+- Add scoped proofs and result notes. Keep the package version, public audit defaults and previously published studies unchanged.
+
 ## 0.2.0
 
 - Add `studentization="resampled"` to `audit_returns` and the CSV CLI. Each bootstrap draw recomputes Bartlett HAC around its own mean, with the original lag count and shared row indices. The `"fixed"` default preserves the v0.1 interpretation.

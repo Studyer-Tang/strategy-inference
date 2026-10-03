@@ -1,0 +1,780 @@
+{
+  "status": "passed",
+  "generated_at_utc": "2026-10-03T02:08:20.752685+00:00",
+  "scope": "Deterministic Gaussian quadratic-form and finite-T algebra checks. Recorded limit-grid discrepancies are not proofs, calibration experiments, or tuning criteria.",
+  "script_sha256": "db17af9143d9270d54c476b488be7c3dce43b57cfb3cee5076aa78e354aee489",
+  "production_reference_sha256": "ce52ff3408cd1b22629e823ef5b29a588dd0eddc57dee02783a2f093124f3480",
+  "numerical_max_residuals": {
+    "trace_expansion": {
+      "count": 72,
+      "max_absolute": 6.994405055138486e-15,
+      "max_relative": 1.8753639688557822e-14
+    },
+    "pair_and_center_decomposition": {
+      "count": 72,
+      "max_absolute": 1.865174681370263e-14,
+      "max_relative": 3.3224441247549384e-14
+    },
+    "production_expectation": {
+      "count": 72,
+      "max_absolute": 1.021405182655144e-14,
+      "max_relative": 8.686217689383123e-15
+    },
+    "production_variance": {
+      "count": 72,
+      "max_absolute": 1.5987211554602254e-14,
+      "max_relative": 9.691518006862898e-15
+    },
+    "finite_mean_target": {
+      "count": 72,
+      "max_absolute": 1.4210854715202004e-14,
+      "max_relative": 1.5807760318732636e-15
+    },
+    "population_kernel_mass": {
+      "count": 72,
+      "max_absolute": 4.440892098500626e-16,
+      "max_relative": 1.399228929915266e-15
+    },
+    "iid_expectation_closed_form": {
+      "count": 18,
+      "max_absolute": 1.3322676295501878e-15,
+      "max_relative": 1.0755285551056202e-15
+    },
+    "iid_chi_square_variance": {
+      "count": 6,
+      "max_absolute": 4.440892098500626e-16,
+      "max_relative": 1.5299532609780798e-15
+    },
+    "ar_precision_sum": {
+      "count": 54,
+      "max_absolute": 1.7763568394002505e-15,
+      "max_relative": 4.310914768788413e-16
+    },
+    "t200_example_expectation": {
+      "count": 1,
+      "max_absolute": 1.6431300764452317e-14,
+      "max_relative": 7.967728850510781e-15
+    },
+    "brownian_distance_identity": {
+      "count": 1,
+      "max_absolute": 2.7284841053187847e-12,
+      "max_relative": 8.521432989880117e-15
+    },
+    "fixed_boundary_stable_trace": {
+      "count": 6,
+      "max_absolute": 2.8421709430404007e-13,
+      "max_relative": 8.876492697791831e-16
+    },
+    "fixed_boundary_last_grid_point": {
+      "count": 1,
+      "max_absolute": 4.547473508864641e-12,
+      "max_relative": 1.420238831646674e-14
+    },
+    "plugin_finite_t_identity": {
+      "count": 12,
+      "max_absolute": 2.3092638912203256e-14,
+      "max_relative": 7.158870093045881e-15
+    },
+    "local_unit_row_sum_expectation": {
+      "count": 9,
+      "max_absolute": 8.881784197001252e-16,
+      "max_relative": 1.3206212542087626e-15
+    },
+    "local_unit_row_sum_target": {
+      "count": 9,
+      "max_absolute": 2.2737367544323206e-13,
+      "max_relative": 1.7382600769560147e-16
+    }
+  },
+  "inequality_checks": {
+    "nonnegative_pair_loss": {
+      "count": 54,
+      "minimum_slack": 0.0
+    },
+    "nonnegative_center_loss": {
+      "count": 54,
+      "minimum_slack": 0.03225806451612903
+    },
+    "relative_bias_upper_bound": {
+      "count": 54,
+      "minimum_slack": 0.06451612903225853
+    },
+    "relative_variance_upper_bound": {
+      "count": 54,
+      "minimum_slack": 0.0020811654526534315
+    },
+    "persistence_r_upper_bound": {
+      "count": 54,
+      "minimum_slack": -8.881784197001252e-16
+    },
+    "quadratic_operator_bound": {
+      "count": 54,
+      "minimum_slack": -1.3877787807814457e-16
+    },
+    "quadratic_trace_square_bound": {
+      "count": 54,
+      "minimum_slack": 0.0010405827263266533
+    }
+  },
+  "dense_cases": [
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 8,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 7
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 17,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 16
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 0.4,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": -0.85,
+      "sigma": 1.7,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 0.4,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.0,
+      "sigma": 1.7,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 0.4,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.65,
+      "sigma": 1.7,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 1
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 2
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 0.4,
+      "bandwidth": 30
+    },
+    {
+      "n_obs": 31,
+      "phi": 0.99,
+      "sigma": 1.7,
+      "bandwidth": 30
+    }
+  ],
+  "t200_example": {
+    "n_obs": 200,
+    "phi": 0.99,
+    "marginal_variance": 1,
+    "bandwidth": 5,
+    "population_mass": 4.920597603999999,
+    "uncentered_pair_expectation": 4.881588047920001,
+    "centered_expectation": 2.062231417852416,
+    "finite_target": 113.26398781093818,
+    "long_run_limit": 198.99999999999983,
+    "finite_target_corrected_expectation": 47.46914358229441,
+    "finite_target_expectation_ratio": 0.41910182132674473,
+    "long_run_corrected_expectation": 83.40126244402214
+  },
+  "fixed_t_boundary": [
+    {
+      "phi": 0.9,
+      "delta": 0.09999999999999998,
+      "expectation_over_delta": 37.7486257998093,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -282.44213420019315
+    },
+    {
+      "phi": 0.99,
+      "delta": 0.010000000000000009,
+      "expectation_over_delta": 206.22314178523968,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -113.96761821476278
+    },
+    {
+      "phi": 0.9999,
+      "delta": 9.999999999998899e-05,
+      "expectation_over_delta": 318.5864169222578,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -1.6043430777446588
+    },
+    {
+      "phi": 0.999999,
+      "delta": 1.0000000000287557e-06,
+      "expectation_over_delta": 320.1746544231528,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -0.01610557684966807
+    },
+    {
+      "phi": 0.99999999,
+      "delta": 1.0000000050247593e-08,
+      "expectation_over_delta": 320.1905989379958,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -0.0001610620066685442
+    },
+    {
+      "phi": 0.9999999999999999,
+      "delta": 1.1102230246251565e-16,
+      "expectation_over_delta": 320.1907599999979,
+      "limit_coefficient": 320.19076000000246,
+      "discrepancy": -4.547473508864641e-12
+    }
+  ],
+  "plugin_identity_inputs": {
+    "seed": 7841,
+    "role": "Fixed seeded Gaussian algebra fixtures, not Monte Carlo calibration.",
+    "cases": [
+      {
+        "n_obs": 8,
+        "phi": -0.7,
+        "lhs": 0.11522413111618768,
+        "rhs": 0.11522413111618757
+      },
+      {
+        "n_obs": 8,
+        "phi": 0.0,
+        "lhs": -0.6885968124830812,
+        "rhs": -0.6885968124830812
+      },
+      {
+        "n_obs": 8,
+        "phi": 0.9,
+        "lhs": -1.9975760239500358,
+        "rhs": -1.9975760239500358
+      },
+      {
+        "n_obs": 8,
+        "phi": 0.99,
+        "lhs": -0.07631438800110404,
+        "rhs": -0.07631438800110413
+      },
+      {
+        "n_obs": 31,
+        "phi": -0.7,
+        "lhs": 1.1554819388372763,
+        "rhs": 1.1554819388372772
+      },
+      {
+        "n_obs": 31,
+        "phi": 0.0,
+        "lhs": -1.1977089715765148,
+        "rhs": -1.1977089715765157
+      },
+      {
+        "n_obs": 31,
+        "phi": 0.9,
+        "lhs": -2.284289630064707,
+        "rhs": -2.2842896300647078
+      },
+      {
+        "n_obs": 31,
+        "phi": 0.99,
+        "lhs": -0.3961844278406912,
+        "rhs": -0.39618442784069074
+      },
+      {
+        "n_obs": 200,
+        "phi": -0.7,
+        "lhs": 5.148757141948963,
+        "rhs": 5.148757141948973
+      },
+      {
+        "n_obs": 200,
+        "phi": 0.0,
+        "lhs": -10.592980516823792,
+        "rhs": -10.592980516823793
+      },
+      {
+        "n_obs": 200,
+        "phi": 0.9,
+        "lhs": 3.2257379463604536,
+        "rhs": 3.2257379463604767
+      },
+      {
+        "n_obs": 200,
+        "phi": 0.99,
+        "lhs": -1.858763629052838,
+        "rhs": -1.8587636290528349
+      }
+    ]
+  },
+  "local_to_unity_grid": {
+    "role": "Finite-grid discrepancies recorded without an asymptotic acceptance rule.",
+    "cases": [
+      {
+        "a": 0.2,
+        "n_obs": 128,
+        "phi": 0.9984375,
+        "bandwidth": 5,
+        "relative_expectation": 0.05970091845770458,
+        "limiting_relative_expectation": 0.06346234610090717,
+        "finite_grid_discrepancy": -0.003761427643202593
+      },
+      {
+        "a": 0.2,
+        "n_obs": 512,
+        "phi": 0.999609375,
+        "bandwidth": 6,
+        "relative_expectation": 0.06229999711662954,
+        "limiting_relative_expectation": 0.06346234610090717,
+        "finite_grid_discrepancy": -0.0011623489842776322
+      },
+      {
+        "a": 0.2,
+        "n_obs": 2048,
+        "phi": 0.99990234375,
+        "bandwidth": 8,
+        "relative_expectation": 0.06306734361338193,
+        "limiting_relative_expectation": 0.06346234610090717,
+        "finite_grid_discrepancy": -0.0003950024875252478
+      },
+      {
+        "a": 1.0,
+        "n_obs": 128,
+        "phi": 0.9921875,
+        "bandwidth": 5,
+        "relative_expectation": 0.25020492389000515,
+        "limiting_relative_expectation": 0.26424111765711533,
+        "finite_grid_discrepancy": -0.014036193767110183
+      },
+      {
+        "a": 1.0,
+        "n_obs": 512,
+        "phi": 0.998046875,
+        "bandwidth": 6,
+        "relative_expectation": 0.2598817315094055,
+        "limiting_relative_expectation": 0.26424111765711533,
+        "finite_grid_discrepancy": -0.0043593861477098095
+      },
+      {
+        "a": 1.0,
+        "n_obs": 2048,
+        "phi": 0.99951171875,
+        "bandwidth": 8,
+        "relative_expectation": 0.26274701584905397,
+        "limiting_relative_expectation": 0.26424111765711533,
+        "finite_grid_discrepancy": -0.0014941018080613655
+      },
+      {
+        "a": 5.0,
+        "n_obs": 128,
+        "phi": 0.9609375,
+        "bandwidth": 5,
+        "relative_expectation": 0.6529921109695641,
+        "limiting_relative_expectation": 0.6794609642400731,
+        "finite_grid_discrepancy": -0.026468853270508963
+      },
+      {
+        "a": 5.0,
+        "n_obs": 512,
+        "phi": 0.990234375,
+        "bandwidth": 6,
+        "relative_expectation": 0.6710890620781107,
+        "limiting_relative_expectation": 0.6794609642400731,
+        "finite_grid_discrepancy": -0.008371902161962375
+      },
+      {
+        "a": 5.0,
+        "n_obs": 2048,
+        "phi": 0.99755859375,
+        "bandwidth": 8,
+        "relative_expectation": 0.676524417779586,
+        "limiting_relative_expectation": 0.6794609642400731,
+        "finite_grid_discrepancy": -0.0029365464604870217
+      }
+    ]
+  },
+  "unverified_scope": [
+    "No conditional-mean Monte Carlo check was run.",
+    "No empirical size limit, Jensen-mixture Monte Carlo check, or plugin-rate simulation was run.",
+    "No growing-K, estimated-rho, bootstrap-validity, or novelty claim follows from this script."
+  ]
+}

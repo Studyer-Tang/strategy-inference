@@ -1,6 +1,6 @@
 # 强时间依赖下的策略筛选：联合检验何时可靠
 
-研究方案，2026-10-02。本文规定下一阶段的问题与论证顺序，不属于 v0.2.0 已完成的实验结论。新的方法和正式评价协议尚未冻结。
+研究方案，2026-10-02。本文规定下一阶段的问题与论证顺序，不属于 v0.2.0 已完成的实验结论。2026-10-03 已冻结并完成第一项[机制诊断协议](../experiments/tail-diagnostic-protocol.json)，结果见[独立实验解读](tail-results.md)；未知参数下的新联合方法仍未完成。
 
 ## 研究问题
 
@@ -83,7 +83,7 @@ P\{M>q\sqrt{1+\varepsilon}\}-\eta
 
 按机制逐层比较：已知有限样本协方差参照；总体 Bartlett 截断尺度；样本 Bartlett HAC；原论文 tail 方法；原项目固定尺度与重新学生化 bootstrap。每种方法的统计量、临界值生成方式、带宽约定及无效估计处理应完整写出。
 
-先复现原论文的单变量实验与 AR(1) 公式，再拓展到原始收益的联合均值检验。[作者页面](https://sites.google.com/site/kwchankeith/publications/tailpostcolor)提供 R 源码包，已核验包版本 0.0.0.3、许可证 GPL ≥2、依赖 `ltsa` 与 `tseries`。用独立实现的公式与外部 R 运行结果交叉检查；尚未安装、运行或核验论文复现，源码不直接并入本项目的 BSD-3-Clause 包。
+先复现原论文的单变量实验与 AR(1) 公式，再拓展到原始收益的联合均值检验。[作者页面](https://sites.google.com/site/kwchankeith/publications/tailpostcolor)提供 R 源码包，已核验包版本 0.0.0.3、许可证 GPL ≥2、依赖 `ltsa` 与 `tseries`。2026-10-03 已在独立 R 环境运行三个作者原始函数，与独立 Python 实现完成 48 项数值对照；[运行来源与范围](../results/research/verification/author-r-runtime.json)另存。自动拟合、自动带宽与原论文整套模拟尚未复现，源码不直接并入本项目的 BSD-3-Clause 包。
 
 第二层压力模型使用持久共同因子、不同载荷及具有较短时间记忆的个体噪声，再加入 ARMA 错配。分别研究因子方向和正交方向的植入均值，防止投影去掉信号后仍把不同目标的 power 放在一起比较。
 
