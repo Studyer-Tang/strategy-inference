@@ -31,6 +31,11 @@ from .model_selection import backtest as backtest
 from .model_selection import drift_forecast as drift_forecast
 from .model_selection import naive_forecast as naive_forecast
 from .model_selection import rolling_splits as rolling_splits
+from .multistep import MultiStepConformal as MultiStepConformal
+from .multistep import MultiStepInterval as MultiStepInterval
+from .multistep import MultiStepResult as MultiStepResult
+from .multistep import MultiStepUpdate as MultiStepUpdate
+from .multistep import multistep_intervals as multistep_intervals
 from .testing import TestResult as TestResult
 from .testing import test_returns as test_returns
 from .uncertainty import UncertaintyResult as UncertaintyResult

@@ -73,3 +73,7 @@ python scripts/joint_report.py --output results/research/joint/reproduced
 - 搜索调整覆盖事先确定的输入候选集。隐藏搜索、自适应生成、反复监测与停止、数据泄漏及未来市场变化不由收益矩阵自动解决。
 
 各专题保留全部格点、区间、原始记录、失败结果及理论限制；首页方法说明仍保留使用者做选择所需的条件。
+
+## 多步成熟反馈与尺度共享（v0.7）
+
+[方法与独立证明](multistep-methods.md)、[固定协议模拟结果](multistep-results.md)和[运行成本](multistep-performance.md)记录每步长反馈时钟、可选尺度共享及其适用范围。四个预设过程各40条独立路径，三张图可由一个命令重现；原始记录与源码、runner和协议哈希绑定。

@@ -1,10 +1,10 @@
 # 时序工具箱：范围与路线图
 
-`strategy-inference` 保留现有包名。v0.6.0 是向时序工具箱扩展的第一阶段：以预测数据对齐、损失评估、统计比较和在线区间组成可复核工作流。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
+`strategy-inference` 保留现有包名。v0.6 建立预测数据对齐、损失评估、统计比较和单步区间工作流；v0.7 增加多步成熟反馈与可选尺度更新。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
 
-安装与例子见[首页](../README.md)，详细新接口见[时序 API](time-series.md)，原收益推断见[均值 API](api.md)。本项目的增量主要是接口整合、实现、验证和计算效率；已知预测、MCS、bootstrap 与 conformal 基础算法不作为算法创新主张。
+安装与例子见[首页](../README.md)，详细接口见[时序 API](time-series.md)、[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)。本项目的增量主要是接口整合、实现、验证和计算效率；已知预测、MCS、bootstrap 与 conformal 基础算法不作为算法创新主张。
 
-## v0.6.0 已实现
+## 保留的 v0.6 工作流
 
 | 能力 | 公共接口与当前边界 |
 | --- | --- |
@@ -16,11 +16,25 @@
 | 收益均值推断 | `test_returns` 与既有高级接口保留；bootstrap 近似和共同平稳 Gaussian AR(1) 模型内的保守决定各自沿用原条件 |
 | 结果保存 | 回测数组、逐预测损失、候选比较与在线区间结果可读取；JSON/记录表接口，部分 `to_frame()` 需可选 pandas。类型和导出范围见 API |
 
-上述回测功能并不自动保证损失平稳；多步预测、单个 lead 的统计比较与单步在线区间也是不同能力。当前比较不会把 lead 展平成独立样本，当前在线 tracker 没有延迟多步反馈保证。
+上述回测功能并不自动保证损失平稳；多步预测、单个 lead 的统计比较与单步在线区间也是不同能力。当前比较不会把 lead 展平成独立样本；原单步 tracker 仍要求即时有序反馈。
+
+## v0.7 增加的能力
+
+| 能力 | 公共接口与边界 |
+| --- | --- |
+| 多步成熟反馈 | `MultiStepConformal`、`multistep_intervals`；单变量连续整数观测时钟，显式 origin/target，observe 后 predict；只用已经成熟的标签，未来尾部保留 pending |
+| Pooled 与 interlaced | 每步长当前状态更新，或按 `origin % lead` 分 lane；逐步长计数和平均覆盖界。两者学习时钟不同，不把差异直接当作效率结论 |
+| 按步长学习率 | `step_size` 支持正标量或 H 向量；`0.1/sqrt(leads)` 是延迟 damping 例子，不声称最优 |
+| 可选成熟尺度 | 固定尺度、自身步长 EWMA RMS，或最短配置步长成熟残差加固定初始尺度比率；发行尺度冻结，阈值不跨步长混用 |
+| 对齐与导出 | 只读发行数组、evaluated 掩码、成熟学习率、pending 与 lane 状态；严格 JSON 和可选 pandas。summary 分开报告空集、全域及有限宽度范围 |
+
+理想递推针对每个步长已成熟预测的历史平均误覆盖，不承诺逐时条件覆盖或整条路径同时覆盖；普通 binary64 结果不提供舍入证书。实现是独立工程 prototype，未包含完整 AcMCP 的 PID 饱和函数、误差预测器或 O²CP 的联合优化。证明见[多步方法](multistep-methods.md)。
+
+研究问题是：不同预测起点新旧与累计误差相关性，能否让短步长成熟残差成为更有效的长步长尺度信息，并改善宽度、区间评分或局部恢复？每时发行、队列填满后，各步长都在同一日历时点收到当前标签；shortest 不提前取得长步长标签，也不消除其阈值反馈延迟。共享尺度与跨步长信息利用已有先例，不声称首次提出。正式对照固定预测器、训练尺度、学习时钟与目标，比较 fixed、horizon 和 shortest，并包含共同波动、突变、重尾及步长特有失配的反例；有限比较不建立一般优势。
 
 ## 后续模块及验收目标
 
-这些模块尚未实现，不是 v0.6.0 的可用功能清单；顺序表示依赖关系，不承诺发布日期。
+这些模块尚未实现，不是当前版本的可用功能清单；顺序表示依赖关系，不承诺发布日期。
 
 | 方向 | 计划范围 | 进入公共接口前的验证 |
 | --- | --- | --- |
@@ -29,7 +43,7 @@
 | 多模型集合与序贯比较 | 经典 MCS 消除法参考，Fast MCS 实验路径，随后独立实现具时间一致目标的 SMCS | 相同 loss 与 bootstrap 索引下核对 ranks/p 值、ties 和纳入集合；Fast MCS 记录有限样本差异/回退；序贯版本另验 e-process 条件与停止规则 |
 | 多 lead 联合比较 | 预声明加权风险、模型 × lead 同时置信带，以及单独的联合 Wald 比较 | 使用完整跨 lead 与时间协方差；不把同一目标的多次预测当独立重复；对参考实现、相关 DGP 和有限样本覆盖做评估 |
 | 条件在线 conformal | 核验 2025 条件分位数建模/在线优化方法，区别 adversarial 平均覆盖与结构化 stochastic 条件结论 | 明确条件分位数结构、设计变量、更新顺序和理论假设；独立复现，不能沿用当前 tracker 的平均覆盖说明代替新定理 |
-| 延迟多步 conformal | 研究 2026 AcMCP/多步 PID，显式维护每个预测的目标成熟时间和可用反馈 | 未成熟 label 无法进入校准；逐 horizon 与整条轨迹覆盖分别报告；核验饱和函数、scorecaster 和长 horizon 有限样本偏差 |
+| 完整 PID、误差预测与联合区间 | 以现有成熟反馈为基础，核验 AcMCP 的饱和/scorecaster 与 O²CP 的可容许集优化；单独设计路径同时覆盖目标 | 不能把额外阈值修正当作当前证明已包含；核验各算法的额外假设，并分别报告逐 horizon 和整条轨迹指标 |
 | 漂移、changepoint 与稳健诊断 | 描述性漂移/依赖诊断、块长敏感性，随后考虑具有明确检测错误控制的方法 | 区分描述性告警与正式检验；多次监测与调参另控误差；验证重尾、结构变化与模型失配下的适用边界 |
 | 性能与 panel | 批量多序列、内存约束、流式结果、适配器与完整工作流 benchmark | 不将多个序列拼接成同一时间样本；固定数据和环境，校对结果；暖核心、首次使用与完整流程成本分别记录 |
 
@@ -42,7 +56,9 @@
 - **2026（online 2025），Barde：[Large-scale model comparison with fast model confidence sets](https://doi.org/10.1016/j.jeconom.2025.106123)。** R-rule 两遍更新算法减少论文所比较实现的模型维度时间与工作内存阶数。**Proposition 1 的 ranking/output 等价结论是样本量增大时的渐近结果**；有限样本实验一致不等于任意输入严格相等。未来实现须保留经典消除法参考、共享抽样索引及差异记录/回退；一遍版本不能冒充两遍算法。添加模型的计算能力也不自动处理自适应搜索。[作者说明](https://sylvain-barde.github.io/projects/fast_mcs/)明确此渐近限制。
 - **2026，Grant–Mrazik–Satchell：[Evaluating Forecasts at Multiple Horizons](https://doi.org/10.1002/for.70150)。** §3 对多步损失差向量及其长期协方差做联合比较；需要联合 CLT 与一致协方差估计。向量差异检验与预声明加权平均改善是不同统计目标，均不是当前单 lead 比较自动提供的结果。
 - **2026，Pohle–Zahn–Lerch：[Uncertainty Quantification in Forecast Comparisons](https://arxiv.org/abs/2605.03997)。** 为 expected scores/skill scores 构造联合带；§3、Proposition 1 使用多元 CLT、一致长期协方差与有效 bootstrap。比值型 skill score 还要求基准期望 score 为正。其有限样本研究也报告强依赖和高维时的欠覆盖，不能由此宣称普遍精确或任意增长维数有效；已有[作者实现](https://github.com/TanjaZahn/UQforecasts)可作对照。
-- **2026 修订（首稿 2024），Wang–Hyndman：[Online conformal inference for multi-step time series forecasting](https://arxiv.org/html/2410.13115v2)。** AcMCP/多步 PID 使用已经成熟的多步误差。长期保证涉及指定饱和函数、可容许次线性函数及 bounded scorecaster 等条件；各 horizon 的长期覆盖不能改称整条预测轨迹同时覆盖。一般非线性 AR 的误差结构推导使用 Taylor 近似，不能泛称精确 MA(h−1)。当前单步模块没有实现该延迟反馈方法。
+- **2026 修订（首稿 2024），Wang–Hyndman：[Online conformal inference for multi-step time series forecasting](https://arxiv.org/html/2410.13115v2)。** AcMCP/多步 PID 使用已经成熟的多步误差。完整长期保证涉及指定饱和函数、可容许次线性函数及 bounded scorecaster 等条件；各 horizon 的长期覆盖不能改称整条预测轨迹同时覆盖。一般非线性 AR 的误差结构推导使用 Taylor 近似，不能泛称精确 MA(h−1)。v0.7 的简单成熟反馈 tracker 未实现完整 AcMCP。
+- **2026 年 9 月，El Halabi–Brandt：[Adaptive Conformal Inference Under Delayed Feedback](https://arxiv.org/html/2609.07251v1)。** 延迟 ACI 可分解成相位交织的控制器，给出延迟相关平均覆盖界；delay-to-memory 是机制相关诊断，尺度归一化也已有研究。其额外 marginal 结论使用结构化依赖假设，不能由本模块直接继承，更不能以 interlaced 的定理替代 pooled 推导。
+- **2026 年 8 月修订（首稿 2025）：[Optimization-Based Online Conformal Prediction for Multi-Step Forecasting](https://arxiv.org/html/2508.13362v3)。** O²CP 在可容许控制集合内利用跨步长误差分布进行优化，保留基础算法的长期 marginal 目标。跨步长利用不是新的概念；本模块的固定比率成熟尺度共享没有实现该联合优化，也不借用其定理保证任意阈值改动。
 
 ## 与成熟库衔接
 
@@ -53,5 +69,7 @@
 ## 版本证据
 
 [v0.5 归档页面及 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)绑定固定发布 commit，原数据保留；[性能说明](performance.md)描述的是该版六格实验。新模块的速度须用新版本 benchmark 验证，不沿用旧版倍数。
+
+[v0.6 归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)与[性能说明](time-series-performance.md)同样绑定当时发布源码。它们不是 v0.7 多步接口的性能报告；新测量另行保存。归档冻结的是统计/性能证据与来源，页面相对链接可随归档位置调整。
 
 历史正式研究须在 metadata 指定的冻结 commit/对应 tag 下完整复核；新 API 和计算优化不改写旧协议与证据。报告和图可直接读取，带 source-hash 锁的旧 auditor 不应直接配合更新后的 core 重跑。完整索引见[研究与复现](research.md)。

@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 _EXPORTS = {
     "AuditResult": "audit",
     "audit_returns": "audit",
@@ -37,6 +37,11 @@ _EXPORTS = {
     "ConformalUpdate": "conformal",
     "ConformalResult": "conformal",
     "adaptive_intervals": "conformal",
+    "MultiStepConformal": "multistep",
+    "MultiStepInterval": "multistep",
+    "MultiStepUpdate": "multistep",
+    "MultiStepResult": "multistep",
+    "multistep_intervals": "multistep",
     "UncertaintyResult": "uncertainty",
     "uncertainty_test": "uncertainty",
     "WilksResult": "wilks",

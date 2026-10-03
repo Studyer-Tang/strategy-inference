@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- Add `MultiStepConformal` and `multistep_intervals` for univariate consecutive integer-time observations. Observe current labels before issuing future paths; update only matured forecasts and retain unobserved future targets as pending. Freeze each issued scale and interval.
+- Support pooled current-state feedback and origin-phase interlaced lanes, with scalar or per-lead learning-rate constants. Document their different decay clocks and ideal-arithmetic retrospective average-miscoverage bounds; retain explicit empty/full intervals and binary64 boundary limitations.
+- Add optional mature-residual EWMA RMS scales, either per horizon or shared from the shortest configured lead with fixed initial ratios. Keep per-lead miss controllers separate. Treat shared-scale efficiency as a research question, without claiming a full AcMCP implementation, conditional coverage or simultaneous path coverage.
+- Add a runnable random-walk/backtest example, multi-step API documentation and recent primary references. Freeze v0.6 performance evidence against its release commit so later modules and versions do not invalidate historical source bindings.
+- Report a fixed four-process study with 160 independent paths, paired interval scores, local-coverage diagnostics and three reproducible scientific figures. Retain the development-informed rate choice and its separate seeds; distinguish simulated gains over own-lead EWMA from general superiority.
+- Save four source-bound batch/stream benchmarks, publish book-style documentation from validated raw records, and preserve frozen v0.5/v0.6 pages.
+
 ## 0.6.0
 
 - Add rolling-origin evaluation with explicit gaps, bounded or expanding training windows, isolated training copies and a model-agnostic callable interface. Retain every origin, lead and forecast, including overlapping targets. Include naive, seasonal-naive and drift baselines.

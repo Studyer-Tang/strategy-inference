@@ -1,21 +1,21 @@
 # strategy-inference
 
-面向预测评估、在线不确定性与策略均值推断的 Python 时序工具箱。v0.6.0 提供第一阶段工作流：滚动预测、逐步损失评估、固定候选比较和单步在线区间；原有收益均值接口继续可用。
+面向预测评估、在线不确定性与策略均值推断的 Python 时序工具箱。v0.7 在滚动预测、损失评估、固定候选比较和单步在线区间之上，增加多步成熟反馈与可选动态尺度；原有收益均值接口继续可用。
 
-[English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
+[English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [多步 API](docs/multistep-api.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
 
 ## 安装
 
-需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone；尚未发布到 PyPI：
+需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone。尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.6.0/strategy_inference-0.6.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.7.0/strategy_inference-0.7.0-py3-none-any.whl
 ```
 
 对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.6.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.7.0'
 ```
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
@@ -63,6 +63,34 @@ print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
 
 `mean_improvement > 0` 表示候选损失低于 baseline。拒绝决定检验期望改善是否大于零，不能仅按平均损失最小选择后再解释未经调整的 p 值。该示例演示接口，实际平均覆盖也不是每个时点的覆盖概率。
 
+## 多步区间与成熟反馈
+
+多步预测须等到各自目标标签成熟后才更新。批量接口保留起点和物理步长，不把回测每行当作立即反馈：
+
+```python
+from strategy_inference import multistep_intervals
+
+walk = np.cumsum(np.random.default_rng(17).normal(size=384))
+multi_run = backtest(
+    walk, {"naive": naive_forecast}, initial_train_size=128, window=128, horizon=12,
+)
+origins = np.asarray([split.origin for split in multi_run.splits])
+leads = multi_run.target_indices[0] - origins[0]  # 包含 gap 的物理步长
+multi = multistep_intervals(
+    walk, multi_run.forecasts[:, :, 0], origins=origins, lead_times=leads,
+    scale=np.sqrt(leads), step_size=0.1 / np.sqrt(leads), decay=0.2,
+    initial_quantile=0.65, strategy="pooled", scale_decay=0.97,
+    scale_source="shortest",
+)
+print(multi.summary())
+```
+
+这里 `sqrt(leads)` 来自单位创新随机游走的已知模拟尺度，按步长降低学习率只是示例。`shortest` 只用最短配置步长已成熟残差更新共同 RMS，再按固定初始尺度比率发行；发行尺度冻结。也可用固定尺度或 `scale_source="horizon"`。共享短成熟信息的效果见[固定协议的模拟结果](docs/multistep-results.md)，尚未确立一般效率收益。
+
+每时发行且队列填满后，各步长都在同一日历时点收到当前标签；共享尺度改变的是预测起点新旧与残差信息，不会提前取得长步长标签或消除其阈值反馈延迟。
+
+流式 `MultiStepConformal` 按 `observe(t, y[t])` 再 `predict(path)` 运行，连续整数观测时钟不能跳步；结束时未成熟预测保留 pending。`pooled` 每个步长一个状态，`interlaced` 按起点相位拆分；两者成熟计数与学习率时钟不同。见[多步 API](docs/multistep-api.md)、[方法与证明](docs/multistep-methods.md)及[可运行例子](examples/multistep.py)。
+
 ## 已实现的接口
 
 | 接口 | 输入与输出 |
@@ -73,6 +101,7 @@ print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
 | `interval_score(actual, lower, upper, alpha=...)` | 中心区间评分，包含宽度与漏覆盖距离惩罚；全域区间评分为无穷，空集不支持 |
 | `compare_forecasts(run, baseline=..., lead_time=...)` | 一个预先指定 baseline、一个 lead、固定候选集的共享时间索引 max bootstrap，返回全族/候选决定及诊断 |
 | `AdaptiveConformal`、`adaptive_intervals(...)` | 单步、有序完整反馈的递减步长 quantile tracker，返回区间、空集/全域状态和实际覆盖 |
+| `MultiStepConformal`、`multistep_intervals(...)` | 单变量整数时钟、多步成熟反馈，pooled/interlaced 状态、冻结发行尺度和逐步长汇总 |
 | `test_returns(...)`、`infer_mean(...)` | 原有同期收益矩阵的同时或逐列均值推断 |
 
 `run.to_dict()` 保存完整回测数组与 splits；`scores.losses` 保留逐 origin 损失，`scores.to_dict()` 导出汇总；比较和在线区间也提供 `to_dict()`。导出候选表或回测长表可使用 `to_frame()`，需要 pandas。详细参数、数组形状和结果语义见[时序 API](docs/time-series.md)。
@@ -83,7 +112,7 @@ print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
 
 预测比较使用 baseline 损失减去候选损失。Bootstrap 近似需要损失差序列平稳、弱依赖、适当矩及非退化方差，渐近讨论固定候选数。重叠预测保留 origin 顺序；多步回测必须指定 `lead_time`，不会把多个 lead 当作独立样本。默认 HAC lag 和块长同时考虑重叠与样本量，仍是启发式；rolling/expanding 切分本身不建立统计条件。常数损失差会报错。候选、baseline、损失和 lead 应事先确定，跨 lead 联合检验、隐藏搜索和反复查看后停止需要另外处理。
 
-在线区间实现 [Angelopoulos–Barber–Bates（ICML 2024）](https://proceedings.mlr.press/v235/angelopoulos24a.html) 的递减步长更新，采用固定尺度有界残差映射。理想递推的保证是时间平均覆盖；逐时、条件覆盖和延迟多步反馈不属于当前方法保证。空集与全域区间显式保留，阈值不截断。实际实现使用普通浮点运算，反馈按返回闭区间计算；详见[时序 API](docs/time-series.md)中的理论范围和数值边界。
+单步在线区间实现 [Angelopoulos–Barber–Bates（ICML 2024）](https://proceedings.mlr.press/v235/angelopoulos24a.html) 的递减步长更新，采用固定尺度有界残差映射。多步模块另外显式维护成熟反馈队列；每个步长的理想递推控制已成熟预测的历史平均误覆盖，不提供逐时条件覆盖或整条路径同时覆盖。它是独立工程实现，没有复刻完整 AcMCP 的 PID 与 scorecaster。空集与全域显式保留，阈值不截断；普通浮点反馈按返回闭区间计算，没有舍入证书。完整条件见[时序 API](docs/time-series.md)与[多步方法](docs/multistep-methods.md)。
 
 ## 收益均值推断
 
@@ -112,9 +141,9 @@ strategy-inference test examples/demo_returns.csv \
 
 [路线图](docs/toolbox-roadmap.md)区分已实现功能与待核验扩展；[研究索引](docs/research.md)保留历史评价、失败边界、冻结协议和原始证据。基础预测、bootstrap 与 conformal 算法的实现不作为算法创新主张。
 
-v0.6 的[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存运行条件、五次热调用与源码哈希。本机 958 个起点的三基线滚动评估约 19 ms，两个候选、999 次重抽样比较约 24 ms，10 万步流式区间更新约 123 ms；输入生成与导入不计时，比较耗时也不包含已有回测。数值是本机工程测量，不是通用速度保证。
+历史 v0.6 的[归档页面](https://studyer-tang.github.io/strategy-inference/library/v0.6.0/)、[性能说明](docs/time-series-performance.md)和[原始记录](benchmarks/results/time-series-0.6.json)保存当时运行条件、五次热调用与源码哈希。它们绑定 v0.6 发布源码，不是当前 v0.7 多步模块的性能测量；v0.7 的[多步性能说明](docs/multistep-performance.md)和[原始记录](benchmarks/results/multistep-0.7.json)另行报告。本机工程测量不提供通用速度或统计校准保证。
 
-历史证据保留在 [v0.5 页面与完整 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)和[v0.5 性能说明](docs/performance.md)。该版本的计时不代表 v0.6 新接口。历史正式研究应在 metadata 指定的冻结 commit/tag 下复核。
+历史证据保留在 [v0.5 页面与完整 benchmark](https://studyer-tang.github.io/strategy-inference/library/v0.5.0/)和[v0.5 性能说明](docs/performance.md)。旧版本计时不代表当前接口。历史正式研究应在 metadata 指定的冻结 commit/tag 下复核。
 
 ```bash
 python -m pytest
@@ -122,6 +151,7 @@ ruff check .
 python scripts/sync_protocols.py --check
 python scripts/build_library_site.py --check
 python scripts/build_toolbox_site.py --check
+python scripts/build_multistep_site.py --check
 ```
 
 BSD-3-Clause 许可证。

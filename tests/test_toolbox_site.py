@@ -4,12 +4,16 @@ import hashlib
 import html
 import importlib.util
 import json
-import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _git(root, *arguments):
+    return subprocess.check_output(["git", "-C", str(root), *arguments], stderr=subprocess.PIPE)
 
 
 @pytest.fixture
@@ -28,11 +32,18 @@ def evidence(builder, monkeypatch, tmp_path):
     root = tmp_path / "repository"
     package = root / "src/strategy_inference"
     package.mkdir(parents=True)
-    for path in (ROOT / "src/strategy_inference").glob("*.py"):
-        shutil.copyfile(path, package / path.name)
+    # Fixtures retain release blobs, independently of the installed version or
+    # new modules in the current checkout. No historical Python is executed.
+    tree = _git(ROOT, "ls-tree", "-r", "--name-only", builder.RELEASE_COMMIT, "--",
+                "src/strategy_inference").decode().splitlines()
+    for path in tree:
+        if path.endswith(".py") and Path(path).parent == Path("src/strategy_inference"):
+            (package / Path(path).name).write_bytes(
+                _git(ROOT, "show", f"{builder.RELEASE_COMMIT}:{path}")
+            )
     runner = root / "benchmarks/time_series.py"
     runner.parent.mkdir()
-    shutil.copyfile(ROOT / "benchmarks/time_series.py", runner)
+    runner.write_bytes(_git(ROOT, "show", f"{builder.RELEASE_COMMIT}:benchmarks/time_series.py"))
     report = json.loads((ROOT / "benchmarks/results/time-series-0.6.json").read_bytes())
     source = root / "benchmarks/results/time-series-0.6.json"
     source.parent.mkdir()
@@ -41,8 +52,24 @@ def evidence(builder, monkeypatch, tmp_path):
     archive.mkdir(parents=True)
     (archive / "index.html").write_bytes(b"Frozen v0.5 page.\n")
     (archive / "benchmark.json").write_bytes(b"Frozen v0.5 raw evidence.\n")
+    # The active landing and its legacy snapshots are not this builder's outputs.
+    landing = root / "docs/library"
+    (landing / "index.html").write_bytes(b"Current landing must remain unchanged.\n")
+    (landing / "benchmark-0.6.json").write_bytes(b"Legacy root benchmark must remain unchanged.\n")
+    (landing / "benchmark.json").write_bytes(b"Legacy v0.5 root benchmark.\n")
     monkeypatch.setattr(builder, "ROOT", root)
     return source, report
+
+
+@pytest.fixture
+def frozen_repository(builder, evidence, monkeypatch):
+    _git(builder.ROOT, "init", "-q")
+    _git(builder.ROOT, "config", "user.name", "Frozen fixture")
+    _git(builder.ROOT, "config", "user.email", "fixture@example.invalid")
+    _git(builder.ROOT, "add", "src", "benchmarks/time_series.py")
+    _git(builder.ROOT, "commit", "-qm", "v0.6 source fixture")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip())
+    return evidence
 
 
 def _snapshot(root):
@@ -66,13 +93,22 @@ def test_build_copies_exact_evidence_and_check_is_readonly_with_archive_retained
     benchmarks_before = _snapshot(builder.ROOT / "benchmarks")
     archive = builder.ROOT / "docs/library/v0.5.0"
     archive_before = _snapshot(archive)
+    landing = builder.ROOT / "docs/library"
+    root_before = {
+        name: ((landing / name).read_bytes(), (landing / name).stat().st_mtime_ns)
+        for name in ("index.html", "benchmark-0.6.json", "benchmark.json")
+    }
     builder.build()
-    site = builder.ROOT / "docs/library"
+    site = builder.ROOT / "docs/library/v0.6.0"
     assert (site / "benchmark-0.6.json").read_bytes() == source.read_bytes()
     page = (site / "index.html").read_text()
     for case in report["cases"]:
         assert f"{case['warm_median_seconds'] * 1000:.3f}" in page
-    assert 'href="v0.5.0/"' in page
+    assert 'href="../v0.5.0/"' in page
+    assert {
+        name: ((landing / name).read_bytes(), (landing / name).stat().st_mtime_ns)
+        for name in root_before
+    } == root_before
     assert _snapshot(builder.ROOT / "src") == source_before
     assert _snapshot(builder.ROOT / "benchmarks") == benchmarks_before
     assert _snapshot(archive) == archive_before
@@ -85,7 +121,7 @@ def test_build_copies_exact_evidence_and_check_is_readonly_with_archive_retained
 def test_check_never_creates_or_repairs_assets(builder, evidence, change):
     if change == "changed":
         builder.build()
-        (builder.ROOT / "docs/library/benchmark-0.6.json").write_bytes(b"changed")
+        (builder.ROOT / "docs/library/v0.6.0/benchmark-0.6.json").write_bytes(b"changed")
     before = _snapshot(builder.ROOT)
     with pytest.raises(ValueError, match="differs"):
         builder.build(check=True)
@@ -225,7 +261,7 @@ def test_every_unsafe_target_is_rejected_before_any_managed_file_is_written(
     kind,
 ):
     source, _ = evidence
-    site = builder.ROOT / "docs/library"
+    site = builder.ROOT / "docs/library/v0.6.0"
     builder.build()
     target = site / name
     target.unlink()
@@ -249,10 +285,11 @@ def test_every_unsafe_target_is_rejected_before_any_managed_file_is_written(
         assert source.is_file()
 
 
-@pytest.mark.parametrize("directory", ["docs", "docs/library"])
+@pytest.mark.parametrize("directory", ["docs", "docs/library", "docs/library/v0.6.0"])
 def test_symlinked_parent_directory_cannot_redirect_managed_writes(
     builder, evidence, tmp_path, directory
 ):
+    builder.build()
     target = builder.ROOT / directory
     outside = tmp_path / "outside"
     target.rename(outside)
@@ -273,3 +310,88 @@ def test_real_saved_report_is_read_without_running_or_rewriting_measurements(bui
     assert report["package_version"] == "0.6.0"
     assert builder.render(report).startswith(b"<!doctype html>")
     assert (report_path.read_bytes(), report_path.stat().st_mtime_ns) == before
+
+
+@pytest.mark.parametrize("change", ["source", "new_module", "remove_module", "runner", "version"])
+def test_frozen_git_release_ignores_changed_current_checkout(builder, frozen_repository, change):
+    source, _ = frozen_repository
+    package = builder.ROOT / "src/strategy_inference"
+    builder.build()
+    expected = _snapshot(builder.ROOT / "docs/library")
+    if change == "source":
+        (package / "model_selection.py").write_text("# New implementation.\n")
+    elif change == "new_module":
+        (package / "multistep.py").write_text("# New v0.7 module.\n")
+    elif change == "remove_module":
+        (package / "model_selection.py").unlink()
+    elif change == "runner":
+        (builder.ROOT / "benchmarks/time_series.py").write_text("# New runner.\n")
+    else:
+        (package / "__init__.py").write_text('__version__ = "0.7.0"\n')
+    before = _snapshot(builder.ROOT)
+    raw, _ = builder._read_performance()
+    assert raw == source.read_bytes()
+    builder.build(check=True)
+    assert _snapshot(builder.ROOT) == before
+    builder.build()
+    assert {
+        name: content[:2] for name, content in _snapshot(builder.ROOT / "docs/library").items()
+    } == {name: content[:2] for name, content in expected.items()}
+
+
+@pytest.mark.parametrize("change", ["source", "new_module", "remove_module", "runner", "version"])
+def test_modified_release_git_blobs_do_not_validate_old_evidence(
+    builder, frozen_repository, monkeypatch, change
+):
+    source, report = frozen_repository
+    package = builder.ROOT / "src/strategy_inference"
+    if change == "source":
+        (package / "model_selection.py").write_text("# Altered release.\n")
+    elif change == "new_module":
+        (package / "unexpected.py").write_text("# Altered source dictionary.\n")
+    elif change == "remove_module":
+        (package / "model_selection.py").unlink()
+    elif change == "runner":
+        (builder.ROOT / "benchmarks/time_series.py").write_text("# Altered release runner.\n")
+    else:
+        (package / "__init__.py").write_text('__version__ = "0.7.0"\n')
+        report["candidate_source_sha256"] = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in package.glob("*.py")
+        }
+        _save(source, report)
+    _git(builder.ROOT, "add", "-A", "src", "benchmarks/time_series.py")
+    _git(builder.ROOT, "commit", "-qm", "Altered purported release")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip())
+    before = _snapshot(builder.ROOT)
+    with pytest.raises(ValueError, match="frozen"):
+        builder.build()
+    assert _snapshot(builder.ROOT) == before
+
+
+@pytest.mark.parametrize("object_kind", ["missing", "tree"])
+def test_invalid_release_object_is_rejected_readonly(
+    builder, frozen_repository, monkeypatch, object_kind
+):
+    release = "0" * 40 if object_kind == "missing" else _git(
+        builder.ROOT, "rev-parse", "HEAD^{tree}"
+    ).decode().strip()
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", release)
+    before = _snapshot(builder.ROOT)
+    with pytest.raises(ValueError, match="fetch.*Git objects" if object_kind == "missing" else "Git commit"):
+        builder.build(check=True)
+    assert _snapshot(builder.ROOT) == before
+
+
+def test_symlink_release_source_is_rejected_before_any_output(
+    builder, frozen_repository, monkeypatch
+):
+    source = builder.ROOT / "src/strategy_inference/model_selection.py"
+    source.unlink()
+    source.symlink_to("inference.py")
+    _git(builder.ROOT, "add", "src")
+    _git(builder.ROOT, "commit", "-qm", "Invalid release source type")
+    monkeypatch.setattr(builder, "RELEASE_COMMIT", _git(builder.ROOT, "rev-parse", "HEAD").decode().strip())
+    before = _snapshot(builder.ROOT)
+    with pytest.raises(ValueError, match="ordinary Git files"):
+        builder.build()
+    assert _snapshot(builder.ROOT) == before

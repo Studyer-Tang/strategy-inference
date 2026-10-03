@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "protocol_version": 2,
+  "study": "matured-feedback-scale-transfer",
+  "seed": 812734,
+  "burn_in": 1024,
+  "phi": 0.65,
+  "lead_times": [1, 6, 12, 24],
+  "alpha": 0.1,
+  "step_size": 0.1,
+  "step_size_rule": "base / sqrt(lead_time)",
+  "decay": 0.2,
+  "initial_quantile": 0.65,
+  "scale_decay": 0.97,
+  "scale_floor": 1e-8,
+  "evaluation_warmup": 128,
+  "local_window": 200,
+  "methods": [
+    {"name": "pooled_fixed", "strategy": "pooled", "scale_source": "horizon", "adaptive_scale": false},
+    {"name": "pooled_horizon", "strategy": "pooled", "scale_source": "horizon", "adaptive_scale": true},
+    {"name": "pooled_shortest", "strategy": "pooled", "scale_source": "shortest", "adaptive_scale": true},
+    {"name": "interlaced_horizon", "strategy": "interlaced", "scale_source": "horizon", "adaptive_scale": true}
+  ],
+  "scenarios": [
+    {"name": "constant", "rho": 0.0, "log_scale_sd": 0.0},
+    {"name": "persistent_scale", "rho": 0.985, "log_scale_sd": 0.1},
+    {"name": "fast_scale", "rho": 0.65, "log_scale_sd": 0.4},
+    {"name": "scale_shift", "rho": 0.0, "log_scale_sd": 0.0}
+  ],
+  "profiles": {
+    "quick": {"n_obs": 1200, "initial_train_size": 256, "repetitions": 4, "seed_offset": 0},
+    "full": {"n_obs": 2400, "initial_train_size": 512, "repetitions": 40, "seed_offset": 1000000}
+  },
+  "comparison": "Paired interval-score differences for pooled_shortest versus pooled_horizon; pointwise 95% Monte Carlo t intervals across independent paths. All methods and settings fixed before held-out evaluation.",
+  "forecaster": "Known conditional mean phi**h * y[origin], used to isolate calibration rather than model-fitting error. Initial lead scales estimated only within the initial training prefix.",
+  "development": "A four-path engineering preview with scalar step_size showed empty/unbounded long-lead intervals. Version 2 fixes step_size_h=0.1/sqrt(h) before formal simulations; formal seeds are disjoint from all preview seeds. This is design informed by a pilot, not a preregistered superiority claim or a search for a winning rate. The slower rate can trade adaptation speed for fewer boundary states.",
+  "scope": "Simulation study, not original-paper replication, empirical financial evidence, or a general ranking. Fast scale is a prespecified counterexample to transferring current volatility far ahead. Interlaced learning rates count lane feedback, pooled rates count all lead feedback."
+}

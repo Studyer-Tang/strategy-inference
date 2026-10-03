@@ -60,11 +60,21 @@ def prepare(tag: str, dist: Path, notes: Path, *, root: Path = ROOT):
     hashes = "".join(
         f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in files
     )
-    api = "time-series.md" if (root / "docs/time-series.md").is_file() else "api.md"
-    performance = (
-        "time-series-performance.md"
-        if (root / "docs/time-series-performance.md").is_file()
-        else "performance.md"
+    api = next(
+        (
+            name
+            for name in ("multistep-api.md", "time-series.md")
+            if (root / "docs" / name).is_file()
+        ),
+        "api.md",
+    )
+    performance = next(
+        (
+            name
+            for name in ("multistep-performance.md", "time-series-performance.md")
+            if (root / "docs" / name).is_file()
+        ),
+        "performance.md",
     )
     body = f"{section[1].strip()}\n\nInstall the wheel without cloning the research repository:\n\n```bash\npython -m pip install 'https://github.com/Studyer-Tang/strategy-inference/releases/download/{tag}/{wheel}'\n```\n\n[Library documentation](https://studyer-tang.github.io/strategy-inference/library/) · [API](https://github.com/Studyer-Tang/strategy-inference/blob/{tag}/docs/{api}) · [Performance](https://github.com/Studyer-Tang/strategy-inference/blob/{tag}/docs/{performance})\n"
     (dist / "SHA256SUMS").write_text(hashes)

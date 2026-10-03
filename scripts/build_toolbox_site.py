@@ -1,4 +1,4 @@
-"""Render the current toolbox overview and its saved engineering measurements."""
+"""Render the frozen v0.6 toolbox overview from its saved measurements."""
 
 from __future__ import annotations
 
@@ -9,10 +9,12 @@ import json
 import math
 import re
 import statistics
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.6.0"
+RELEASE_COMMIT = "ffcd83b7043056182fdf7a6e36f1011e11889a34"
 THREAD_ENV = {
     "OPENBLAS_NUM_THREADS": "1",
     "OMP_NUM_THREADS": "1",
@@ -26,27 +28,97 @@ def _sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _version(contents):
+    match = re.search(r'^__version__ = "([^"]+)"$', contents.decode("utf-8"), re.MULTILINE)
+    if match is None or match[1] != VERSION:
+        raise ValueError(f"The frozen toolbox source must have package version {VERSION}.")
+
+
+def _git_bytes(*arguments):
+    """Read release blobs without importing or executing historical code."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), *arguments], capture_output=True, check=False
+        )
+    except OSError as exc:
+        raise ValueError(f"Cannot read frozen release {RELEASE_COMMIT}: Git is unavailable.") from exc
+    if result.returncode:
+        raise ValueError(
+            f"Cannot read frozen release {RELEASE_COMMIT}; fetch this commit and its Git objects."
+        )
+    return result.stdout
+
+
+def _release_sources():
+    """Bind saved evidence to Git release blobs, or a non-Git v0.6 fixture."""
+    prefix = "src/strategy_inference/"
+    runner_path = "benchmarks/time_series.py"
+    if not (ROOT / ".git").exists():
+        package = ROOT / prefix
+        init = package / "__init__.py"
+        if init.is_symlink() or not init.is_file():
+            raise ValueError("Release __init__.py must be an ordinary Python file.")
+        init_contents = init.read_bytes()
+        _version(init_contents)
+        paths = sorted(package.glob("*.py"))
+        runner = ROOT / runner_path
+        if (
+            not paths
+            or any(path.is_symlink() or not path.is_file() for path in paths)
+            or runner.is_symlink()
+            or not runner.is_file()
+        ):
+            raise ValueError("Release source and benchmark runner must be ordinary files.")
+        return {path.name: _sha(path) for path in paths}, init_contents, runner.read_bytes()
+
+    if _git_bytes("cat-file", "-t", RELEASE_COMMIT).strip() != b"commit":
+        raise ValueError(f"Frozen release {RELEASE_COMMIT} must identify a Git commit.")
+    tree = _git_bytes(
+        "ls-tree", "-r", "-z", "--full-tree", RELEASE_COMMIT, "--",
+        "src/strategy_inference", runner_path,
+    )
+    hashes, init_contents, runner_contents = {}, None, None
+    for entry in tree.split(b"\0"):
+        if not entry:
+            continue
+        metadata, encoded_path = entry.split(b"\t", 1)
+        mode, kind, _ = metadata.split()
+        path = encoded_path.decode("utf-8")
+        is_source = (
+            path.startswith(prefix) and path.endswith(".py")
+            and "/" not in path[len(prefix):]
+        )
+        if not is_source and path != runner_path:
+            continue
+        if kind != b"blob" or mode not in (b"100644", b"100755"):
+            raise ValueError("Frozen release source and runner must be ordinary Git files.")
+        contents = _git_bytes("show", f"{RELEASE_COMMIT}:{path}")
+        if is_source:
+            hashes[path[len(prefix):]] = hashlib.sha256(contents).hexdigest()
+            if path == prefix + "__init__.py":
+                init_contents = contents
+        else:
+            runner_contents = contents
+    if not hashes or init_contents is None or runner_contents is None:
+        raise ValueError(f"Frozen release {RELEASE_COMMIT} lacks source or benchmark objects.")
+    return hashes, init_contents, runner_contents
+
+
 def _read_performance():
     path = ROOT / "benchmarks/results/time-series-0.6.json"
     raw = path.read_bytes()
     report = json.loads(raw)
-    hashes = {p.name: _sha(p) for p in sorted((ROOT / "src/strategy_inference").glob("*.py"))}
+    hashes, init_contents, runner_contents = _release_sources()
     if (
         report["schema_version"] != 1
         or report["package_version"] != VERSION
         or report["candidate_source_sha256"] != hashes
-        or report["benchmark_source_sha256"] != _sha(ROOT / "benchmarks/time_series.py")
+        or report["benchmark_source_sha256"] != hashlib.sha256(runner_contents).hexdigest()
     ):
         raise ValueError(
-            "Performance record must match this version's source and benchmark runner."
+            "Performance record must match the frozen release source and benchmark runner."
         )
-    version = re.search(
-        r'^__version__ = "([^"]+)"$',
-        (ROOT / "src/strategy_inference/__init__.py").read_text(),
-        re.MULTILINE,
-    )
-    if version is None or version[1] != VERSION:
-        raise ValueError("The current overview must match the package version.")
+    _version(init_contents)
     cases = report["cases"]
     expected = (
         "squared_loss_10000x20",
@@ -222,7 +294,7 @@ th,td{{padding:.65rem;border-bottom:1px solid #d8cebd;text-align:left}}th{{font-
 <p>串行、BLAS 线程环境设为 1、五次热调用中位数；耗时为毫秒，跟踪分配峰值为 KiB。输入生成、导入与结果指纹不计时；模型比较的既有回测也不计时。峰值包含新输出、不包含已有输入和导入。</p>
 <div class="table-scroll" tabindex="0" role="region" aria-label="性能表，可横向滚动"><table><thead><tr><th>任务</th><th>耗时 / ms</th><th>峰值 / KiB</th></tr></thead><tbody>{rows}</tbody></table></div>
 <p>环境：{html.escape(report["platform"])}；Python {html.escape(report["python"].split()[0])}；NumPy {html.escape(report["numpy"])}。流式 tracker 保存常数个状态；批量接口保留整段区间，空间为 O(T)。这些实测不能作为通用速度承诺或统计校准。</p>
-<p><a href="benchmark-0.6.json" download>完整原始计时与源代码哈希</a> · <a href="v0.5.0/">v0.5.0 冻结性能对照</a></p>
+<p><a href="benchmark-0.6.json" download>完整原始计时与源代码哈希</a> · <a href="../v0.5.0/">v0.5.0 冻结性能对照</a></p>
 </main><footer>BSD-3-Clause · 完整条件、返回值与异常见 <a href="{tag}/docs/time-series.md">时序 API</a>。</footer>
 </body></html>
 '''.encode()
@@ -231,8 +303,8 @@ th,td{{padding:.65rem;border-bottom:1px solid #d8cebd;text-align:left}}th{{font-
 def build(*, check=False):
     raw, report = _read_performance()
     expected = {"index.html": render(report), "benchmark-0.6.json": raw}
-    destination = ROOT / "docs/library"
-    if any(path.is_symlink() for path in (ROOT, ROOT / "docs", destination)):
+    destination = ROOT / f"docs/library/v{VERSION}"
+    if any(path.is_symlink() for path in (ROOT, ROOT / "docs", ROOT / "docs/library", destination)):
         raise ValueError("Overview directories must not be symlinks.")
     paths = {name: destination / name for name in expected}
     for path in paths.values():
