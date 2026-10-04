@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -11,7 +12,7 @@ from numpy.typing import ArrayLike, NDArray
 from ._validation import positive_integer, probability
 
 if TYPE_CHECKING:
-    from .model_selection import BacktestResult
+    from .model_selection import BacktestResult, Forecaster
     from .testing import TestResult
 
 Loss = Literal["squared", "absolute", "pinball"]
@@ -213,6 +214,100 @@ def evaluate_forecasts(
         quantile,
         _readonly(losses),
         _readonly(_nonnegative_mean(losses)),
+    )
+
+
+@dataclass(frozen=True)
+class ForecastSelection:
+    """A validation-loss minimizer, without a claim of statistical superiority.
+
+    ``target_indices`` refer to the concatenated training/validation prefix.
+    The selected callable is retained by reference; no test data are stored.
+    """
+
+    names: tuple[str, ...]
+    mean_loss: NDArray[np.float64]
+    selected_index: int
+    forecaster: Forecaster
+    train_size: int
+    validation_size: int
+    target_indices: NDArray[np.int64]
+    loss: Loss
+    quantile: float | None
+    lead_time: int
+
+    @property
+    def name(self) -> str:
+        return self.names[self.selected_index]
+
+    def to_dict(self) -> dict:
+        """Detached strict-JSON scores and a half-open target-position envelope."""
+        return dict(
+            selected_name=self.name,
+            scores=[
+                dict(model=name, mean_loss=float(score))
+                for name, score in zip(self.names, self.mean_loss, strict=True)
+            ],
+            target_range=[int(self.target_indices[0]), int(self.target_indices[-1]) + 1],
+            n_origins=len(self.target_indices),
+            train_size=self.train_size,
+            validation_size=self.validation_size,
+            loss=self.loss,
+            quantile=self.quantile,
+            lead_time=self.lead_time,
+            tie_rule="Exact ties choose the first supplied forecaster.",
+        )
+
+
+def select_forecaster(
+    train: ArrayLike,
+    validation: ArrayLike,
+    forecasters: Mapping[str, Forecaster],
+    *,
+    loss: Loss = "absolute",
+    quantile: float | None = None,
+    lead_time: int = 1,
+    step: int = 1,
+    window: int | None = None,
+) -> ForecastSelection:
+    """Select on earlier validation labels, then evaluate separately on test data.
+
+    The first forecast uses the end of ``train``; lead h first scores validation
+    position h-1. All candidates use the same targets and loss; step may skip
+    targets. Models refit with the earlier validation history as labels mature.
+    Callbacks receive isolated past-only arrays, but must also avoid captured
+    future data and external information. A test series is not an input here.
+    """
+    from .model_selection import _real_vector, backtest
+
+    train, validation = _real_vector(train, "train"), _real_vector(validation, "validation")
+    forecast_loss([0.0], [0.0], loss=loss, quantile=quantile)
+    lead_time = positive_integer(lead_time, "lead_time")
+    if not isinstance(forecasters, Mapping):
+        raise ValueError("forecasters must be a nonempty mapping of model names to callables.")
+    models = dict(forecasters)
+    result = backtest(
+        np.concatenate((train, validation)),
+        models,
+        initial_train_size=len(train),
+        horizon=1,
+        gap=lead_time - 1,
+        step=step,
+        window=window,
+    )
+    scores = evaluate_forecasts(result, loss=loss, quantile=quantile)
+    selected = int(np.argmin(scores.mean_loss[0]))
+    return ForecastSelection(
+        result.names,
+        _readonly(scores.mean_loss[0]),
+        selected,
+        models[result.names[selected]],
+        len(train),
+        len(validation),
+        _readonly(result.target_indices[:, 0]),
+        loss,
+        scores.quantile,
+        lead_time,
     )
 
 

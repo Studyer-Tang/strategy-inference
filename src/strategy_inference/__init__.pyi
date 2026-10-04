@@ -19,10 +19,12 @@ from .datasets import load_dataset as load_dataset
 from .datasets import read_tsf as read_tsf
 from .evaluation import ForecastComparison as ForecastComparison
 from .evaluation import ForecastEvaluation as ForecastEvaluation
+from .evaluation import ForecastSelection as ForecastSelection
 from .evaluation import compare_forecasts as compare_forecasts
 from .evaluation import evaluate_forecasts as evaluate_forecasts
 from .evaluation import forecast_loss as forecast_loss
 from .evaluation import interval_score as interval_score
+from .evaluation import select_forecaster as select_forecaster
 from .inference import MeanInference as MeanInference
 from .inference import default_lags as default_lags
 from .inference import infer_mean as infer_mean
@@ -31,6 +33,7 @@ from .io import ReturnTable as ReturnTable
 from .io import read_returns_csv as read_returns_csv
 from .model_selection import Autoregression as Autoregression
 from .model_selection import BacktestResult as BacktestResult
+from .model_selection import Differenced as Differenced
 from .model_selection import RollingSplit as RollingSplit
 from .model_selection import SeasonalNaive as SeasonalNaive
 from .model_selection import backtest as backtest

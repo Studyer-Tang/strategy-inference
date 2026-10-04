@@ -24,7 +24,7 @@ TSF 的 `?` 保留为原位置 NaN；不填补、不删行、不重采样。`rea
 
 FRED-MD 保留档案提供的预处理，不从匿名列名猜测指标，不是发布时点 vintage 数据。Bitcoin 的 `price` 有 560 个前导缺失，之后是 4,021 个连续有限观测。Oikolab 是供应商提供的历史气候数据，没有证据将该快照称作气象站直接实测；文件未给时区，其起点和点数也不应由文字简介的结束日期替换。三个数据集是历史研究快照。
 
-[真实数据例子](../examples/real_data.py) 固定 FRED-MD/T1、Bitcoin/price 的有限连续后缀及 Oikolab/T1 的末 8,760 小时，按整数位置划分 70% 训练、15% 验证及其余测试目标。这不是 Monash 官方基准划分；官方 HF 的 train/validation/test 是嵌套前缀，不能拼接。固定 lag、window、季节周期和 ridge 网格；验证段选择 penalty，测试前冻结，逐起点仅使用已观测历史重新拟合。输出 MAE、原单位 RMSE、仅由初始训练段季节差分定标的 MASE，以及 strong conditional-superiority 的连续集合；集合不表示平均误差排名。
+[真实数据例子](../examples/real_data.py) 固定 FRED-MD/T1、Bitcoin/price 的有限连续后缀及 Oikolab/T1 的末 8,760 小时，按整数位置划分 70% 训练、15% 验证及其余测试目标。这不是 Monash 官方基准划分；官方 HF 的 train/validation/test 是嵌套前缀，不能拼接。每条序列给出固定的 24 个配置：两种窗口、密集／稀疏滞后、原尺度／一阶差分、三个 ridge。候选共享相同验证目标，在验证段选择，测试前冻结，逐起点仅使用已观测历史重新拟合。简单基线保持原设置。输出 MAE、原单位 RMSE、仅由初始训练段季节差分定标的 MASE，以及 strong conditional-superiority 的连续集合；集合不表示平均误差排名。v0.11 在这些已公开样例上的迭代属于开发比较。
 
 训练段定标和逐起点评价与近期 [fev-bench（2026 版本）](https://arxiv.org/abs/2509.26468) 的设计一致；这里是三个序列的可运行例子，没有复现其完整 benchmark 或 task-bootstrap 结论。公开历史序列可能进入基础模型预训练，因此本例使用从头拟合的基线，不宣称基础模型的无污染零样本比较。
 
@@ -68,13 +68,29 @@ prediction = forecaster(train, lead_times)
 | `naive_forecast(train, lead_times)` | 全部步长重复最后观测 |
 | `drift_forecast(train, lead_times)` | 延伸首尾之间的平均变化；训练至少两个观测 |
 | `SeasonalNaive(period)(train, lead_times)` | 重复最后完整季节周期；训练至少 `period` 个观测 |
-| `Autoregression(lags=12, ridge=0)(train, lead_times)` | 带截距 AR(p)，训练至少 `2*lags+1` 点；按物理 lead 递推，可给不连续、重复或乱序 lead |
+| `Autoregression(lags=12, ridge=0)(train, lead_times)` | 带截距密集或稀疏 AR；整数 p 使用 1…p，元组指定不同的正整数滞后并排序。训练至少 `max_lag+n_lags+1` 点，密集情形为 `2*p+1`；按物理 lead 递推 |
+| `Differenced(model, period=1)(train, lead_times)` | 只在本次训练窗内计算 `y[t]-y[t-period]`，调用任意预测器，再逐物理步还原原尺度；常规／季节差分，无自动平稳性判断 |
 
 AR 在当前训练窗内中心化并以最大绝对偏差定标，拟合目标为归一化残差平方和加 `ridge * sum(lag_coefficients**2)`，截距不惩罚。`ridge=0` 是 OLS，秩不足时使用中心化系数系统的最小范数解；正 ridge 采用增广设计和 `lstsq`，不显式求逆或构造正规方程。常数训练序列返回常数预测。实例不保留折间状态，不自动选 lag 或 penalty；参数选择须先做训练内或独立验证。
+
+稀疏滞后如 `(1, 2, 24, 48, 168)` 只拟合五个系数；默认整数 AR 的行为保持不变。`Differenced` 支持不连续、乱序或重复的请求步长，先预测 1…最大 lead 的全部差分，再按季节锚点逐步还原，包含 gap 内的未请求步。原训练数据及回调收到的差分／lead 不共享未来数据；任一中间差分、预测或还原结果超出有限浮点范围都会报错。其工作空间随最大请求步长增长，不能把长 lead 当作只计算一个标量。
 
 季节周期和窗口应事先确定。每折重新调用模型；若 callback 每次重新拟合，计算成本包含拟合本身。使用较小的固定 `window` 或较大的 `step` 可以限制工作量，同时改变评估设计。当前没有自动增量更新、外生变量或多序列 panel 接口。
 
 其他预测库可通过 callable 接入。模型训练、超参数选择和预处理应限制在传入的训练资料中；本接口不替使用者确认嵌套验证过程。
+
+## 验证集选择
+
+```python
+select_forecaster(train, validation, forecasters, *, loss="absolute",
+                  quantile=None, lead_time=1, step=1, window=None)
+```
+
+训练、验证分开输入，二者均须为非空、有限一维序列；日期顺序由调用者保证。第一起点是训练段末尾，一个固定的物理 lead=h 使用 `gap=h-1, horizon=1`；验证段前 `h-1` 个标签没有这个起点发行的预测，因此不评分。所有模型使用相同目标位置、损失和给定训练窗口。验证期间后续起点可用已成熟的验证标签，回调仍只能使用当时的历史。
+
+返回 `ForecastSelection`：`.name` 是最小平均验证损失的名称，`.forecaster` 保留该 callable，`.names`、只读 `.mean_loss` 保存完整映射顺序与分数，完全相同的分数取第一个。只读 `.target_indices` 是训练＋验证前缀中的绝对位置。`.to_dict()` 保存分数、样本数、损失、lead 与半开目标范围；当 `step>1` 时，该范围是包络，内部存在未评价目标。选中的 callable 可用于随后独立的测试段；结果不声称统计优越性。回调捕获外部未来资料仍需使用者约束。
+
+窗口和表示选择参考 [Huang、Xu、Darlow（2026-06）](https://arxiv.org/abs/2606.27282) 对线性预测器的研究，尤其保持候选验证目标一致。本库实现递推 AR 与显式差分组合；论文采用直接多步 ridge、三折验证及更广的表示搜索，本文例子采用单步滚动验证，未复现其全套算法或 benchmark。
 
 ## 保存的预测
 

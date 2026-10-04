@@ -104,10 +104,10 @@ def test_build_copies_exact_downloads_and_check_leaves_archive_and_inputs_untouc
     assert "v0.7.0/" in page and "pilot-01" not in page and "pilot-02" not in page
     assert page.count('<div class="table-scroll"') == 3
     assert 'loading="lazy"' in page and '<html lang="zh-CN">' in page
-    assert "v0.10.0" in page and "连续模型比较" in page
-    assert "strategy_inference-0.10.0-py3-none-any.whl" in page
+    assert "v0.11.0" in page and "连续模型比较" in page
+    assert "strategy_inference-0.11.0-py3-none-any.whl" in page
     assert "load_dataset" in page and "Autoregression" in page and "真实数据" in page
-    assert "sequential_compare_forecasts" in page and "JRSSB 2026" in page
+    assert "select_forecaster" in page and "Differenced" in page and "JRSSB 2026" in page
     assert '<details><summary>历史研究与复现' in page
     archive = (builder.ROOT / "docs/library/v0.8.0/index.html").read_text()
     assert "strategy_inference-0.8.0-py3-none-any.whl" in archive
@@ -124,7 +124,7 @@ def test_build_copies_exact_downloads_and_check_leaves_archive_and_inputs_untouc
         builder.ROOT / builder.BENCHMARK
     ).read_bytes()
     manifest = json.loads((downloads / "site-manifest.json").read_text())
-    assert manifest["package_version"] == "0.10.0" and manifest["evidence_version"] == "0.8.0"
+    assert manifest["package_version"] == "0.11.0" and manifest["evidence_version"] == "0.8.0"
     archived = builder.ROOT / "docs/library/v0.8.0/research/blended"
     assert json.loads((archived / "site-manifest.json").read_text())["package_version"] == "0.8.0"
     for path in downloads.iterdir():

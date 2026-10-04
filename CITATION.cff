@@ -5,7 +5,7 @@ title: "Strategy inference: time-series evaluation and uncertainty"
 authors:
   - name: "Studyer-Tang"
     website: "https://github.com/Studyer-Tang"
-version: 0.10.0
+version: 0.11.0
 date-released: 2026-10-04
 url: "https://github.com/Studyer-Tang/strategy-inference"
 license: BSD-3-Clause

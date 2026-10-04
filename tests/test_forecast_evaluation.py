@@ -14,6 +14,7 @@ from strategy_inference.evaluation import (
     evaluate_forecasts,
     forecast_loss,
     interval_score,
+    select_forecaster,
 )
 from strategy_inference.inference import default_lags
 from strategy_inference.model_selection import backtest, drift_forecast, naive_forecast
@@ -508,3 +509,190 @@ def test_optional_frame_dependency_errors_are_actionable(panel, monkeypatch):
     for result in [evaluation, comparison]:
         with pytest.raises(ImportError, match="requires pandas"):
             result.to_frame()
+
+
+@pytest.mark.parametrize("loss,quantile", [("absolute", None), ("squared", None), ("pinball", 0.3)])
+@pytest.mark.parametrize("lead_time,step,window", [(1, 1, None), (3, 2, None), (3, 1, 3)])
+def test_selection_matches_independent_scalar_rolling_reference(
+    loss, quantile, lead_time, step, window
+):
+    train, validation = [1.0, -1.0, 2.0, 0.0, 3.0], [4.0, -2.0, 1.0, 5.0, 6.0, 7.0]
+
+    def mean_shift(history, leads):
+        return [sum(history) / len(history) + 0.3 * int(lead) for lead in leads]
+
+    models = {"last": naive_forecast, "mean": mean_shift}
+    result = select_forecaster(
+        train,
+        validation,
+        models,
+        loss=loss,
+        quantile=quantile,
+        lead_time=lead_time,
+        step=step,
+        window=window,
+    )
+    values = train + validation
+    targets, losses = [], []
+    for origin in range(len(train) - 1, len(values) - lead_time, step):
+        history = values[0 if window is None else max(0, origin + 1 - window) : origin + 1]
+        target = origin + lead_time
+        predictions = [history[-1], sum(history) / len(history) + 0.3 * lead_time]
+        losses.append(
+            [_scalar_loss(values[target], prediction, loss, quantile) for prediction in predictions]
+        )
+        targets.append(target)
+    expected = [sum(row[i] for row in losses) / len(losses) for i in range(2)]
+    np.testing.assert_allclose(result.mean_loss, expected, rtol=2e-15, atol=2e-15)
+    np.testing.assert_array_equal(result.target_indices, targets)
+    winner = 0 if expected[0] <= expected[1] else 1
+    assert result.selected_index == winner
+    assert result.name == tuple(models)[winner]
+    assert result.forecaster is models[result.name]
+    assert result.names == tuple(models)
+    assert result.lead_time == lead_time
+    assert result.train_size == len(train)
+    assert result.validation_size == len(validation)
+
+
+def test_selection_callbacks_expose_only_prior_prefix_without_input_or_future_base():
+    whole = np.arange(30.0)
+    train, validation = whole[:6], whole[6:13]
+    calls = []
+
+    def model(history, leads):
+        assert not history.flags.writeable and not leads.flags.writeable
+        assert history.base is leads.base is None
+        assert not np.shares_memory(history, whole)
+        calls.append((history.copy(), leads.copy()))
+        return [history[-1]]
+
+    result = select_forecaster(train, validation, {"model": model}, lead_time=3, step=2, window=4)
+    np.testing.assert_array_equal(result.target_indices, [8, 10, 12])
+    for (history, leads), origin in zip(calls, [5, 7, 9], strict=True):
+        np.testing.assert_array_equal(history, whole[origin - 3 : origin + 1])
+        np.testing.assert_array_equal(leads, [3])
+    np.testing.assert_array_equal(whole, np.arange(30.0))
+
+
+def test_selection_mapping_snapshot_keeps_selected_callback_after_user_mapping_mutation():
+    models = {}
+
+    def original(history, leads):
+        models["original"] = replacement
+        models["new"] = replacement
+        return [0.0]
+
+    def replacement(history, leads):
+        pytest.fail("User mutation must not change the supplied mapping snapshot")
+
+    models["original"] = original
+    result = select_forecaster([0.0, 0.0], [0.0, 0.0], models)
+    assert result.names == ("original",)
+    assert result.forecaster is original
+    assert models["original"] is replacement
+
+
+def test_exact_selection_ties_keep_supplied_order_and_exports_are_detached():
+    def first(history, leads):
+        return [0.0]
+
+    def second(history, leads):
+        return [0.0]
+
+    result = select_forecaster([1.0, 2.0], [0.0, 0.0, 0.0, 0.0], {"z": first, "a": second}, step=2)
+    assert result.name == "z"
+    assert result.selected_index == 0
+    assert result.forecaster is first
+    assert not result.mean_loss.flags.writeable
+    assert not result.target_indices.flags.writeable
+    assert result.mean_loss.base is result.target_indices.base is None
+    with pytest.raises(ValueError):
+        result.mean_loss[0] = 9
+    with pytest.raises(ValueError):
+        result.target_indices[0] = 0
+    record = result.to_dict()
+    assert json.loads(json.dumps(record, allow_nan=False)) == record
+    assert record["selected_name"] == "z"
+    assert [row["model"] for row in record["scores"]] == ["z", "a"]
+    assert record["target_range"] == [2, 5]
+    assert record["n_origins"] == 2
+    record["scores"][0]["mean_loss"] = 99
+    record["target_range"][0] = -1
+    assert result.mean_loss[0] == 0
+    assert result.target_indices[0] == 2
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"loss": "unknown"},
+        {"loss": "absolute", "quantile": 0.5},
+        {"loss": "pinball"},
+        {"loss": "pinball", "quantile": True},
+        {"loss": "pinball", "quantile": 0},
+        {"loss": "pinball", "quantile": np.nan},
+    ],
+)
+def test_selection_invalid_loss_fails_before_calling_models(options):
+    def forbidden(history, leads):
+        pytest.fail("Invalid loss options must be checked before fitting")
+
+    with pytest.raises(ValueError):
+        select_forecaster([1.0, 2.0], [3.0, 4.0], {"model": forbidden}, **options)
+
+
+@pytest.mark.parametrize(
+    "bad", [[], [[1.0]], [np.nan], [np.inf], [True], ["1"], [1j], np.ma.array([1.0], mask=True)]
+)
+@pytest.mark.parametrize("side", ["train", "validation"])
+def test_selection_invalid_segments_fail_before_calling_models(bad, side):
+    def forbidden(history, leads):
+        pytest.fail("Invalid segments must be checked before fitting")
+
+    values = {"train": [1.0, 2.0], "validation": [3.0, 4.0]}
+    values[side] = bad
+    with pytest.raises(ValueError, match=side):
+        select_forecaster(**values, forecasters={"model": forbidden})
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"lead_time": 0},
+        {"lead_time": True},
+        {"lead_time": 1.5},
+        {"step": 0},
+        {"step": True},
+        {"window": 0},
+        {"window": True},
+        {"lead_time": 3},
+    ],
+)
+def test_selection_invalid_boundaries_fail_before_calling_models(options):
+    def forbidden(history, leads):
+        pytest.fail("Invalid boundaries must be checked before fitting")
+
+    with pytest.raises(ValueError):
+        select_forecaster([1.0, 2.0], [3.0, 4.0], {"model": forbidden}, **options)
+
+
+@pytest.mark.parametrize(
+    "models", [[], [("a", naive_forecast)], {}, {"": naive_forecast}, {"a": 1}]
+)
+def test_selection_forecasters_reuse_mapping_and_callback_validation(models):
+    with pytest.raises(ValueError):
+        select_forecaster([1.0, 2.0], [3.0], models)
+
+
+def test_selection_pinball_metadata_normalizes_numpy_scalar_quantile():
+    result = select_forecaster(
+        [0.0, 1.0],
+        [1.0, 2.0],
+        {"last": naive_forecast},
+        loss="pinball",
+        quantile=np.float32(0.25),
+    )
+    assert type(result.quantile) is float
+    assert result.quantile == 0.25
+    json.dumps(result.to_dict(), allow_nan=False)

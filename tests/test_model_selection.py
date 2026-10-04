@@ -9,6 +9,7 @@ import pytest
 
 from strategy_inference.model_selection import (
     Autoregression,
+    Differenced,
     RollingSplit,
     SeasonalNaive,
     backtest,
@@ -345,22 +346,25 @@ def _ar_reference(train, lags, leads, ridge=0):
         work = (train - train_center) / train_scale
     else:
         train_center, train_scale, work = 0.0, 1.0, train
-    x = np.array([[work[t - lag] for lag in range(1, lags + 1)] for t in range(lags, len(work))])
-    y = work[lags:]
+    offsets = tuple(range(1, lags + 1)) if isinstance(lags, int) else lags
+    maximum, count = max(offsets), len(offsets)
+    x = np.array([[work[t - lag] for lag in offsets] for t in range(maximum, len(work))])
+    y = work[maximum:]
     if ridge:
         # This ordinary-unit design explicitly includes the unpenalized intercept.
         design = np.column_stack((np.ones(len(x)), x))
-        penalty = np.zeros((lags, lags + 1))
-        penalty[:, 1:] = np.sqrt(ridge) * np.eye(lags)
+        penalty = np.zeros((count, count + 1))
+        penalty[:, 1:] = np.sqrt(ridge) * np.eye(count)
         coefficient = np.linalg.lstsq(
-            np.vstack((design, penalty)), np.concatenate((y, np.zeros(lags))), rcond=None
+            np.vstack((design, penalty)), np.concatenate((y, np.zeros(count))), rcond=None
         )[0]
     else:
         coefficient = np.linalg.lstsq(np.column_stack((np.ones(len(x)), x)), y, rcond=None)[0]
     history = work.tolist()
     for _ in range(max(leads)):
         history.append(
-            coefficient[0] + sum(coefficient[lag] * history[-lag] for lag in range(1, lags + 1))
+            coefficient[0]
+            + sum(coefficient[index + 1] * history[-lag] for index, lag in enumerate(offsets))
         )
     return np.array([history[len(work) + lead - 1] * train_scale + train_center for lead in leads])
 
@@ -487,6 +491,12 @@ def test_autoregression_requires_valid_unmasked_integer_leads(leads):
         Autoregression(1)([1, 2, 3, 4, 5], leads)
 
 
+@pytest.mark.parametrize("model", [naive_forecast, drift_forecast, SeasonalNaive(2)])
+def test_baselines_share_the_unmasked_lead_contract(model):
+    with pytest.raises(ValueError, match="lead_times"):
+        model([1, 2, 3, 4, 5], np.ma.array([1, 2], mask=[False, True]))
+
+
 def test_autoregression_overflow_is_reported_without_clipping_or_replacing_forecasts():
     maximum = np.finfo(float).max
     train = maximum * np.array([0.1, 0.2, 0.4, 0.8])
@@ -496,3 +506,227 @@ def test_autoregression_overflow_is_reported_without_clipping_or_replacing_forec
     with pytest.raises(ValueError, match="finite"):
         ar([1, 2, 4, 8], [1100])
     np.testing.assert_allclose(ar([1, 2, 4, 8], [1]), [16])
+
+
+@pytest.mark.parametrize("lags", [(2,), (1, 3, 7), (1, 2, 24, 48)])
+@pytest.mark.parametrize("ridge", [0.0, 0.2, 10.0])
+def test_sparse_ar_matches_independently_indexed_ols_and_ridge(lags, ridge):
+    train = np.random.default_rng(411).normal(size=120).cumsum() + 20
+    leads = [8, 1, 3, 8, 2]
+    expected = _ar_reference(train, lags, leads, ridge)
+    np.testing.assert_allclose(
+        Autoregression(lags, ridge)(train, leads), expected, rtol=2e-12, atol=2e-12
+    )
+
+
+def test_sparse_lags_are_canonical_and_contiguous_tuple_preserves_dense_predictions():
+    ar = Autoregression((np.int64(7), 1, np.int32(3)), np.float64(0.2))
+    assert ar.lags == (1, 3, 7) and all(type(lag) is int for lag in ar.lags)
+    assert vars(ar) == {"lags": (1, 3, 7), "ridge": 0.2}
+    train = np.random.default_rng(122).normal(size=50).cumsum()
+    np.testing.assert_array_equal(ar(train, [1, 4]), Autoregression((1, 3, 7), 0.2)(train, [1, 4]))
+    for ridge in (0, 0.2):
+        np.testing.assert_allclose(
+            Autoregression((1, 2, 3), ridge)(train, [1, 4, 9]),
+            Autoregression(3, ridge)(train, [1, 4, 9]),
+            rtol=2e-12,
+            atol=2e-12,
+        )
+    assert Autoregression().lags == 12
+
+
+@pytest.mark.parametrize(
+    "lags",
+    [
+        (),
+        (1, 1),
+        (0, 2),
+        (-1, 2),
+        (True, 2),
+        (np.bool_(True), 2),
+        (1.0, 2),
+        ("1", 2),
+        (None, 2),
+        [1, 2],
+        np.array([1, 2]),
+        np.ma.array([1, 2], mask=[0, 1]),
+    ],
+)
+def test_sparse_ar_rejects_empty_duplicate_or_invalid_lags(lags):
+    with pytest.raises(ValueError, match="lags"):
+        Autoregression(lags)
+
+
+def test_sparse_minimum_history_uses_maximum_lag_and_coefficient_count():
+    ar = Autoregression((2, 5))  # max lag 5 + two coefficients + intercept = 8.
+    with pytest.raises(ValueError, match=r"max\(lags\) \+ len\(lags\) \+ 1"):
+        ar(np.arange(7), [1])
+    np.testing.assert_allclose(ar(np.arange(8), [1, 4]), [8, 11], atol=1e-12)
+    np.testing.assert_array_equal(Autoregression((100,))([3.0] * 102, [1, 5]), [3, 3])
+
+
+@pytest.mark.parametrize("period", [1, 4])
+@pytest.mark.parametrize("lags", [3, (1, 3, 7)])
+@pytest.mark.parametrize("ridge", [0.0, 0.2])
+def test_differenced_ar_composition_matches_independent_difference_fit_and_inverse(
+    period, lags, ridge
+):
+    train = np.random.default_rng(923).normal(size=100).cumsum() + 30
+    leads = [9, 1, 3, 9]
+    differences = np.array([train[t] - train[t - period] for t in range(period, len(train))])
+    changes = _ar_reference(differences, lags, list(range(1, max(leads) + 1)), ridge)
+    restored = train.tolist()
+    for change in changes:
+        restored.append(change + restored[-period])
+    expected = np.array([restored[len(train) + lead - 1] for lead in leads])
+    result = Differenced(Autoregression(lags, ridge), period)(train, leads)
+    np.testing.assert_allclose(result, expected, rtol=2e-12, atol=2e-12)
+
+
+def test_seasonal_difference_restores_observed_cycle_then_recursive_forecast_cycle():
+    calls = []
+
+    def forecast_changes(train, leads):
+        calls.append((train.copy(), leads.copy()))
+        return np.arange(1, len(leads) + 1, dtype=float)
+
+    result = Differenced(forecast_changes, period=3)([2, 5, 11, 4, 10, 20], [8, 1, 4, 8])
+    np.testing.assert_array_equal(result, [25, 5, 9, 25])
+    assert len(calls) == 1
+    np.testing.assert_array_equal(calls[0][0], [2, 5, 9])
+    np.testing.assert_array_equal(calls[0][1], np.arange(1, 9))
+    np.testing.assert_array_equal(
+        Differenced(naive_forecast)([1, 3, 5, 7, 9], [3, 1, 6]), [15, 11, 21]
+    )
+
+
+def test_differenced_callback_has_detached_readonly_inputs_with_no_future_base():
+    complete = np.arange(30, dtype=float) ** 2
+    original = complete.copy()
+    requested = np.array([4, 1, 4])
+
+    def inspect(train, leads):
+        assert not train.flags.writeable and not leads.flags.writeable
+        assert not np.shares_memory(train, complete) and not np.shares_memory(leads, requested)
+        base = train
+        while isinstance(base.base, np.ndarray):
+            base = base.base
+        np.testing.assert_array_equal(base, original[3:12] - original[:9])
+        np.testing.assert_array_equal(leads, [1, 2, 3, 4])
+        with pytest.raises(ValueError):
+            train[0] = 99
+        with pytest.raises(ValueError):
+            leads[0] = 99
+        # Even forcing own arrays writable must not alter original history/leads.
+        train.flags.writeable = leads.flags.writeable = True
+        train[:] = -100
+        leads[:] = 99
+        return np.zeros(len(leads))
+
+    wrapper = Differenced(inspect, period=3)
+    np.testing.assert_array_equal(wrapper(complete[:12], requested), [81, 81, 81])
+    np.testing.assert_array_equal(complete, original)
+    np.testing.assert_array_equal(requested, [4, 1, 4])
+    with pytest.raises(FrozenInstanceError):
+        wrapper.period = 1
+
+
+def test_sparse_differenced_backtest_gap_and_fixed_window_are_causal():
+    y = np.random.default_rng(166).normal(size=65).cumsum()
+    future_changed = y.copy()
+    future_changed[50:] += 10000
+    model = Differenced(Autoregression((1, 3, 7), 0.2), period=4)
+    options = dict(initial_train_size=32, horizon=3, gap=3, step=5, window=24)
+    original = backtest(y, {"sparse-diff": model}, **options)
+    changed = backtest(future_changed, {"sparse-diff": model}, **options)
+    for fold, split in enumerate(original.splits):
+        history = y[split.train_start : split.train_stop].tolist()
+        difference = [history[t] - history[t - 4] for t in range(4, len(history))]
+        predictions = _ar_reference(difference, (1, 3, 7), [1, 2, 3, 4, 5, 6], 0.2)
+        restored = history.copy()
+        for prediction in predictions:
+            restored.append(prediction + restored[-4])
+        np.testing.assert_allclose(
+            original.forecasts[fold, :, 0], restored[-3:], rtol=2e-12, atol=2e-12
+        )
+        if split.train_stop <= 50:
+            np.testing.assert_array_equal(original.forecasts[fold], changed.forecasts[fold])
+
+
+@pytest.mark.parametrize("period", [0, -1, True, np.bool_(True), 2.0, "2", None])
+def test_differenced_period_requires_positive_nonbool_integer(period):
+    with pytest.raises(ValueError, match="period"):
+        Differenced(naive_forecast, period)
+
+
+@pytest.mark.parametrize("callback", [None, 1, "naive", [naive_forecast]])
+def test_differenced_requires_callable_model(callback):
+    with pytest.raises(ValueError, match="forecaster"):
+        Differenced(callback)
+
+
+@pytest.mark.parametrize(
+    "prediction",
+    [
+        [1],
+        [[1, 2, 3]],
+        [1, np.nan, 2],
+        [1, np.inf, 2],
+        [True, True, True],
+        np.ma.array([1, 2, 3], mask=[0, 1, 0]),
+    ],
+)
+def test_differenced_never_skips_invalid_intervening_forecasts(prediction):
+    with pytest.raises(ValueError):
+        Differenced(lambda train, leads: prediction)([1, 2, 3, 4], [3])
+
+
+@pytest.mark.parametrize(
+    "leads",
+    [
+        [],
+        [0],
+        [-1],
+        [1.0],
+        [True],
+        [[1]],
+        np.ma.array([1, 2], mask=[0, 1]),
+        np.array([2**64 - 1], dtype=np.uint64),
+    ],
+)
+def test_differenced_rejects_invalid_or_masked_leads_before_callback(leads):
+    def must_not_run(*args):
+        pytest.fail("Callback ran before input validation.")
+
+    with pytest.raises(ValueError, match="lead_times"):
+        Differenced(must_not_run)([1, 2, 3, 4], leads)
+
+
+def test_differenced_minimum_training_is_checked_before_the_callback():
+    def must_not_run(*args):
+        pytest.fail("Callback ran before validating its training data.")
+
+    with pytest.raises(ValueError, match="more than period"):
+        Differenced(must_not_run, period=3)([1, 2, 3], [1])
+    with pytest.raises(ValueError, match="train"):
+        Differenced(must_not_run)([1, np.nan, 3], [1])
+    with pytest.raises(ValueError, match="max\\(lags\\)"):
+        Differenced(Autoregression((2, 5)), period=3)(np.arange(10), [1])
+
+
+def test_differenced_training_overflow_fails_before_callback():
+    def must_not_run(*args):
+        pytest.fail("Overflowing differences reached the callback.")
+
+    maximum = np.finfo(float).max
+    with pytest.raises(ValueError, match="Training differences"):
+        Differenced(must_not_run)([-maximum, maximum], [1])
+
+
+@pytest.mark.parametrize("period", [1, 2])
+def test_differenced_unrequested_intermediate_level_overflow_is_reported(period):
+    maximum = np.finfo(float).max
+    history = [0, maximum * 0.75] if period == 1 else [0, 0, maximum * 0.75, maximum * 0.5]
+    changes = [maximum * 0.75, -maximum * 0.75] if period == 1 else [maximum * 0.75, 0]
+    with pytest.raises(ValueError, match="Restored forecasts"):
+        Differenced(lambda train, leads: changes, period)(history, [2])

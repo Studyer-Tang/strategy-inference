@@ -10,7 +10,8 @@
 | --- | --- |
 | 真实数据（v0.10） | `load_dataset`、`read_tsf`；固定版本 Monash 宏观、Bitcoin 与小时气候档案，SHA-256/离线缓存，原位保留缺失；不是实时金融 vintage 数据。真实例子按时间切分，验证调参、测试冻结 |
 | 滚动与扩展窗回测 | `rolling_splits`、`backtest`；单变量数值序列、完整 horizon、可设 step/gap/window。保留 origin、目标位置和重叠预测；回调只得到当前训练数据与 lead 的独立只读副本 |
-| 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`、`Autoregression(lags, ridge)`；AR 每次仅拟合当前训练历史，支持递推 physical lead。可通过 callback 接入外部预测器 |
+| 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`、`Autoregression(lags, ridge)`；密集／稀疏滞后，只拟合当前历史。`Differenced` 可组合常规／季节差分与任意 callback，并还原物理 lead |
+| 验证集选择（v0.11） | `select_forecaster(train, validation, models, ...)`；候选共享验证目标、窗口和损失，返回选中的 callable 与完整分数，确定性处理 ties；测试段另行评价 |
 | 逐预测损失 | `forecast_loss`、`evaluate_forecasts`；平方、绝对、pinball，保留 origin × lead × model 数组并按 lead 汇总。`interval_score` 单独评价中心区间，不能凭评分推断覆盖保证 |
 | 固定候选预测比较 | `compare_forecasts`；预先指定 baseline 与单个 lead，共享时间索引的 max bootstrap。正改善为 baseline 损失减去候选损失；依赖固定族、平稳弱依赖、适当矩和非退化方差等条件 |
 | 连续模型置信集（v0.9） | `SequentialModelConfidenceSet`、`sequential_compare_forecasts`；固定模型族、绝对/pinball 损失、事前注册预测与非重叠反馈。目标为每时每 pair 的强条件优劣；集合可空，排除不恢复。见[API](time-series.md#连续模型置信集) |

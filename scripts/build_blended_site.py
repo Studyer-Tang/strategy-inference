@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.8.0"
-CURRENT_VERSION = "0.10.0"
+CURRENT_VERSION = "0.11.0"
 RELEASE_COMMIT = "7488a96283890a7884d0cb58346f973bfd4a245b"
 GITHUB = "https://github.com/Studyer-Tang/strategy-inference/blob/main"
 STUDY = "results/research/blended-scales/full"
@@ -650,7 +650,7 @@ def render(study, performance, *, archive=False):
     maintenance = (
         "本页保存 v0.8.0 的完整研究与计时记录，源码绑定不可变提交。"
         if archive
-        else f'v0.10 接入官方真实数据与 AR/ridge 基线；连续模型比较依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a>。<a href="{github}/examples/real_data.py">运行真实数据例子</a>。'
+        else 'v0.11 增加稀疏滞后、可组合差分与验证集选择，参考 <a href="https://arxiv.org/abs/2606.27282">Huang 等（2026）</a> 的线性预测研究；连续比较依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a>。'
     )
     names = [r["name"] for r in study["protocol"]["scenarios"]]
     group = {(r["scenario"], r["method"]): r for r in study["aggregate"] if r["lead_time"] == 24}
@@ -724,20 +724,24 @@ for t, value in enumerate(observations):
     baseline_extra = "" if archive else "和 AR/ridge 拟合"
     if not archive:
         quickstart = '''from strategy_inference import (
-    load_dataset, Autoregression, backtest, naive_forecast,
-    sequential_compare_forecasts,
+    load_dataset, Autoregression, Differenced,
+    select_forecaster, backtest,
 )
 
 data = load_dataset("fred_md")
-run = backtest(
-    data["T1"].values,
-    {"naive": naive_forecast, "ar": Autoregression(lags=12, ridge=1.0)},
-    initial_train_size=600, window=120,
+y = data["T1"].values
+choice = select_forecaster(
+    y[:400], y[400:600],
+    {"level": Autoregression(12),
+     "changes": Differenced(Autoregression((1, 2, 12)))},
+    window=120,
 )
-comparison = sequential_compare_forecasts(run, loss="absolute")
-print(comparison.confidence_set)'''
-        note = "首次下载约 169 KB；固定版本、SHA-256 校验，之后复用缓存。AR 只用当前训练窗；此处参数预先指定。连续集合针对逐时条件风险优势，可为空，不表示平均误差排名。"
-        sequential_tool = f'<li><a href="{github}/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
+run = backtest(
+    y, {"chosen": choice.forecaster}, initial_train_size=600, window=120,
+)
+print(choice.name, choice.to_dict())'''
+        note = "首次下载约 169 KB；固定版本、SHA-256 校验，之后复用缓存。候选共享验证目标；参数在使用测试段之前确定。完整真实数据例子可选择窗口、滞后、差分与 ridge。"
+        sequential_tool = f'<li><a href="{github}/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="{github}/docs/time-series.md#验证集选择">验证集选择</a>：共同目标、固定损失、完整候选分数，返回可直接用于后续回测的预测器。</li><li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
     history_open = "" if archive else '<details><summary>历史研究与复现 · v0.8.0</summary>'
     history_close = "" if archive else "</details>"
     return f'''<!doctype html>

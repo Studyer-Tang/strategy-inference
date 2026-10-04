@@ -1,6 +1,6 @@
 # strategy-inference
 
-A Python time-series toolbox for real-data backtests, forecast evaluation, continuous model comparison, online intervals and strategy mean inference. Version 0.10 adds pinned historical datasets and a training-only AR/ridge baseline. Register forecasts from a fixed family, score them when their labels arrive, and retain the comparison's statistical assumptions.
+A Python time-series toolbox for real-data backtests, forecast evaluation, model comparison and online intervals. Training-only linear baselines, validation selection and mature feedback retain forecast timing and source provenance.
 
 [中文](README.md) · [Online docs](https://studyer-tang.github.io/strategy-inference/library/) · [Time-series API](docs/time-series.md) · [Multi-step API](docs/multistep-api.md) · [Mean API](docs/api.md) · [Roadmap](docs/toolbox-roadmap.md) · [Research and reproduction](docs/research.md)
 
@@ -9,13 +9,13 @@ A Python time-series toolbox for real-data backtests, forecast evaluation, conti
 Requires Python 3.10+, NumPy and SciPy. The GitHub release wheel can be installed without cloning. The package has not been published to PyPI.
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.10.0/strategy_inference-0.10.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.11.0/strategy_inference-0.11.0-py3-none-any.whl
 ```
 
 Source installation from the corresponding tag:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.10.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.11.0'
 ```
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
@@ -80,7 +80,9 @@ run = backtest(
 
 Curated FRED-MD, Bitcoin and Oikolab archives from the [official Monash repository](https://huggingface.co/datasets/Monash-University/monash_tsf) total about 1.7 MB compressed. Each revision and SHA-256 is pinned; cache reads are verified and `offline=True` never accesses the network. No HF SDK, pandas or remote loading code is required. `read_tsf(path)` also reads local TSF/ZIP files, preserving missing positions as NaN and original time attributes.
 
-In a source checkout, `python examples/real_data.py --dataset all` prints compact tables; `--output result.json` saves provenance and the fixed protocol. The example uses chronological training/validation/test targets, selects the ridge penalty only on validation, and scales MASE only with initial training data. These CC BY 4.0 historical archives are not point-in-time market feeds; FRED-MD has supplied preprocessing and anonymous columns without release-vintage data. Details and attribution are in the [API](docs/time-series.md#真实数据与缓存).
+In a source checkout, `python examples/real_data.py --dataset all` prints compact tables; `--output result.json` saves provenance and candidate scores. Window, lag structure, differencing and ridge are chosen on common chronological validation targets; MASE uses only the initial training scale. Iterations on these previously published examples are development comparisons. These CC BY 4.0 historical archives are not point-in-time market feeds; FRED-MD has supplied preprocessing and anonymous columns without release-vintage data. Details and attribution are in the [API](docs/time-series.md#真实数据与缓存).
+
+`Autoregression(lags=(1, 2, 24, 168))` fits a sparse lag set. `Differenced(model, period=24)` composes seasonal differencing with any callback and restores levels. `select_forecaster(train, validation, models, ...)` returns the chosen callable and all validation scores, with fixed common targets and deterministic ties. Defaults remain dense, undifferenced AR. These independent recursive implementations take guidance from [Huang, Xu and Darlow (2026)](https://arxiv.org/abs/2606.27282) on representation and validation choices for linear forecasters.
 
 ## Multi-step intervals and mature feedback
 

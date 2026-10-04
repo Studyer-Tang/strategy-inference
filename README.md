@@ -1,6 +1,6 @@
 # strategy-inference
 
-面向预测评估、连续模型比较、在线区间与策略均值推断的 Python 时序工具箱。v0.9 增加流式模型置信集：先登记固定模型族的预测，再用成熟标签更新比较证据。支持滚动回测、固定样本 bootstrap 比较、单步与多步在线区间。
+面向真实数据回测、预测评估、模型比较与在线区间的 Python 时序工具箱。提供训练内拟合的线性基线、验证集选择、固定样本和连续比较，保留预测时点、成熟反馈及完整来源。
 
 [English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [多步 API](docs/multistep-api.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
 
@@ -9,13 +9,13 @@
 需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone。尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.10.0/strategy_inference-0.10.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.11.0/strategy_inference-0.11.0-py3-none-any.whl
 ```
 
 对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.10.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.11.0'
 ```
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
@@ -80,9 +80,25 @@ run = backtest(
 
 内置 `fred_md`、`bitcoin`、`oikolab_weather` 三个官方历史档案，总压缩大小约 1.7 MB。固定源版本与 SHA-256，支持 `offline=True`；不需要 Hugging Face SDK、pandas 或远程加载脚本。`read_tsf(path)` 也可读取自己的 TSF/ZIP 文件。缺失位置保持为 NaN，回测前须明确处理；软件不会自动删行或填补。
 
-仓库内运行 `python examples/real_data.py --dataset all`，得到三个固定序列的整齐评分表。例子按时间划分训练、验证、测试段，用验证段选择 ridge 参数，在测试段逐时重新拟合；MASE 的尺度只来自训练段。`--output result.json` 保存来源、参数与结果，缓存完成后可加 `--offline` 复现。
+仓库内运行 `python examples/real_data.py --dataset all`，得到三个固定序列的整齐评分表。例子按时间划分训练、验证、测试段，在共同验证目标上选择窗口、滞后、差分和 ridge，在测试段逐时重新拟合；MASE 的尺度只来自训练段。`--output result.json` 保存来源、候选与选择结果，缓存完成后可加 `--offline` 复现。这些已公开样例上的迭代是开发比较。
 
 数据来自 [Monash 时间序列档案](https://huggingface.co/datasets/Monash-University/monash_tsf)，原始记录采用 CC BY 4.0。FRED-MD 保留档案提供的数值预处理和匿名列名，未提供历史发布版本；这些数据可用于预测评估，不能据此声称无修订信息的实时交易回测。来源和具体协议见[时序 API](docs/time-series.md#真实数据与缓存)。
+
+验证集选择可直接使用公共接口：
+
+```python
+from strategy_inference import Differenced, select_forecaster
+
+choice = select_forecaster(
+    y[:400], y[400:600],
+    {"level": Autoregression(12), "changes": Differenced(Autoregression((1, 2, 12)))},
+    window=120, loss="absolute",
+)
+run = backtest(y, {"chosen": choice.forecaster}, initial_train_size=600, window=120)
+print(choice.name, choice.to_dict())
+```
+
+`lags=(1, 2, 24, 168)` 可用少量系数表示短期和日／周信息；`Differenced(model, period=24)` 在小时数据上做季节差分并还原预测。默认仍是未差分的密集 AR。相关设计参考 [Huang、Xu、Darlow（2026）](https://arxiv.org/abs/2606.27282) 对线性预测器表示和验证选择的研究；本库采用独立的递推实现。
 
 ## 多步区间与成熟反馈
 
@@ -121,6 +137,7 @@ print(multi.summary())
 | `rolling_splits(...)`、`backtest(y, forecasters, ...)` | 有限、等间隔的一维序列；保存训练/测试位置、每个 origin 的预测、真实值和目标索引。`window=None` 为扩展窗，整数为滚动窗上限 |
 | `naive_forecast`、`SeasonalNaive(period)`、`drift_forecast`、`Autoregression(lags, ridge)` | 透明 baseline；AR/ridge 只在当前训练窗拟合。也可提供 `callback(train, lead_times)`，返回指定 lead 的一维预测 |
 | `load_dataset(name)`、`read_tsf(path)` | 固定版本真实数据、校验缓存及本地 TSF；保留缺失位置和来源，不执行远程代码 |
+| `Differenced(model, period)`、`select_forecaster(train, validation, models)` | 可组合的差分与预测还原；在共同验证目标上选择模型，返回可直接用于后续回测的 callable |
 | `forecast_loss(...)`、`evaluate_forecasts(run, ...)` | 平方、绝对、pinball 损失；保留 origin × lead × model 损失，按 lead 分别汇总。Pinball 预测须对应指定分位数 |
 | `interval_score(actual, lower, upper, alpha=...)` | 中心区间评分，包含宽度与漏覆盖距离惩罚；全域区间评分为无穷，空集不支持 |
 | `compare_forecasts(run, baseline=..., lead_time=...)` | 一个预先指定 baseline、一个 lead、固定候选集的共享时间索引 max bootstrap，返回全族/候选决定及诊断 |

@@ -40,7 +40,33 @@ def test_validation_excludes_test_and_uses_only_mature_history(monkeypatch):
     values = np.arange(60, dtype=float) + np.sin(np.arange(60))
     dataset = _dataset(values)
     monkeypatch.setattr(example, "load_dataset", lambda *args, **kwargs: dataset)
-    seen = []
+    selections, seen = [], []
+
+    def recording_selection(train, validation, candidates, **options):
+        calls = {name: [] for name in candidates}
+
+        def recording_candidate(history, leads, *, name, model):
+            calls[name].append((history.copy(), leads.copy()))
+            return model(history, leads)
+
+        recorded = {
+            name: lambda history, leads, name=name, model=model: recording_candidate(
+                history, leads, name=name, model=model
+            )
+            for name, model in candidates.items()
+        }
+        result = original_selection(train, validation, recorded, **options)
+        # The selected callable is also reused on test; preserve validation calls now.
+        selections.append(
+            (
+                train.copy(),
+                validation.copy(),
+                options,
+                result,
+                {k: tuple(v) for k, v in calls.items()},
+            )
+        )
+        return result
 
     def recording_backtest(y, models, **options):
         result = original(y, models, **options)
@@ -48,17 +74,28 @@ def test_validation_excludes_test_and_uses_only_mature_history(monkeypatch):
         return result
 
     original = example.backtest
+    original_selection = example.select_forecaster
     monkeypatch.setattr(example, "backtest", recording_backtest)
+    monkeypatch.setattr(example, "select_forecaster", recording_selection)
     result = example.run_dataset("fred_md")
-    assert len(seen) == 2
-    validation_y, validation_options, validation = seen[0]
-    np.testing.assert_array_equal(validation_y, values[:51])
-    assert validation_options["initial_train_size"] == 42
-    np.testing.assert_array_equal(validation.target_indices[:, 0], np.arange(42, 51))
-    assert validation.splits[-1].train_stop == 50
-    test_y, test_options, test = seen[1]
+    assert len(selections) == 1
+    train_y, validation_y, validation_options, validation, calls = selections[0]
+    np.testing.assert_array_equal(train_y, values[:42])
+    np.testing.assert_array_equal(validation_y, values[42:51])
+    assert validation_options == dict(loss="absolute", window=240)
+    np.testing.assert_array_equal(validation.target_indices, np.arange(42, 51))
+    assert len(validation.names) == 24
+    assert tuple(calls) == validation.names
+    for candidate_calls in calls.values():
+        assert len(candidate_calls) == 9
+        for target, (history, leads) in zip(range(42, 51), candidate_calls, strict=True):
+            np.testing.assert_array_equal(history, values[:target])
+            np.testing.assert_array_equal(leads, [1])
+    assert len(seen) == 1  # The example's backtest entry point is used only for test.
+    test_y, test_options, test = seen[0]
     np.testing.assert_array_equal(test_y, values)
     assert test_options["initial_train_size"] == 51
+    assert test_options["window"] == 240
     np.testing.assert_array_equal(test.target_indices[:, 0], np.arange(51, 60))
     assert test.names == ("naive", "seasonal", "drift", "ar")
     assert result["sequential"]["n_updates"] == 9
@@ -66,6 +103,11 @@ def test_validation_excludes_test_and_uses_only_mature_history(monkeypatch):
     assert result["protocol"]["train"] == [0, 42]
     assert result["protocol"]["validation"] == [42, 51]
     assert result["protocol"]["test"] == [51, 60]
+    assert result["protocol"]["validation_selection"] == validation.to_dict()
+    configurations = result["protocol"]["candidate_configurations"]
+    assert tuple(configurations) == validation.names
+    assert result["protocol"]["selected_configuration"] == configurations[validation.name]
+    assert json.loads(json.dumps(configurations, allow_nan=False)) == configurations
 
 
 def test_mase_uses_initial_train_only_and_rmse_original_units(monkeypatch):
@@ -82,14 +124,59 @@ def test_mase_uses_initial_train_only_and_rmse_original_units(monkeypatch):
     assert naive["rmse"] == pytest.approx(np.sqrt((naive_errors**2).mean()))
 
 
-def test_exact_validation_ties_choose_first_penalty_and_zero_mase_is_null(monkeypatch):
+def test_exact_validation_ties_choose_first_grid_entry_and_zero_mase_is_null(monkeypatch):
     monkeypatch.setattr(example, "load_dataset", lambda *args, **kwargs: _dataset(np.ones(60)))
     result = example.run_dataset("fred_md")
-    assert result["protocol"]["validation_mae"] == [0.0, 0.0, 0.0]
-    assert result["protocol"]["selected_ridge"] == 0.0
+    protocol = result["protocol"]
+    scores = protocol["validation_selection"]["scores"]
+    assert len(scores) == 24
+    assert [row["mean_loss"] for row in scores] == [0.0] * 24
+    assert protocol["validation_selection"]["selected_name"] == scores[0]["model"]
+    assert protocol["selected_configuration"] == dict(
+        window=120, lags=12, difference_period=0, ridge=0.0
+    )
+    assert list(protocol["candidate_configurations"].values()) == [
+        dict(window=window, lags=lags, difference_period=difference, ridge=ridge)
+        for window in (120, 240)
+        for lags in (12, [1, 2, 3, 12])
+        for difference in (0, 1)
+        for ridge in (0.0, 1.0, 10.0)
+    ]
     assert result["protocol"]["mase_train_denominator"] == 0.0
     assert all(row["mase"] is None for row in result["scores"])
     json.dumps(result, allow_nan=False)
+
+
+def test_future_test_changes_cannot_affect_validation_choice_or_scores(monkeypatch):
+    values = np.arange(60, dtype=float) + np.sin(np.arange(60))
+    monkeypatch.setattr(example, "load_dataset", lambda *args, **kwargs: _dataset(values))
+    original = example.run_dataset("fred_md")
+    changed = values.copy()
+    changed[51:] += np.linspace(10.0, 50.0, 9)
+    monkeypatch.setattr(example, "load_dataset", lambda *args, **kwargs: _dataset(changed))
+    perturbed = example.run_dataset("fred_md")
+    for field in ("selected_configuration", "candidate_configurations", "validation_selection"):
+        assert perturbed["protocol"][field] == original["protocol"][field]
+    assert perturbed["scores"][0]["mae"] != original["scores"][0]["mae"]
+
+
+def test_baseline_drift_keeps_original_window_with_larger_ar_history(monkeypatch):
+    values = np.arange(200, dtype=float) + np.sin(np.arange(200))
+    monkeypatch.setattr(example, "load_dataset", lambda *args, **kwargs: _dataset(values))
+    calls = []
+    original = example.drift_forecast
+
+    def recording_drift(history, leads):
+        calls.append(history.copy())
+        return original(history, leads)
+
+    monkeypatch.setattr(example, "drift_forecast", recording_drift)
+    result = example.run_dataset("fred_md")
+    assert result["protocol"]["baseline_window"] == 120
+    assert result["protocol"]["history_window"] == 240
+    assert len(calls) == 30
+    for target, history in zip(range(170, 200), calls, strict=True):
+        np.testing.assert_array_equal(history, values[target - 120 : target])
 
 
 def test_bitcoin_leading_missing_is_trimmed_and_source_offset_preserved():
@@ -133,7 +220,7 @@ def test_offline_and_cache_options_are_forwarded_and_json_stays_compact(monkeypa
     assert "forecasts" not in result["datasets"][0]
     assert "actuals" not in result["datasets"][0]
     assert "strong conditional" in result["sequential_scope"]
-    assert len(encoded) < 6000
+    assert len(encoded) < 12000
 
 
 def test_cli_prints_table_and_writes_new_json_without_overwriting(monkeypatch, tmp_path, capsys):

@@ -84,6 +84,8 @@ def _real_vector(values: ArrayLike, name: str) -> NDArray[np.float64]:
 
 def _lead_times(values: ArrayLike) -> NDArray[np.int64]:
     try:
+        if np.ma.isMaskedArray(values) and np.any(np.ma.getmaskarray(values)):
+            raise ValueError
         raw = np.asarray(values)
         if (
             raw.ndim != 1
@@ -286,9 +288,11 @@ def drift_forecast(train: ArrayLike, lead_times: ArrayLike) -> NDArray[np.float6
 
 @dataclass(frozen=True)
 class Autoregression:
-    """Fit a recursive AR(p) with an intercept, using this call's history only.
+    """Fit a recursive dense or sparse AR with an intercept, using history only.
 
-    At least ``2 * lags + 1`` observations are required. Training values are
+    Integer ``lags=p`` uses 1, ..., p. A tuple selects distinct positive lags,
+    e.g. ``(1, 2, 24, 168)``. At least ``max_lag + n_lags + 1`` training
+    observations are required (``2 * p + 1`` for dense AR). Training values are
     centered and divided by their largest absolute deviation before fitting.
     ``ridge`` minimizes normalized residual sum of squares plus
     ``ridge * sum(coefficients**2)``; the intercept is not penalized. Zero ridge
@@ -298,11 +302,17 @@ class Autoregression:
     recursively. There is no automatic parameter choice or state across calls.
     """
 
-    lags: int = 12
+    lags: int | tuple[int, ...] = 12
     ridge: float = 0.0
 
     def __post_init__(self):
-        object.__setattr__(self, "lags", positive_integer(self.lags, "lags"))
+        if isinstance(self.lags, tuple):
+            lags = tuple(positive_integer(lag, "lags") for lag in self.lags)
+            if not lags or len(set(lags)) != len(lags):
+                raise ValueError("lags must be a nonempty tuple of distinct positive integers.")
+            object.__setattr__(self, "lags", tuple(sorted(lags)))
+        else:
+            object.__setattr__(self, "lags", positive_integer(self.lags, "lags"))
         if np.ma.isMaskedArray(self.ridge) or not np.isscalar(self.ridge):
             raise ValueError("ridge must be a finite nonnegative real scalar.")
         try:
@@ -318,11 +328,13 @@ class Autoregression:
 
     def __call__(self, train: ArrayLike, lead_times: ArrayLike) -> NDArray[np.float64]:
         values = _real_vector(train, "train")
-        if np.ma.isMaskedArray(lead_times) and np.any(np.ma.getmaskarray(lead_times)):
-            raise ValueError("lead_times must contain no masked values.")
         leads = _lead_times(lead_times)
-        if len(values) < 2 * self.lags + 1:
-            raise ValueError("Autoregression requires at least 2 * lags + 1 training observations.")
+        dense = isinstance(self.lags, int)
+        count = self.lags if dense else len(self.lags)
+        maximum_lag = self.lags if dense else self.lags[-1]
+        if len(values) < maximum_lag + count + 1:
+            condition = "2 * lags + 1" if dense else "max(lags) + len(lags) + 1"
+            raise ValueError(f"Autoregression requires at least {condition} training observations.")
         # Normalize before centering, so opposite finite extremes do not overflow.
         magnitude = float(np.max(np.abs(values)))
         scaled = values / magnitude if magnitude else np.zeros_like(values)
@@ -332,22 +344,24 @@ class Autoregression:
         if not spread:
             return np.full(len(leads), values[-1], dtype=np.float64)
         normalized = centered / spread
-        rows = np.lib.stride_tricks.sliding_window_view(normalized, self.lags + 1)
-        design, target = rows[:, :-1][:, ::-1], rows[:, -1]
+        rows = np.lib.stride_tricks.sliding_window_view(normalized, maximum_lag + 1)
+        indices = slice(None) if dense else np.asarray(self.lags, dtype=np.intp) - 1
+        design = rows[:, :-1][:, ::-1] if dense else rows[:, maximum_lag - indices - 1]
+        target = rows[:, -1]
         x_mean, y_mean = design.mean(axis=0), float(target.mean())
         design, target = design - x_mean, target - y_mean
         if self.ridge:
-            design = np.vstack((design, np.sqrt(self.ridge) * np.eye(self.lags)))
-            target = np.concatenate((target, np.zeros(self.lags)))
+            design = np.vstack((design, np.sqrt(self.ridge) * np.eye(count)))
+            target = np.concatenate((target, np.zeros(count)))
         coefficients = np.linalg.lstsq(design, target, rcond=None)[0]
         intercept = y_mean - x_mean @ coefficients
-        history = normalized[-self.lags :][::-1].copy()
+        history = normalized[-maximum_lag:][::-1].copy()
         unique_leads, inverse = np.unique(leads, return_inverse=True)
         forecasts = np.empty(len(unique_leads))
         requested = 0
         with np.errstate(over="ignore", invalid="ignore"):
             for lead in range(1, int(unique_leads[-1]) + 1):
-                prediction = intercept + history @ coefficients
+                prediction = intercept + history[indices] @ coefficients
                 if not np.isfinite(prediction):
                     raise ValueError("Autoregression produced a non-finite recursive forecast.")
                 history[1:] = history[:-1]
@@ -356,3 +370,51 @@ class Autoregression:
                     forecasts[requested] = (prediction * spread + center) * magnitude
                     requested += 1
         return _real_vector(forecasts[inverse], "Autoregression forecasts")
+
+
+@dataclass(frozen=True)
+class Differenced:
+    """Forecast differences with any callback, then restore original levels.
+
+    ``period=1`` uses successive changes; larger periods use seasonal changes.
+    Each call differences only its training history, calls the supplied model
+    once for every lead from 1 to the maximum requested lead, and recursively
+    restores levels. Requested leads may be unordered, repeated or gapped.
+    No differencing order, seasonality or model is selected automatically.
+    """
+
+    forecaster: Forecaster
+    period: int = 1
+
+    def __post_init__(self):
+        if not callable(self.forecaster):
+            raise ValueError("forecaster must be callable.")
+        object.__setattr__(self, "period", positive_integer(self.period, "period"))
+
+    def __call__(self, train: ArrayLike, lead_times: ArrayLike) -> NDArray[np.float64]:
+        values, leads = _real_vector(train, "train"), _lead_times(lead_times)
+        if len(values) <= self.period:
+            raise ValueError("Differenced requires more than period training observations.")
+        try:
+            with np.errstate(over="raise", invalid="raise"):
+                differences = values[self.period:] - values[:-self.period]
+        except FloatingPointError as exc:
+            raise ValueError("Training differences are outside the finite float range.") from exc
+        differences.flags.writeable = False
+        all_leads = np.arange(1, int(leads.max()) + 1, dtype=np.int64)
+        all_leads.flags.writeable = False
+        predictions = _real_vector(self.forecaster(differences, all_leads), "Difference forecasts")
+        if len(predictions) != len(all_leads):
+            raise ValueError("forecaster must return one forecast for every intervening lead.")
+        restored = predictions.copy()
+        try:
+            with np.errstate(over="raise", invalid="raise"):
+                for index in range(len(restored)):
+                    anchor = (
+                        values[len(values) - self.period + index]
+                        if index < self.period else restored[index - self.period]
+                    )
+                    restored[index] += anchor
+        except FloatingPointError as exc:
+            raise ValueError("Restored forecasts are outside the finite float range.") from exc
+        return restored[leads - 1]

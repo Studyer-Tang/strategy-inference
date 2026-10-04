@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0
+
+- Extend `Autoregression` with explicit sparse lag tuples, retaining dense defaults and the stable least-squares solver. Add `Differenced` to compose ordinary or seasonal differencing with any forecaster and restore every physical lead to original levels. Share lead validation across all baselines.
+- Add `select_forecaster(train, validation, candidates, ...)`: compare a fixed family on common validation targets, preserve explicit lead/step/window settings, and return the chosen callable with compact scores and reproducible tie handling.
+- Update the real-data example to select window, lag representation, differencing and ridge on validation only. Keep simple baseline settings and the original target splits; describe comparisons on the previously published examples as development results.
+
 ## 0.10.0
 
 - Add pinned, SHA-256 verified FRED-MD, Bitcoin and Oikolab archives from the official Monash Hugging Face repository. Read local TSF/ZIP files, retain original timestamps and missing positions, and support atomic caching and offline reuse without executing remote code or adding dependencies.

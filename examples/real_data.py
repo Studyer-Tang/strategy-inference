@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from functools import partial
 from pathlib import Path
 
 import numpy as np
 
 from strategy_inference import (
     Autoregression,
+    Differenced,
     SeasonalNaive,
     __version__,
     backtest,
@@ -23,10 +25,11 @@ from strategy_inference import (
     evaluate_forecasts,
     load_dataset,
     naive_forecast,
+    select_forecaster,
     sequential_compare_forecasts,
 )
 
-# All choices except the ridge penalty are fixed before looking at validation.
+# Fixed candidate grid, common validation targets, and unchanged simple baselines.
 # (series, frequency, seasonal period, training window, AR lags, final slice)
 _SETTINGS = {
     "fred_md": ("T1", "monthly", 12, 120, 12, None),
@@ -34,6 +37,11 @@ _SETTINGS = {
     "oikolab_weather": ("T1", "hourly", 24, 336, 24, 365 * 24),
 }
 _RIDGE_GRID = (0.0, 1.0, 10.0)
+_LAG_GRID = {
+    "fred_md": (12, (1, 2, 3, 12)),
+    "bitcoin": (7, (1, 2, 7)),
+    "oikolab_weather": (24, (1, 2, 24, 48, 168)),
+}
 _SOURCE_NOTES = {
     "fred_md": "Frozen archive values and anonymous series names; no release-vintage information.",
     "bitcoin": "Historical scraped price series; not a current or point-in-time market feed.",
@@ -86,46 +94,65 @@ def _prepare(dataset, name):
     )
 
 
+def _windowed_forecast(train, lead_times, *, model, window):
+    return model(train[-window:], lead_times)
+
+
 def run_dataset(name, *, cache_dir=None, offline=False):
-    """Validate on earlier labels, freeze the penalty, then score every test label."""
+    """Choose a configuration on earlier labels, then score every test label."""
     if name not in _SETTINGS:
         raise ValueError(f"Choose one of {tuple(_SETTINGS)}.")
     dataset = load_dataset(name, cache_dir=cache_dir, offline=offline)
     values, selection = _prepare(dataset, name)
-    _, _, period, window, lags, _ = _SETTINGS[name]
+    _, _, period, window, _, _ = _SETTINGS[name]
     n_obs = len(values)
     train_stop, validation_stop = 7 * n_obs // 10, 85 * n_obs // 100
-    if min(train_stop, window) < max(2 * lags + 1, period):
+    minimum_train = max(
+        2 * lags + 2 if isinstance(lags, int) else max(lags) + len(lags) + 2
+        for lags in _LAG_GRID[name]
+    )
+    if min(train_stop, window) < max(minimum_train, period):
         raise ValueError("Initial training data are too short for the fixed models.")
     if not train_stop < validation_stop < n_obs:
         raise ValueError("The chronological split requires nonempty validation and test ranges.")
 
-    candidates = {
-        f"ridge={ridge:g}": Autoregression(lags=lags, ridge=ridge) for ridge in _RIDGE_GRID
-    }
-    # The validation run cannot see any test observation, including through its array base.
-    validation = backtest(
-        values[:validation_stop],
-        candidates,
-        initial_train_size=train_stop,
-        horizon=1,
-        window=window,
+    candidates, configurations = {}, {}
+    for candidate_window in (window, 2 * window):
+        for candidate_lags in _LAG_GRID[name]:
+            for difference in (0, 1):
+                for ridge in _RIDGE_GRID:
+                    label = f"w={candidate_window}/lags={candidate_lags}/d={difference}/r={ridge:g}"
+                    model = Autoregression(lags=candidate_lags, ridge=ridge)
+                    if difference:
+                        model = Differenced(model)
+                    candidates[label] = partial(
+                        _windowed_forecast, model=model, window=candidate_window
+                    )
+                    configurations[label] = dict(
+                        window=candidate_window,
+                        lags=list(candidate_lags) if isinstance(candidate_lags, tuple) else candidate_lags,
+                        difference_period=difference,
+                        ridge=ridge,
+                    )
+    # Only training and validation are passed to selection; every candidate
+    # scores the same target indices, regardless of its lag set or window.
+    selection_result = select_forecaster(
+        values[:train_stop], values[train_stop:validation_stop], candidates,
+        loss="absolute", window=2 * window,
     )
-    validation_mae = evaluate_forecasts(validation, loss="absolute").mean_loss[0]
-    selected_index = int(np.argmin(validation_mae))  # First grid entry wins an exact tie.
-    ridge = _RIDGE_GRID[selected_index]
+    configuration = configurations[selection_result.name]
     models = {
         "naive": naive_forecast,
         "seasonal": SeasonalNaive(period),
-        "drift": drift_forecast,
-        "ar": Autoregression(lags=lags, ridge=ridge),
+        "drift": partial(_windowed_forecast, model=drift_forecast, window=window),
+        "ar": selection_result.forecaster,
     }
     test = backtest(
         values,
         models,
         initial_train_size=validation_stop,
         horizon=1,
-        window=window,
+        window=2 * window,
     )
     mae = evaluate_forecasts(test, loss="absolute").mean_loss[0]
     rmse = np.sqrt(evaluate_forecasts(test, loss="squared").mean_loss[0])
@@ -150,12 +177,13 @@ def run_dataset(name, *, cache_dir=None, offline=False):
             test=[validation_stop, n_obs],
             lead_time=1,
             step=1,
-            window=window,
-            ar_lags=lags,
+            baseline_window=window,
+            history_window=2 * window,
+            selected_configuration=configuration,
             seasonal_period=period,
             ridge_grid=list(_RIDGE_GRID),
-            validation_mae=validation_mae.tolist(),
-            selected_ridge=ridge,
+            candidate_configurations=configurations,
+            validation_selection=selection_result.to_dict(),
             selection_rule="Minimum validation one-step absolute loss; exact ties choose first grid entry.",
             refit="Fit from scratch at each origin using only that origin's training window.",
             mase_train_denominator=denominator,
@@ -182,7 +210,8 @@ def run(dataset="all", *, cache_dir=None, offline=False):
         schema_version=1,
         library_version=__version__,
         interpretation=(
-            "Historical fixed-series demonstrations with from-scratch models; "
+            "Development comparisons on previously published fixed-series examples; "
+            "configuration selection uses validation only. From-scratch models; "
             "not a foundation-model benchmark or evidence of broad model superiority."
         ),
         sequential_scope=_SMCS_SCOPE,
@@ -195,7 +224,12 @@ def _print_table(record):
         selected, protocol = result["selection"], result["protocol"]
         print(
             f"{result['dataset']}/{selected['series']}: {selected['n_observations']} observations, "
-            f"{result['frequency']}, ridge={protocol['selected_ridge']:g}"
+            f"{result['frequency']}"
+        )
+        config = protocol["selected_configuration"]
+        print(
+            f"AR: window={config['window']}, lags={config['lags']}, "
+            f"difference={config['difference_period']}, ridge={config['ridge']:g}"
         )
         start, stop = selected["source_index_range"]
         print(f"Original positions [{start}, {stop}); test targets {protocol['test']}")

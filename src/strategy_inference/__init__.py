@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 _EXPORTS = {
     "AuditResult": "audit",
     "audit_returns": "audit",
@@ -32,8 +32,11 @@ _EXPORTS = {
     "drift_forecast": "model_selection",
     "SeasonalNaive": "model_selection",
     "Autoregression": "model_selection",
+    "Differenced": "model_selection",
     "ForecastEvaluation": "evaluation",
     "ForecastComparison": "evaluation",
+    "ForecastSelection": "evaluation",
+    "select_forecaster": "evaluation",
     "forecast_loss": "evaluation",
     "interval_score": "evaluation",
     "evaluate_forecasts": "evaluation",
