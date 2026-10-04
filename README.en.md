@@ -1,6 +1,6 @@
 # strategy-inference
 
-A Python time-series toolbox for forecast evaluation, continuous model comparison, online intervals and strategy mean inference. Version 0.9 adds streaming model confidence sets: register predictions from a fixed family, then update comparison evidence when their common label arrives. Rolling backtests, fixed-sample bootstrap comparisons and one-step or multi-step intervals remain available.
+A Python time-series toolbox for real-data backtests, forecast evaluation, continuous model comparison, online intervals and strategy mean inference. Version 0.10 adds pinned historical datasets and a training-only AR/ridge baseline. Register forecasts from a fixed family, score them when their labels arrive, and retain the comparison's statistical assumptions.
 
 [中文](README.md) · [Online docs](https://studyer-tang.github.io/strategy-inference/library/) · [Time-series API](docs/time-series.md) · [Multi-step API](docs/multistep-api.md) · [Mean API](docs/api.md) · [Roadmap](docs/toolbox-roadmap.md) · [Research and reproduction](docs/research.md)
 
@@ -9,13 +9,13 @@ A Python time-series toolbox for forecast evaluation, continuous model compariso
 Requires Python 3.10+, NumPy and SciPy. The GitHub release wheel can be installed without cloning. The package has not been published to PyPI.
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.9.0/strategy_inference-0.9.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.10.0/strategy_inference-0.10.0-py3-none-any.whl
 ```
 
 Source installation from the corresponding tag:
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.9.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.10.0'
 ```
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
@@ -64,6 +64,23 @@ print(intervals.coverage)         # Realized average coverage of evaluated one-s
 ```
 
 A positive `mean_improvement` means lower candidate loss than baseline loss. This example uses squared loss for bootstrap and absolute loss for sequential comparison; their targets and assumptions are described below. It demonstrates the interfaces, without establishing model superiority or coverage validity.
+
+## Real data
+
+```python
+from strategy_inference import load_dataset, Autoregression, backtest, naive_forecast
+
+data = load_dataset("fred_md")
+run = backtest(
+    data["T1"].values,
+    {"naive": naive_forecast, "ar": Autoregression(lags=12, ridge=1.0)},
+    initial_train_size=600, window=120,
+)
+```
+
+Curated FRED-MD, Bitcoin and Oikolab archives from the [official Monash repository](https://huggingface.co/datasets/Monash-University/monash_tsf) total about 1.7 MB compressed. Each revision and SHA-256 is pinned; cache reads are verified and `offline=True` never accesses the network. No HF SDK, pandas or remote loading code is required. `read_tsf(path)` also reads local TSF/ZIP files, preserving missing positions as NaN and original time attributes.
+
+In a source checkout, `python examples/real_data.py --dataset all` prints compact tables; `--output result.json` saves provenance and the fixed protocol. The example uses chronological training/validation/test targets, selects the ridge penalty only on validation, and scales MASE only with initial training data. These CC BY 4.0 historical archives are not point-in-time market feeds; FRED-MD has supplied preprocessing and anonymous columns without release-vintage data. Details and attribution are in the [API](docs/time-series.md#真实数据与缓存).
 
 ## Multi-step intervals and mature feedback
 

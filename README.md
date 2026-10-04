@@ -9,13 +9,13 @@
 需要 Python 3.10+，核心依赖为 NumPy 与 SciPy。可直接安装 GitHub release wheel，无需 clone。尚未发布到 PyPI：
 
 ```bash
-python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.9.0/strategy_inference-0.9.0-py3-none-any.whl
+python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.10.0/strategy_inference-0.10.0-py3-none-any.whl
 ```
 
 对应标签的源码安装方式：
 
 ```bash
-python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.9.0'
+python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.git@v0.10.0'
 ```
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
@@ -65,6 +65,25 @@ print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
 
 `mean_improvement > 0` 表示候选损失低于 baseline。上例的 bootstrap 使用平方损失，连续比较使用绝对损失；两者统计目标和条件见下文。示例演示接口，不建立模型优劣或覆盖保证。
 
+## 真实数据
+
+```python
+from strategy_inference import Autoregression, load_dataset, backtest, naive_forecast
+
+data = load_dataset("fred_md")  # 第一次下载 169 KB；之后校验并复用缓存
+y = data["T1"].values
+run = backtest(
+    y, {"naive": naive_forecast, "ar": Autoregression(lags=12, ridge=1.0)},
+    initial_train_size=600, window=120,
+)
+```
+
+内置 `fred_md`、`bitcoin`、`oikolab_weather` 三个官方历史档案，总压缩大小约 1.7 MB。固定源版本与 SHA-256，支持 `offline=True`；不需要 Hugging Face SDK、pandas 或远程加载脚本。`read_tsf(path)` 也可读取自己的 TSF/ZIP 文件。缺失位置保持为 NaN，回测前须明确处理；软件不会自动删行或填补。
+
+仓库内运行 `python examples/real_data.py --dataset all`，得到三个固定序列的整齐评分表。例子按时间划分训练、验证、测试段，用验证段选择 ridge 参数，在测试段逐时重新拟合；MASE 的尺度只来自训练段。`--output result.json` 保存来源、参数与结果，缓存完成后可加 `--offline` 复现。
+
+数据来自 [Monash 时间序列档案](https://huggingface.co/datasets/Monash-University/monash_tsf)，原始记录采用 CC BY 4.0。FRED-MD 保留档案提供的数值预处理和匿名列名，未提供历史发布版本；这些数据可用于预测评估，不能据此声称无修订信息的实时交易回测。来源和具体协议见[时序 API](docs/time-series.md#真实数据与缓存)。
+
 ## 多步区间与成熟反馈
 
 多步预测须等到各自目标标签成熟后才更新。批量接口保留起点和物理步长，不把回测每行当作立即反馈：
@@ -100,7 +119,8 @@ print(multi.summary())
 | 接口 | 输入与输出 |
 | --- | --- |
 | `rolling_splits(...)`、`backtest(y, forecasters, ...)` | 有限、等间隔的一维序列；保存训练/测试位置、每个 origin 的预测、真实值和目标索引。`window=None` 为扩展窗，整数为滚动窗上限 |
-| `naive_forecast`、`SeasonalNaive(period)`、`drift_forecast` | 三种透明 baseline；也可提供 `callback(train, lead_times)`，返回指定 lead 的一维预测 |
+| `naive_forecast`、`SeasonalNaive(period)`、`drift_forecast`、`Autoregression(lags, ridge)` | 透明 baseline；AR/ridge 只在当前训练窗拟合。也可提供 `callback(train, lead_times)`，返回指定 lead 的一维预测 |
+| `load_dataset(name)`、`read_tsf(path)` | 固定版本真实数据、校验缓存及本地 TSF；保留缺失位置和来源，不执行远程代码 |
 | `forecast_loss(...)`、`evaluate_forecasts(run, ...)` | 平方、绝对、pinball 损失；保留 origin × lead × model 损失，按 lead 分别汇总。Pinball 预测须对应指定分位数 |
 | `interval_score(actual, lower, upper, alpha=...)` | 中心区间评分，包含宽度与漏覆盖距离惩罚；全域区间评分为无穷，空集不支持 |
 | `compare_forecasts(run, baseline=..., lead_time=...)` | 一个预先指定 baseline、一个 lead、固定候选集的共享时间索引 max bootstrap，返回全族/候选决定及诊断 |

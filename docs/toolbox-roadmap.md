@@ -1,6 +1,6 @@
 # 时序工具箱：范围与路线图
 
-`strategy-inference` 保留现有包名。当前提供滚动预测评估、固定样本比较、成熟反馈在线区间与尺度融合；v0.9 增加 strong 连续模型置信集。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
+`strategy-inference` 保留现有包名。当前提供真实数据读取、滚动预测评估、固定样本与连续模型比较、成熟反馈在线区间与尺度融合。下面区分已经实现的公共接口与后续方向；列出论文不意味着其全部算法或理论已进入本库。
 
 安装与例子见[首页](../README.md)，详细接口见[时序 API](time-series.md)、[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)。本项目的增量主要是接口整合、实现、验证和计算效率；已知预测、MCS、bootstrap 与 conformal 基础算法不作为算法创新主张。
 
@@ -8,8 +8,9 @@
 
 | 能力 | 公共接口与当前边界 |
 | --- | --- |
+| 真实数据（v0.10） | `load_dataset`、`read_tsf`；固定版本 Monash 宏观、Bitcoin 与小时气候档案，SHA-256/离线缓存，原位保留缺失；不是实时金融 vintage 数据。真实例子按时间切分，验证调参、测试冻结 |
 | 滚动与扩展窗回测 | `rolling_splits`、`backtest`；单变量数值序列、完整 horizon、可设 step/gap/window。保留 origin、目标位置和重叠预测；回调只得到当前训练数据与 lead 的独立只读副本 |
-| 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`；支持 `callback(train, lead_times)` 接入使用者预测器，外部状态的未来信息须由使用者约束 |
+| 透明预测 baseline | `naive_forecast`、`SeasonalNaive`、`drift_forecast`、`Autoregression(lags, ridge)`；AR 每次仅拟合当前训练历史，支持递推 physical lead。可通过 callback 接入外部预测器 |
 | 逐预测损失 | `forecast_loss`、`evaluate_forecasts`；平方、绝对、pinball，保留 origin × lead × model 数组并按 lead 汇总。`interval_score` 单独评价中心区间，不能凭评分推断覆盖保证 |
 | 固定候选预测比较 | `compare_forecasts`；预先指定 baseline 与单个 lead，共享时间索引的 max bootstrap。正改善为 baseline 损失减去候选损失；依赖固定族、平稳弱依赖、适当矩和非退化方差等条件 |
 | 连续模型置信集（v0.9） | `SequentialModelConfidenceSet`、`sequential_compare_forecasts`；固定模型族、绝对/pinball 损失、事前注册预测与非重叠反馈。目标为每时每 pair 的强条件优劣；集合可空，排除不恢复。见[API](time-series.md#连续模型置信集) |

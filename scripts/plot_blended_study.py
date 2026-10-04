@@ -141,6 +141,9 @@ def statistics(report):
         "0.8.0": REQUIRED_SOURCES,
         "0.8.1": CURRENT_SOURCES,
         "0.9.0": CURRENT_SOURCES | {"src/strategy_inference/sequential.py"},
+        "0.10.0": CURRENT_SOURCES | {
+            "src/strategy_inference/sequential.py", "src/strategy_inference/datasets.py",
+        },
     }.get(
         report.get("package_version")
     )

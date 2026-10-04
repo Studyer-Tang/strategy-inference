@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0
+
+- Add pinned, SHA-256 verified FRED-MD, Bitcoin and Oikolab archives from the official Monash Hugging Face repository. Read local TSF/ZIP files, retain original timestamps and missing positions, and support atomic caching and offline reuse without executing remote code or adding dependencies.
+- Add a stateless AR/ridge forecaster with training-only centering, unpenalized intercept, stable least-squares fitting and recursive physical leads.
+- Add a real-data example with chronological training/validation/test targets, validation-only penalty selection, training-scaled MASE and sequential comparison. Record dataset provenance and the fixed evaluation protocol; distinguish historical archives from point-in-time feeds.
+
 ## 0.9.0
 
 - Add streaming `SequentialModelConfidenceSet` and a backtest adapter, based on Arnold et al. (JRSSB, 2026). Compare all prespecified models under strong conditional superiority with predictable absolute/pinball score-difference bounds and closed e-testing.

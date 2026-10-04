@@ -1,6 +1,32 @@
 # 时间序列评估与在线区间
 
-预测评估、固定样本比较、v0.9 连续模型置信集与单步在线区间的公共接口。多步成熟反馈见[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)，后续范围见[路线图](toolbox-roadmap.md)。核心依赖为 NumPy 与 SciPy。
+真实数据、预测评估、固定样本比较、连续模型置信集与单步在线区间的公共接口。多步成熟反馈见[多步 API](multistep-api.md)，原收益推断见[均值 API](api.md)，后续范围见[路线图](toolbox-roadmap.md)。核心依赖为 NumPy 与 SciPy。
+
+## 真实数据与缓存
+
+```python
+available_datasets()  # ("fred_md", "bitcoin", "oikolab_weather")
+load_dataset(name, *, cache_dir=None, offline=False, timeout=30.0)
+read_tsf(path, *, encoding="cp1252")
+```
+
+返回 `TimeSeriesDataset`：`.names` 是原始名称元组，`data[name]` 返回 `TimeSeries`，`.values` 是只读 float64 一维数组，`.attributes` 保存文件中的属性。`.start_timestamp` 来自原文件；缺失时返回 `None`，不虚构日期或时区。数据集的 `.metadata` 保存 TSF 头，`.frequency` 返回频率字符串，`.source`、`.license`、`.revision`、`.sha256` 记录来源；本地读取不推断源网站或许可，SHA-256 对应所读文件字节。
+
+| 名称 | 原始内容 | ZIP 大小 | 原始档案 |
+| --- | --- | --- | --- |
+| `fred_md` | 107 条月序列，各 728 点，匿名 T1…T107 | 169,107 B | [FRED-MD v2](https://zenodo.org/records/4654833) |
+| `bitcoin` | 18 条日序列，各 4,581 点，含缺失 | 220,403 B | [Bitcoin v1](https://zenodo.org/records/5121965) |
+| `oikolab_weather` | 8 条小时序列，各 100,057 点 | 1,326,101 B | [Oikolab v1](https://zenodo.org/records/5184708) |
+
+上述 CC BY 4.0 存档由 Godahewa、Bergmeir、Webb、Hyndman 与 Montero-Manso 整理，见 [Monash Time Series Forecasting Archive（NeurIPS 2021）](https://arxiv.org/abs/2105.06643)。下载来自[官方 Hugging Face 仓库](https://huggingface.co/datasets/Monash-University/monash_tsf/tree/58aafbe2712ff481c014f562e42723f2820fd5d4)，固定 revision `58aafbe2712ff481c014f562e42723f2820fd5d4` 和各文件 SHA-256。读取原始 ZIP，无 HF SDK、pandas 或远程代码依赖。缓存默认位于 `~/.cache/strategy-inference/datasets`（尊重 `XDG_CACHE_HOME`），下载通过大小、哈希与解析校验后原子写入。每次缓存读取都校验；损坏时明确报错，移除该缓存文件后可重下。`offline=True` 缓存未命中直接报错，不联网。
+
+TSF 的 `?` 保留为原位置 NaN；不填补、不删行、不重采样。`read_tsf` 支持单文件 TSF 或仅含一个 TSF 的 ZIP，压缩输入和解压内容均限 32 MiB，不向磁盘解压 ZIP。默认编码遵循原作者解析器，本地 UTF-8 可显式指定。无 `series_name` 属性时用一基行号命名。
+
+FRED-MD 保留档案提供的预处理，不从匿名列名猜测指标，不是发布时点 vintage 数据。Bitcoin 的 `price` 有 560 个前导缺失，之后是 4,021 个连续有限观测。Oikolab 是供应商提供的历史气候数据，没有证据将该快照称作气象站直接实测；文件未给时区，其起点和点数也不应由文字简介的结束日期替换。三个数据集是历史研究快照。
+
+[真实数据例子](../examples/real_data.py) 固定 FRED-MD/T1、Bitcoin/price 的有限连续后缀及 Oikolab/T1 的末 8,760 小时，按整数位置划分 70% 训练、15% 验证及其余测试目标。这不是 Monash 官方基准划分；官方 HF 的 train/validation/test 是嵌套前缀，不能拼接。固定 lag、window、季节周期和 ridge 网格；验证段选择 penalty，测试前冻结，逐起点仅使用已观测历史重新拟合。输出 MAE、原单位 RMSE、仅由初始训练段季节差分定标的 MASE，以及 strong conditional-superiority 的连续集合；集合不表示平均误差排名。
+
+训练段定标和逐起点评价与近期 [fev-bench（2026 版本）](https://arxiv.org/abs/2509.26468) 的设计一致；这里是三个序列的可运行例子，没有复现其完整 benchmark 或 task-bootstrap 结论。公开历史序列可能进入基础模型预训练，因此本例使用从头拟合的基线，不宣称基础模型的无污染零样本比较。
 
 ## 滚动切分
 
@@ -42,6 +68,9 @@ prediction = forecaster(train, lead_times)
 | `naive_forecast(train, lead_times)` | 全部步长重复最后观测 |
 | `drift_forecast(train, lead_times)` | 延伸首尾之间的平均变化；训练至少两个观测 |
 | `SeasonalNaive(period)(train, lead_times)` | 重复最后完整季节周期；训练至少 `period` 个观测 |
+| `Autoregression(lags=12, ridge=0)(train, lead_times)` | 带截距 AR(p)，训练至少 `2*lags+1` 点；按物理 lead 递推，可给不连续、重复或乱序 lead |
+
+AR 在当前训练窗内中心化并以最大绝对偏差定标，拟合目标为归一化残差平方和加 `ridge * sum(lag_coefficients**2)`，截距不惩罚。`ridge=0` 是 OLS，秩不足时使用中心化系数系统的最小范数解；正 ridge 采用增广设计和 `lstsq`，不显式求逆或构造正规方程。常数训练序列返回常数预测。实例不保留折间状态，不自动选 lag 或 penalty；参数选择须先做训练内或独立验证。
 
 季节周期和窗口应事先确定。每折重新调用模型；若 callback 每次重新拟合，计算成本包含拟合本身。使用较小的固定 `window` 或较大的 `step` 可以限制工作量，同时改变评估设计。当前没有自动增量更新、外生变量或多序列 panel 接口。
 

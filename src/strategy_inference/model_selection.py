@@ -282,3 +282,77 @@ def drift_forecast(train: ArrayLike, lead_times: ArrayLike) -> NDArray[np.float6
     with np.errstate(over="ignore", invalid="ignore"):
         forecasts = values[-1] + leads * ((values[-1] - values[0]) / (len(values) - 1))
     return _real_vector(forecasts, "Drift forecasts")
+
+
+@dataclass(frozen=True)
+class Autoregression:
+    """Fit a recursive AR(p) with an intercept, using this call's history only.
+
+    At least ``2 * lags + 1`` observations are required. Training values are
+    centered and divided by their largest absolute deviation before fitting.
+    ``ridge`` minimizes normalized residual sum of squares plus
+    ``ridge * sum(coefficients**2)``; the intercept is not penalized. Zero ridge
+    is ordinary least squares; rank-deficient centered coefficient systems use
+    the minimum-norm solution.
+    Leads may be unordered or nonconsecutive; intervening values are forecast
+    recursively. There is no automatic parameter choice or state across calls.
+    """
+
+    lags: int = 12
+    ridge: float = 0.0
+
+    def __post_init__(self):
+        object.__setattr__(self, "lags", positive_integer(self.lags, "lags"))
+        if np.ma.isMaskedArray(self.ridge) or not np.isscalar(self.ridge):
+            raise ValueError("ridge must be a finite nonnegative real scalar.")
+        try:
+            raw = np.asarray(self.ridge)
+            if raw.dtype.kind not in "iuf":
+                raise ValueError
+            ridge = float(raw)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("ridge must be a finite nonnegative real scalar.") from exc
+        if not np.isfinite(ridge) or ridge < 0:
+            raise ValueError("ridge must be a finite nonnegative real scalar.")
+        object.__setattr__(self, "ridge", ridge)
+
+    def __call__(self, train: ArrayLike, lead_times: ArrayLike) -> NDArray[np.float64]:
+        values = _real_vector(train, "train")
+        if np.ma.isMaskedArray(lead_times) and np.any(np.ma.getmaskarray(lead_times)):
+            raise ValueError("lead_times must contain no masked values.")
+        leads = _lead_times(lead_times)
+        if len(values) < 2 * self.lags + 1:
+            raise ValueError("Autoregression requires at least 2 * lags + 1 training observations.")
+        # Normalize before centering, so opposite finite extremes do not overflow.
+        magnitude = float(np.max(np.abs(values)))
+        scaled = values / magnitude if magnitude else np.zeros_like(values)
+        center = float(scaled.mean())
+        centered = scaled - center
+        spread = float(np.max(np.abs(centered)))
+        if not spread:
+            return np.full(len(leads), values[-1], dtype=np.float64)
+        normalized = centered / spread
+        rows = np.lib.stride_tricks.sliding_window_view(normalized, self.lags + 1)
+        design, target = rows[:, :-1][:, ::-1], rows[:, -1]
+        x_mean, y_mean = design.mean(axis=0), float(target.mean())
+        design, target = design - x_mean, target - y_mean
+        if self.ridge:
+            design = np.vstack((design, np.sqrt(self.ridge) * np.eye(self.lags)))
+            target = np.concatenate((target, np.zeros(self.lags)))
+        coefficients = np.linalg.lstsq(design, target, rcond=None)[0]
+        intercept = y_mean - x_mean @ coefficients
+        history = normalized[-self.lags :][::-1].copy()
+        unique_leads, inverse = np.unique(leads, return_inverse=True)
+        forecasts = np.empty(len(unique_leads))
+        requested = 0
+        with np.errstate(over="ignore", invalid="ignore"):
+            for lead in range(1, int(unique_leads[-1]) + 1):
+                prediction = intercept + history @ coefficients
+                if not np.isfinite(prediction):
+                    raise ValueError("Autoregression produced a non-finite recursive forecast.")
+                history[1:] = history[:-1]
+                history[0] = prediction
+                if lead == unique_leads[requested]:
+                    forecasts[requested] = (prediction * spread + center) * magnitude
+                    requested += 1
+        return _real_vector(forecasts[inverse], "Autoregression forecasts")

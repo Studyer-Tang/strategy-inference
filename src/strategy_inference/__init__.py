@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 _EXPORTS = {
     "AuditResult": "audit",
     "audit_returns": "audit",
@@ -17,6 +17,11 @@ _EXPORTS = {
     "long_run_variance": "inference",
     "ReturnTable": "io",
     "read_returns_csv": "io",
+    "TimeSeries": "datasets",
+    "TimeSeriesDataset": "datasets",
+    "available_datasets": "datasets",
+    "load_dataset": "datasets",
+    "read_tsf": "datasets",
     "TestResult": "testing",
     "test_returns": "testing",
     "RollingSplit": "model_selection",
@@ -26,6 +31,7 @@ _EXPORTS = {
     "naive_forecast": "model_selection",
     "drift_forecast": "model_selection",
     "SeasonalNaive": "model_selection",
+    "Autoregression": "model_selection",
     "ForecastEvaluation": "evaluation",
     "ForecastComparison": "evaluation",
     "forecast_loss": "evaluation",

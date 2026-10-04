@@ -12,6 +12,11 @@ from .conformal import ConformalInterval as ConformalInterval
 from .conformal import ConformalResult as ConformalResult
 from .conformal import ConformalUpdate as ConformalUpdate
 from .conformal import adaptive_intervals as adaptive_intervals
+from .datasets import TimeSeries as TimeSeries
+from .datasets import TimeSeriesDataset as TimeSeriesDataset
+from .datasets import available_datasets as available_datasets
+from .datasets import load_dataset as load_dataset
+from .datasets import read_tsf as read_tsf
 from .evaluation import ForecastComparison as ForecastComparison
 from .evaluation import ForecastEvaluation as ForecastEvaluation
 from .evaluation import compare_forecasts as compare_forecasts
@@ -24,6 +29,7 @@ from .inference import infer_mean as infer_mean
 from .inference import long_run_variance as long_run_variance
 from .io import ReturnTable as ReturnTable
 from .io import read_returns_csv as read_returns_csv
+from .model_selection import Autoregression as Autoregression
 from .model_selection import BacktestResult as BacktestResult
 from .model_selection import RollingSplit as RollingSplit
 from .model_selection import SeasonalNaive as SeasonalNaive

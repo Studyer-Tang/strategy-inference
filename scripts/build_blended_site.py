@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = "0.8.0"
-CURRENT_VERSION = "0.9.0"
+CURRENT_VERSION = "0.10.0"
 RELEASE_COMMIT = "7488a96283890a7884d0cb58346f973bfd4a245b"
 GITHUB = "https://github.com/Studyer-Tang/strategy-inference/blob/main"
 STUDY = "results/research/blended-scales/full"
@@ -650,7 +650,7 @@ def render(study, performance, *, archive=False):
     maintenance = (
         "本页保存 v0.8.0 的完整研究与计时记录，源码绑定不可变提交。"
         if archive
-        else f'v0.9 新增连续模型比较，依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a> 的 sequential model confidence sets。<a href="{github}/docs/time-series.md#连续模型置信集">查看接口与例子</a>。'
+        else f'v0.10 接入官方真实数据与 AR/ridge 基线；连续模型比较依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a>。<a href="{github}/examples/real_data.py">运行真实数据例子</a>。'
     )
     names = [r["name"] for r in study["protocol"]["scenarios"]]
     group = {(r["scenario"], r["method"]): r for r in study["aggregate"] if r["lead_time"] == 24}
@@ -721,19 +721,23 @@ for t, value in enumerate(observations):
     intervals = tracker.predict([value] * 4)  # naive 基线；只用当前标签'''
     note = "示例尺度须在使用前由训练数据确定；上面只示范接口。允许跳过发行，观测时钟连续。每个区间保持发行时的阈值和尺度，未成熟标签留在 pending。"
     sequential_tool = ""
+    baseline_extra = "" if archive else "和 AR/ridge 拟合"
     if not archive:
         quickstart = '''from strategy_inference import (
-    backtest, naive_forecast, drift_forecast, sequential_compare_forecasts,
+    load_dataset, Autoregression, backtest, naive_forecast,
+    sequential_compare_forecasts,
 )
 
+data = load_dataset("fred_md")
 run = backtest(
-    observations, {"naive": naive_forecast, "drift": drift_forecast},
-    initial_train_size=64,
+    data["T1"].values,
+    {"naive": naive_forecast, "ar": Autoregression(lags=12, ridge=1.0)},
+    initial_train_size=600, window=120,
 )
 comparison = sequential_compare_forecasts(run, loss="absolute")
 print(comparison.confidence_set)'''
-        note = "连续检验比较事先固定的模型族；保留集合针对每次发行时的条件风险优势，可为空。新数据到来后可继续 predict / update。"
-        sequential_tool = f'<li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
+        note = "首次下载约 169 KB；固定版本、SHA-256 校验，之后复用缓存。AR 只用当前训练窗；此处参数预先指定。连续集合针对逐时条件风险优势，可为空，不表示平均误差排名。"
+        sequential_tool = f'<li><a href="{github}/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
     history_open = "" if archive else '<details><summary>历史研究与复现 · v0.8.0</summary>'
     history_close = "" if archive else "</details>"
     return f'''<!doctype html>
@@ -750,7 +754,7 @@ print(comparison.confidence_set)'''
 <pre><code>{quickstart}</code></pre>
 <p class="small">{note}</p>
 <h2 id="tools">可用功能</h2>
-<ul><li><a href="{github}/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线。</li>
+<ul><li><a href="{github}/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线{baseline_extra}。</li>
 <li><a href="{github}/docs/time-series.md">预测器比较</a>：时间依赖下的路径损失差与重采样。</li>
 {sequential_tool}
 <li><a href="{github}/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>

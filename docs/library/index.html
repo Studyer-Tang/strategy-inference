@@ -15,27 +15,30 @@ th,td{padding:.65rem;border-bottom:1px solid #d8cebd;text-align:left}th{font-wei
 footer{border-top:1px solid #d8cebd;margin-top:3rem;padding-top:1rem}
 </style></head><body>
 <nav aria-label="目录"><a href="#start">开始使用</a><a href="#tools">功能</a><a href="#research">研究记录</a><a href="#performance">工程计时</a><a href="v0.8.0/">v0.8.0 归档</a><a href="v0.7.0/">v0.7 归档</a><a href="https://github.com/Studyer-Tang/strategy-inference">GitHub</a></nav>
-<main><p class="small">strategy-inference · v0.9.0 · Python ≥ 3.10</p>
+<main><p class="small">strategy-inference · v0.10.0 · Python ≥ 3.10</p>
 <h1>从时序评价，到在线不确定性</h1>
 <p>一个可安装的 Python 工具库：整理预测损失、做因果回测、比较预测器，并在标签成熟后更新单步或多步区间。统计假设、数值边界与复现记录随代码一起保留。</p>
-<p class="small">v0.9 新增连续模型比较，依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a> 的 sequential model confidence sets。<a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md#连续模型置信集">查看接口与例子</a>。</p>
+<p class="small">v0.10 接入官方真实数据与 AR/ridge 基线；连续模型比较依据 <a href="https://doi.org/10.1093/jrsssb/qkag066">JRSSB 2026</a>。<a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/examples/real_data.py">运行真实数据例子</a>。</p>
 <h2 id="start">开始使用</h2>
-<pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.9.0/strategy_inference-0.9.0-py3-none-any.whl</code></pre>
+<pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v0.10.0/strategy_inference-0.10.0-py3-none-any.whl</code></pre>
 <pre><code>from strategy_inference import (
-    backtest, naive_forecast, drift_forecast, sequential_compare_forecasts,
+    load_dataset, Autoregression, backtest, naive_forecast,
+    sequential_compare_forecasts,
 )
 
+data = load_dataset("fred_md")
 run = backtest(
-    observations, {"naive": naive_forecast, "drift": drift_forecast},
-    initial_train_size=64,
+    data["T1"].values,
+    {"naive": naive_forecast, "ar": Autoregression(lags=12, ridge=1.0)},
+    initial_train_size=600, window=120,
 )
 comparison = sequential_compare_forecasts(run, loss="absolute")
 print(comparison.confidence_set)</code></pre>
-<p class="small">连续检验比较事先固定的模型族；保留集合针对每次发行时的条件风险优势，可为空。新数据到来后可继续 predict / update。</p>
+<p class="small">首次下载约 169 KB；固定版本、SHA-256 校验，之后复用缓存。AR 只用当前训练窗；此处参数预先指定。连续集合针对逐时条件风险优势，可为空，不表示平均误差排名。</p>
 <h2 id="tools">可用功能</h2>
-<ul><li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线。</li>
+<ul><li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md">预测评价与回测</a>：损失矩阵、滚动窗口、预先固定的 naive / drift / seasonal 基线和 AR/ridge 拟合。</li>
 <li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md">预测器比较</a>：时间依赖下的路径损失差与重采样。</li>
-<li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>
+<li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>
 <li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>
 <li><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/api.md">金融策略推断</a>：HAC、筛选重放及有模型条件的参数不确定性检验。</li></ul>
 <p><a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/examples/multistep.py">完整例子</a> · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/multistep-methods.md">递推与证明</a> · <a href="https://github.com/Studyer-Tang/strategy-inference/blob/main/docs/toolbox-roadmap.md">发展路线</a></p>

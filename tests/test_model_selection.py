@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from strategy_inference.model_selection import (
+    Autoregression,
     RollingSplit,
     SeasonalNaive,
     backtest,
@@ -333,3 +334,165 @@ def test_frame_missing_dependency_has_actionable_error(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", unavailable)
     with pytest.raises(ImportError, match="requires pandas"):
         result.to_frame()
+
+
+def _ar_reference(train, lags, leads, ridge=0):
+    """Independent row construction and intercept-preserving ridge system."""
+    train = np.asarray(train, dtype=float)
+    if ridge:
+        train_center = float(np.mean(train))
+        train_scale = float(np.max(np.abs(train - train_center)))
+        work = (train - train_center) / train_scale
+    else:
+        train_center, train_scale, work = 0.0, 1.0, train
+    x = np.array([[work[t - lag] for lag in range(1, lags + 1)] for t in range(lags, len(work))])
+    y = work[lags:]
+    if ridge:
+        # This ordinary-unit design explicitly includes the unpenalized intercept.
+        design = np.column_stack((np.ones(len(x)), x))
+        penalty = np.zeros((lags, lags + 1))
+        penalty[:, 1:] = np.sqrt(ridge) * np.eye(lags)
+        coefficient = np.linalg.lstsq(
+            np.vstack((design, penalty)), np.concatenate((y, np.zeros(lags))), rcond=None
+        )[0]
+    else:
+        coefficient = np.linalg.lstsq(np.column_stack((np.ones(len(x)), x)), y, rcond=None)[0]
+    history = work.tolist()
+    for _ in range(max(leads)):
+        history.append(
+            coefficient[0] + sum(coefficient[lag] * history[-lag] for lag in range(1, lags + 1))
+        )
+    return np.array([history[len(work) + lead - 1] * train_scale + train_center for lead in leads])
+
+
+@pytest.mark.parametrize("lags", [1, 3, 12])
+@pytest.mark.parametrize("ridge", [0, 0.1, 2.5])
+def test_autoregression_matches_independent_ols_and_augmented_ridge(lags, ridge):
+    train = np.random.default_rng(801 + lags).normal(size=80).cumsum() + 40
+    leads = [9, 1, 3, 9, 2]
+    actual = Autoregression(lags=lags, ridge=ridge)(train, leads)
+    expected = _ar_reference(train, lags, leads, ridge)
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
+    assert actual.shape == (len(leads),) and np.isfinite(actual).all()
+
+
+def test_autoregression_recursive_ar1_matches_hand_written_values():
+    # y[t] = 2 + 0.5*y[t-1]; fitting must not substitute future observations.
+    train = np.array([0, 2, 3, 3.5, 3.75, 3.875])
+    np.testing.assert_allclose(Autoregression(1)(train, [1, 2, 4]), [3.9375, 3.96875, 3.9921875])
+
+
+@pytest.mark.parametrize("ridge", [0.0, 0.7])
+def test_autoregression_training_normalization_is_affine_equivariant(ridge):
+    train = np.random.default_rng(906).normal(size=90).cumsum()
+    ar = Autoregression(4, ridge)
+    expected = ar(train, [1, 4, 8])
+    for multiplier, offset in [(1e200, 3e200), (1e-200, 0.0), (-5, 1000)]:
+        actual = ar(multiplier * train + offset, [1, 4, 8])
+        np.testing.assert_allclose((actual - offset) / multiplier, expected, rtol=5e-12, atol=5e-12)
+
+
+@pytest.mark.parametrize("value", [0.0, -2.0, np.finfo(float).max, -np.finfo(float).max])
+@pytest.mark.parametrize("ridge", [0.0, 1.0])
+def test_autoregression_constant_history_preserves_intercept_and_extreme_scale(value, ridge):
+    np.testing.assert_array_equal(Autoregression(2, ridge)([value] * 7, [1, 1000]), [value, value])
+
+
+def test_autoregression_rank_deficient_centered_system_has_valid_minimum_norm_fit():
+    train = np.arange(20, dtype=float)
+    np.testing.assert_allclose(Autoregression(4)(train, [1, 2, 10]), [20, 21, 29], atol=1e-12)
+    # The minimum permitted history is accepted without requiring full rank.
+    np.testing.assert_allclose(Autoregression(2)([1, 2, 3, 4, 5], [1, 3]), [6, 8], atol=1e-12)
+
+
+def test_autoregression_is_frozen_stateless_and_causal_inside_backtest():
+    y = np.random.default_rng(109).normal(size=45).cumsum()
+    changed = y.copy()
+    changed[30:] += 10000
+    ar = Autoregression(3, 0.2)
+    first = ar(y[:20], [1, 4])
+    ar(y[10:35], [1, 4])
+    np.testing.assert_array_equal(ar(y[:20], [1, 4]), first)
+    assert vars(ar) == {"lags": 3, "ridge": 0.2}
+    with pytest.raises(FrozenInstanceError):
+        ar.lags = 1
+    options = dict(initial_train_size=15, horizon=3, gap=2, step=3, window=12)
+    run = backtest(y, {"ar": ar}, **options)
+    perturbed = backtest(changed, {"ar": ar}, **options)
+    for i, split in enumerate(run.splits):
+        expected = _ar_reference(y[split.train_start : split.train_stop], 3, [3, 4, 5], 0.2)
+        np.testing.assert_allclose(run.forecasts[i, :, 0], expected, rtol=1e-12, atol=1e-12)
+        if split.train_stop <= 30:
+            np.testing.assert_array_equal(run.forecasts[i], perturbed.forecasts[i])
+
+
+@pytest.mark.parametrize("lags", [0, -1, True, np.bool_(True), 2.0, "2", None])
+def test_autoregression_lags_require_a_positive_nonbool_integer(lags):
+    with pytest.raises(ValueError, match="lags"):
+        Autoregression(lags)
+
+
+@pytest.mark.parametrize(
+    "ridge",
+    [
+        -1,
+        np.inf,
+        np.nan,
+        True,
+        np.bool_(False),
+        "1",
+        1j,
+        [0.1],
+        np.array(0.1),
+        np.ma.array(0.1, mask=True),
+        10**500,
+    ],
+)
+def test_autoregression_ridge_requires_a_finite_nonnegative_scalar(ridge):
+    with pytest.raises(ValueError, match="ridge"):
+        Autoregression(1, ridge)
+
+
+def test_autoregression_numpy_scalar_parameters_and_training_errors():
+    ar = Autoregression(np.int64(2), np.float64(0.5))
+    assert type(ar.lags) is int and type(ar.ridge) is float
+    with pytest.raises(ValueError, match="2 \\* lags \\+ 1"):
+        ar([1, 2, 3, 4], [1])
+    for train in (
+        [1, 2, np.nan, 4, 5],
+        [1, 2, np.inf, 4, 5],
+        [True] * 5,
+        np.ma.array([1, 2, 3, 4, 5], mask=[0, 1, 0, 0, 0]),
+    ):
+        with pytest.raises(ValueError, match="train"):
+            ar(train, [1])
+
+
+@pytest.mark.parametrize(
+    "leads",
+    [
+        [],
+        [0],
+        [-1],
+        [True],
+        [1.0],
+        [1j],
+        [[1]],
+        np.ma.array([1, 2], mask=[0, 1]),
+        np.array([2**64 - 1], dtype=np.uint64),
+    ],
+)
+def test_autoregression_requires_valid_unmasked_integer_leads(leads):
+    with pytest.raises(ValueError, match="lead_times"):
+        Autoregression(1)([1, 2, 3, 4, 5], leads)
+
+
+def test_autoregression_overflow_is_reported_without_clipping_or_replacing_forecasts():
+    maximum = np.finfo(float).max
+    train = maximum * np.array([0.1, 0.2, 0.4, 0.8])
+    with pytest.raises(ValueError, match="finite"):
+        Autoregression(1)(train, [1])
+    ar = Autoregression(1)
+    with pytest.raises(ValueError, match="finite"):
+        ar([1, 2, 4, 8], [1100])
+    np.testing.assert_allclose(ar([1, 2, 4, 8], [1]), [16])
