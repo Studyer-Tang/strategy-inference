@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "seed": 20261009,
+  "scope": "Prespecified extension within the previously used FRED-MD archive; not an external-dataset or foundation-model benchmark.",
+  "freeze_rule": "Commit this protocol and its runner before examining these series' benchmark results. Do not replace series, candidates, seeds or settings based on outcomes.",
+  "panel": {
+    "dataset": "fred_md",
+    "series": ["T2", "T26", "T51", "T76", "T101"],
+    "frequency": "monthly",
+    "n_observations": 728,
+    "split_percent": [70, 85],
+    "window": 120,
+    "lead_time": 1,
+    "seasonal_period": 12,
+    "lag_sets": [12, [1, 2, 12]],
+    "ridge_grid": [0.0, 1.0],
+    "selection_loss": "absolute",
+    "selection_rule": "Minimum one-step validation MAE among four AR configurations; exact ties retain supplied order. All configurations use the same rolling window. Test labels never choose the configuration.",
+    "test_models": ["naive", "seasonal", "drift", "selected_ar"],
+    "comparison_baseline": "naive",
+    "comparison_loss": "absolute",
+    "comparison_scope": "One fixed baseline and the three listed competitors, separately for each series. No simultaneous claim across series. Bootstrap assumptions must be assessed separately from descriptive forecasting scores.",
+    "reference": {
+      "implementation": "statsmodels.tsa.ar_model.AutoReg",
+      "scope": "OLS only: dense and sparse AR, unpenalized intercept, same training windows and recursively forecast next observation. Not a ridge equivalence or optimized-baseline claim.",
+      "repetitions": 3,
+      "rtol": 1e-10,
+      "atol": 1e-10,
+      "timing_scope": "Model fit plus one-step prediction on preconstructed identical histories; warm-up excluded, alternating method order. Median wall time on this machine, not a general speed guarantee."
+    }
+  },
+  "inference": {
+    "alpha": 0.05,
+    "lags": 4,
+    "block_length": 8,
+    "n_resamples": 499,
+    "studentization": "resampled",
+    "search_complete": true
+  },
+  "simulation": {
+    "n_observations": 256,
+    "initial_train_size": 8,
+    "phi": [0.0, 0.6],
+    "delta": [0.0, 0.15],
+    "replications": {"quick": 128, "full": 1024},
+    "forecasts": {"plus": 0.25, "minus": -0.25},
+    "baseline": "plus",
+    "loss": "squared",
+    "process": "Stationary Gaussian AR(1), E[Y]=-delta, Var[Y]=1; initialize from its stationary law. Baseline squared loss minus candidate squared loss equals -Y, so E[d]=delta.",
+    "null": "H0: E[d] <= 0; delta=0 is the boundary null, delta=0.15 the fixed alternative. Both methods use a fixed terminal sample and this same unconditional mean-loss target.",
+    "reference": "Infeasible known-phi Gaussian oracle with exact finite-sample variance [n+2*sum((n-k)*phi**k,k=1..n-1)]/n**2. No estimated nuisance parameters; not a deployable method.",
+    "seeds": "Path SeedSequence([seed,1,phi_index,replication]); bootstrap SeedSequence([seed,2,phi_index,replication]). Reuse the same centered path and bootstrap seed for both delta values.",
+    "uncertainty": "95% Wilson intervals for individual rejection probabilities; paired bootstrap-minus-oracle rejection-rate difference with sqrt(sample_variance(paired_difference,ddof=1)/R). Raw paired decisions retained."
+  }
+}
