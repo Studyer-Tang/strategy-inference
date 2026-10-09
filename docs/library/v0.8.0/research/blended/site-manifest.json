@@ -3,7 +3,7 @@
   "package_version": "0.8.0",
   "evidence_version": "0.8.0",
   "evidence_commit": "7488a96283890a7884d0cb58346f973bfd4a245b",
-  "builder_sha256": "b56ac72092ec899bc413a60deb5fbbbfa011e5b3fad936a515c649462613d29d",
+  "builder_sha256": "173845de61aa344dbbc9bdcffecba3262d572441a6f4ff46008b66f0f1760db6",
   "input_sha256": {
     "results/research/blended-scales/full/results.json": "5601df3323211d5e8d211c002c8634a34816166db6dce3f5b8adbeb7dfd1cb31",
     "experiments/blended-scale-protocol.json": "1078226d6a063f28b57beaef89871cf8a615934eae031ee1ad8e61ef3bf45092",

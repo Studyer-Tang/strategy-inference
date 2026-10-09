@@ -39,8 +39,10 @@ jobs:
       - run: strategy-inference reproduce --study baseline --profile quick --output results/quick
       - run: strategy-inference reproduce --study calibration --profile quick --output results/calibration/quick
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: matrix.python-version == '3.12'
         with:
           name: quick-figures-py${{ matrix.python-version }}
+          retention-days: 7
           path: |
             results/quick
             results/calibration/quick

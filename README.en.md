@@ -1,6 +1,6 @@
 # strategy-inference
 
-A Python time-series toolbox for real-data backtests, forecast evaluation, model comparison and online intervals. Training-only linear baselines, validation selection and mature feedback retain forecast timing and source provenance.
+A Python library for time-series forecast comparison and uncertainty assessment. Run chronological backtests, select forecasters on validation data, compare out-of-sample losses under temporal dependence, and update online intervals with mature feedback. Forecast timing, candidate scores and data provenance remain explicit.
 
 [中文](README.md) · [Online docs](https://studyer-tang.github.io/strategy-inference/library/) · [Time-series API](docs/time-series.md) · [Multi-step API](docs/multistep-api.md) · [Mean API](docs/api.md) · [Roadmap](docs/toolbox-roadmap.md) · [Research and reproduction](docs/research.md)
 
@@ -81,6 +81,8 @@ run = backtest(
 Curated FRED-MD, Bitcoin and Oikolab archives from the [official Monash repository](https://huggingface.co/datasets/Monash-University/monash_tsf) total about 1.7 MB compressed. Each revision and SHA-256 is pinned; cache reads are verified and `offline=True` never accesses the network. No HF SDK, pandas or remote loading code is required. `read_tsf(path)` also reads local TSF/ZIP files, preserving missing positions as NaN and original time attributes.
 
 In a source checkout, `python examples/real_data.py --dataset all` prints compact tables; `--output result.json` saves provenance and candidate scores. Window, lag structure, differencing and ridge are chosen on common chronological validation targets; MASE uses only the initial training scale. Iterations on these previously published examples are development comparisons. These CC BY 4.0 historical archives are not point-in-time market feeds; FRED-MD has supplied preprocessing and anonymous columns without release-vintage data. Details and attribution are in the [API](docs/time-series.md#真实数据与缓存).
+
+For independent validation from a current `main` checkout, run `python benchmarks/forecast_validation.py --mode full --cache-dir .cache --output forecast-validation.json` (requires `.[dev]`). The [prespecified protocol](benchmarks/forecast_validation_protocol.json) fixes five FRED-MD series not used in the development examples, same-window [statsmodels OLS](https://www.statsmodels.org/stable/generated/statsmodels.tsa.ar_model.AutoReg.html) checks, and an AR(1) size/power experiment for the same mean-loss target. The [complete ledger](benchmarks/results/forecast-validation-0.11.json) retains individual decisions and Monte Carlo uncertainty. This is a within-archive extension, not external-dataset validation; the known-parameter oracle is a calibration reference.
 
 `Autoregression(lags=(1, 2, 24, 168))` fits a sparse lag set. `Differenced(model, period=24)` composes seasonal differencing with any callback and restores levels. `select_forecaster(train, validation, models, ...)` returns the chosen callable and all validation scores, with fixed common targets and deterministic ties. Defaults remain dense, undifferenced AR. These independent recursive implementations take guidance from [Huang, Xu and Darlow (2026)](https://arxiv.org/abs/2606.27282) on representation and validation choices for linear forecasters.
 

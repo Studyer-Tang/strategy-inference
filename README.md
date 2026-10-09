@@ -1,6 +1,6 @@
 # strategy-inference
 
-面向真实数据回测、预测评估、模型比较与在线区间的 Python 时序工具箱。提供训练内拟合的线性基线、验证集选择、固定样本和连续比较，保留预测时点、成熟反馈及完整来源。
+用于时序预测比较与不确定性评估的 Python 库。按时间回测，在验证段选择预测器，评估样本外损失与依赖调整的比较结果，并用已成熟标签更新在线区间。保留预测时点、候选分数和数据来源。
 
 [English](README.en.md) · [在线文档](https://studyer-tang.github.io/strategy-inference/library/) · [时序 API](docs/time-series.md) · [多步 API](docs/multistep-api.md) · [均值 API](docs/api.md) · [路线图](docs/toolbox-roadmap.md) · [研究与复现](docs/research.md)
 
@@ -83,6 +83,8 @@ run = backtest(
 仓库内运行 `python examples/real_data.py --dataset all`，得到三个固定序列的整齐评分表。例子按时间划分训练、验证、测试段，在共同验证目标上选择窗口、滞后、差分和 ridge，在测试段逐时重新拟合；MASE 的尺度只来自训练段。`--output result.json` 保存来源、候选与选择结果，缓存完成后可加 `--offline` 复现。这些已公开样例上的迭代是开发比较。
 
 数据来自 [Monash 时间序列档案](https://huggingface.co/datasets/Monash-University/monash_tsf)，原始记录采用 CC BY 4.0。FRED-MD 保留档案提供的数值预处理和匿名列名，未提供历史发布版本；这些数据可用于预测评估，不能据此声称无修订信息的实时交易回测。来源和具体协议见[时序 API](docs/time-series.md#真实数据与缓存)。
+
+独立核验在当前 `main` 的源码目录中运行：`python benchmarks/forecast_validation.py --mode full --cache-dir .cache --output forecast-validation.json`（需 `.[dev]`）。[事先固定的协议](benchmarks/forecast_validation_protocol.json)包含五个此前未用于开发例子的 FRED-MD 序列、同训练窗 [statsmodels OLS](https://www.statsmodels.org/stable/generated/statsmodels.tsa.ar_model.AutoReg.html) 对照，以及同一均值损失目标下的 AR(1) 错误率／功效实验。[完整账本](benchmarks/results/forecast-validation-0.11.json)保留所有逐次决定与 Monte Carlo 不确定性。这是同档案多序列扩展，不是独立外部数据集验证；已知参数 oracle 仅用于校准参考。
 
 验证集选择可直接使用公共接口：
 

@@ -741,17 +741,34 @@ run = backtest(
 )
 print(choice.name, choice.to_dict())'''
         note = "首次下载约 169 KB；固定版本、SHA-256 校验，之后复用缓存。候选共享验证目标；参数在使用测试段之前确定。完整真实数据例子可选择窗口、滞后、差分与 ridge。"
-        sequential_tool = f'<li><a href="{github}/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="{github}/docs/time-series.md#验证集选择">验证集选择</a>：共同目标、固定损失、完整候选分数，返回可直接用于后续回测的预测器。</li><li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：无需重采样，支持绝对或分位数损失，保留模型选择的不确定性。</li>'
+        sequential_tool = f'<li><a href="{github}/docs/time-series.md#真实数据与缓存">真实数据</a>：FRED-MD、Bitcoin、小时气候序列，原始时间属性与缺失位置、离线缓存及本地 TSF 读取。</li><li><a href="{github}/docs/time-series.md#验证集选择">验证集选择</a>：共同目标、固定损失、完整候选分数，返回可直接用于后续回测的预测器。</li><li><a href="{github}/docs/time-series.md#连续模型置信集">连续模型比较</a>：固定模型族、绝对或分位数损失的强条件比较；模型集合可以为空。</li>'
     history_open = "" if archive else '<details><summary>历史研究与复现 · v0.8.0</summary>'
     history_close = "" if archive else "</details>"
+    title = "时间序列工具库" if archive else "预测比较与不确定性"
+    description = (
+        "时间序列评价、预测比较与在线区间。Python API、完整研究记录和本机性能证据。"
+        if archive
+        else "时序预测比较与不确定性。按时间回测、验证段选模、依赖调整检验与在线区间。"
+    )
+    heading = "从时序评价，到在线不确定性" if archive else "时序预测比较与不确定性"
+    introduction = (
+        "一个可安装的 Python 工具库：整理预测损失、做因果回测、比较预测器，并在标签成熟后更新单步或多步区间。统计假设、数值边界与复现记录随代码一起保留。"
+        if archive
+        else "按时间回测，在验证段选择预测器，比较样本外损失，并用已成熟标签更新在线区间。Python 接口保留预测时点、候选分数与数据来源；检验条件和数值边界有明确说明。"
+    )
+    validation = "" if archive else f'''<h2>实现与检验核验</h2>
+<p>预先固定五个 FRED-MD 序列，按时间分成训练、验证与测试段；OLS 预测与独立 statsmodels 实现逐点核对。受控 AR(1) 实验对同一均值损失目标测量错误率与功效，保存逐次决定及 Monte Carlo 不确定性。</p>
+<p class="small">这是同档案的多序列扩展；已知参数 Gaussian oracle 只作校准参考。正式模拟与真实数据结果不构成普遍有效性保证。</p>
+<p><a href="{github}/benchmarks/forecast_validation.py">运行程序</a> · <a href="{github}/benchmarks/forecast_validation_protocol.json">固定协议</a> · <a href="{github}/benchmarks/results/forecast-validation-0.11.json">完整 JSON 账本</a></p>
+'''
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>strategy-inference · 时间序列工具库</title><meta name="description" content="时间序列评价、预测比较与在线区间。Python API、完整研究记录和本机性能证据。">
+<title>strategy-inference · {title}</title><meta name="description" content="{description}">
 <style>{CSS}</style></head><body>
 <nav aria-label="目录"><a href="#start">开始使用</a><a href="#tools">功能</a><a href="#research">研究记录</a><a href="#performance">工程计时</a>{archive_link}<a href="{prefix}v0.7.0/">v0.7 归档</a><a href="https://github.com/Studyer-Tang/strategy-inference">GitHub</a></nav>
 <main><p class="small">strategy-inference · v{page_version} · Python ≥ 3.10</p>
-<h1>从时序评价，到在线不确定性</h1>
-<p>一个可安装的 Python 工具库：整理预测损失、做因果回测、比较预测器，并在标签成熟后更新单步或多步区间。统计假设、数值边界与复现记录随代码一起保留。</p>
+<h1>{heading}</h1>
+<p>{introduction}</p>
 <p class="small">{maintenance}</p>
 <h2 id="start">开始使用</h2>
 <pre class="install"><code>python -m pip install https://github.com/Studyer-Tang/strategy-inference/releases/download/v{page_version}/strategy_inference-{page_version}-py3-none-any.whl</code></pre>
@@ -764,7 +781,7 @@ print(choice.name, choice.to_dict())'''
 <li><a href="{github}/docs/multistep-api.md">在线区间</a>：单步、多步成熟反馈、pool / interlace 与固定尺度融合。</li>
 <li><a href="{github}/docs/api.md">金融策略推断</a>：HAC、筛选重放及有模型条件的参数不确定性检验。</li></ul>
 <p><a href="{github}/examples/multistep.py">完整例子</a> · <a href="{github}/docs/multistep-methods.md">递推与证明</a> · <a href="{github}/docs/toolbox-roadmap.md">发展路线</a></p>
-{history_open}
+{validation}{history_open}
 <h2 id="research">v0.8.0 研究 · 固定尺度融合</h2>
 <p>v0.8 可按预先固定的权重，融合自身步长成熟残差 RMS 与最短步长共享 RMS。权重为 0、1 时，在两来源均可表示的范围内复现两个原模式；默认半权重不表示最优。融合保持每步长阈值独立，既不提前获得长步长标签，也不改变理想平均覆盖账本。</p>
 <p>六个情形，每个 40 条独立路径；每条 3,000 个观测。滚动 AR(1) 点预测只用起点已有标签；训练前缀为 600，评价排除前 128 个发行起点。表中是本次模拟的 interval score 观测均值，越低越好。</p>
