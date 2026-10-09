@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
 import subprocess
 import time
@@ -67,14 +68,18 @@ def _reference_ar(histories, lags, options):
         return np.array([library(history, leads)[0] for history in histories])
 
     def reference():
-        return np.array([
-            AutoReg(history, lags=lags, trend="c", hold_back=maximum).fit().predict(
-                start=len(history), end=len(history), dynamic=False
-            )[0]
-            for history in histories
-        ])
+        return np.array(
+            [
+                AutoReg(history, lags=lags, trend="c", hold_back=maximum)
+                .fit()
+                .predict(start=len(history), end=len(history), dynamic=False)[0]
+                for history in histories
+            ]
+        )
 
-    own(), reference()  # Warm-up is excluded from the timed repetitions.
+    # Warm-up is excluded from the timed repetitions.
+    own()
+    reference()
     timings = {"library": [], "statsmodels": []}
     results = {}
     functions = (("library", own), ("statsmodels", reference))
@@ -97,7 +102,9 @@ def _reference_ar(histories, lags, options):
 def _panel_case(dataset, name, options=PROTOCOL["panel"]):
     values = dataset[name].values
     if len(values) != options["n_observations"] or not np.isfinite(values).all():
-        raise ValueError(f"{name}: unexpected length or missing/nonfinite values; no series replaced.")
+        raise ValueError(
+            f"{name}: unexpected length or missing/nonfinite values; no series replaced."
+        )
     train_stop, validation_stop = [p * len(values) // 100 for p in options["split_percent"]]
     candidates, configurations = {}, {}
     for raw_lags in options["lag_sets"]:
@@ -107,8 +114,11 @@ def _panel_case(dataset, name, options=PROTOCOL["panel"]):
             candidates[label] = Autoregression(lags=lags, ridge=ridge)
             configurations[label] = dict(lags=raw_lags, ridge=ridge)
     choice = select_forecaster(
-        values[:train_stop], values[train_stop:validation_stop], candidates,
-        window=options["window"], loss=options["selection_loss"],
+        values[:train_stop],
+        values[train_stop:validation_stop],
+        candidates,
+        window=options["window"],
+        loss=options["selection_loss"],
     )
     models = dict(
         naive=naive_forecast,
@@ -117,7 +127,11 @@ def _panel_case(dataset, name, options=PROTOCOL["panel"]):
         selected_ar=choice.forecaster,
     )
     run = backtest(
-        values, models, initial_train_size=validation_stop, window=options["window"], horizon=1,
+        values,
+        models,
+        initial_train_size=validation_stop,
+        window=options["window"],
+        horizon=1,
     )
     mae = evaluate_forecasts(run, loss="absolute").mean_loss[0]
     rmse = np.sqrt(evaluate_forecasts(run, loss="squared").mean_loss[0])
@@ -125,24 +139,37 @@ def _panel_case(dataset, name, options=PROTOCOL["panel"]):
     denominator = float(np.mean(np.abs(values[period:train_stop] - values[: train_stop - period])))
     histories = [values[split.train_start : split.train_stop] for split in run.splits]
     references = [
-        _reference_ar(histories, tuple(lags) if isinstance(lags, list) else lags, options["reference"])
+        _reference_ar(
+            histories, tuple(lags) if isinstance(lags, list) else lags, options["reference"]
+        )
         for lags in options["lag_sets"]
     ]
     comparison = compare_forecasts(
-        run, baseline=options["comparison_baseline"], lead_time=1,
-        loss=options["comparison_loss"], seed=PROTOCOL["seed"], **PROTOCOL["inference"],
+        run,
+        baseline=options["comparison_baseline"],
+        lead_time=1,
+        loss=options["comparison_loss"],
+        seed=PROTOCOL["seed"],
+        **PROTOCOL["inference"],
     )
     return dict(
         series=name,
-        train=[0, train_stop], validation=[train_stop, validation_stop],
+        train=[0, train_stop],
+        validation=[train_stop, validation_stop],
         test=[validation_stop, len(values)],
         n_test_targets=run.n_folds,
         selection=choice.to_dict(),
         configurations=configurations,
         mase_training_denominator=denominator,
-        scores=[dict(model=model, mae=float(mae[i]), rmse=float(rmse[i]),
-                     mase=None if denominator == 0 else float(mae[i] / denominator))
-                for i, model in enumerate(run.names)],
+        scores=[
+            dict(
+                model=model,
+                mae=float(mae[i]),
+                rmse=float(rmse[i]),
+                mase=None if denominator == 0 else float(mae[i] / denominator),
+            )
+            for i, model in enumerate(run.names)
+        ],
         comparison=comparison.to_dict(),
         references=references,
     )
@@ -154,8 +181,11 @@ def panel(*, cache_dir=None, offline=False):
     if dataset.frequency != options["frequency"]:
         raise ValueError("Unexpected archive frequency.")
     return dict(
-        dataset=dataset.name, source=dataset.source, revision=dataset.revision,
-        sha256=dataset.sha256, license=dataset.license,
+        dataset=dataset.name,
+        source=dataset.source,
+        revision=dataset.revision,
+        sha256=dataset.sha256,
+        license=dataset.license,
         series=[_panel_case(dataset, name) for name in options["series"]],
     )
 
@@ -164,41 +194,66 @@ def simulation(mode="quick"):
     options = PROTOCOL["simulation"]
     n, initial = options["n_observations"], options["initial_train_size"]
     replications = options["replications"][mode]
-    forecasts = {name: (lambda train, leads, value=value: np.full(len(leads), value))
-                 for name, value in options["forecasts"].items()}
+    forecasts = {
+        name: (lambda train, leads, value=value: np.full(len(leads), value))
+        for name, value in options["forecasts"].items()
+    }
     cells = []
     for phi_index, phi in enumerate(options["phi"]):
         decisions = {delta: {"bootstrap": [], "oracle": []} for delta in options["delta"]}
         variance = mean_variance(n, phi)
         for replicate in range(replications):
-            rng = np.random.default_rng(np.random.SeedSequence([PROTOCOL["seed"], 1, phi_index, replicate]))
+            rng = np.random.default_rng(
+                np.random.SeedSequence([PROTOCOL["seed"], 1, phi_index, replicate])
+            )
             innovations = rng.normal(size=n + initial)
             centered = np.empty_like(innovations)
             centered[0] = innovations[0]
             for t in range(1, len(centered)):
                 centered[t] = phi * centered[t - 1] + np.sqrt(1 - phi * phi) * innovations[t]
-            seed = int(np.random.SeedSequence([PROTOCOL["seed"], 2, phi_index, replicate]).generate_state(1)[0])
+            seed = int(
+                np.random.SeedSequence([PROTOCOL["seed"], 2, phi_index, replicate]).generate_state(
+                    1
+                )[0]
+            )
             for delta in options["delta"]:
                 values = centered - delta
                 run = backtest(values, forecasts, initial_train_size=initial, horizon=1)
                 result = compare_forecasts(
-                    run, baseline=options["baseline"], lead_time=1, loss=options["loss"],
-                    seed=seed, **PROTOCOL["inference"],
+                    run,
+                    baseline=options["baseline"],
+                    lead_time=1,
+                    loss=options["loss"],
+                    seed=seed,
+                    **PROTOCOL["inference"],
                 )
                 decisions[delta]["bootstrap"].append(bool(result.inference.global_reject))
                 statistic = float(np.mean(-values[initial:])) / np.sqrt(variance)
-                decisions[delta]["oracle"].append(bool(statistic > norm.isf(PROTOCOL["inference"]["alpha"])))
+                decisions[delta]["oracle"].append(
+                    bool(statistic > norm.isf(PROTOCOL["inference"]["alpha"]))
+                )
         for delta, paired in decisions.items():
-            difference = np.asarray(paired["bootstrap"], dtype=float) - np.asarray(paired["oracle"], dtype=float)
-            cells.append(dict(
-                phi=phi, delta=delta, target="boundary_null" if delta == 0 else "alternative",
-                replications=replications, oracle_mean_variance=variance,
-                methods={name: dict(rejections=sum(bits), rate=float(np.mean(bits)), wilson_95=wilson(bits))
-                         for name, bits in paired.items()},
-                paired_rate_difference=float(np.mean(difference)),
-                paired_mcse=float(np.std(difference, ddof=1) / np.sqrt(replications)),
-                decisions=paired,
-            ))
+            difference = np.asarray(paired["bootstrap"], dtype=float) - np.asarray(
+                paired["oracle"], dtype=float
+            )
+            cells.append(
+                dict(
+                    phi=phi,
+                    delta=delta,
+                    target="boundary_null" if delta == 0 else "alternative",
+                    replications=replications,
+                    oracle_mean_variance=variance,
+                    methods={
+                        name: dict(
+                            rejections=sum(bits), rate=float(np.mean(bits)), wilson_95=wilson(bits)
+                        )
+                        for name, bits in paired.items()
+                    },
+                    paired_rate_difference=float(np.mean(difference)),
+                    paired_mcse=float(np.std(difference, ddof=1) / np.sqrt(replications)),
+                    decisions=paired,
+                )
+            )
     return cells
 
 
@@ -215,8 +270,24 @@ def _source():
         commit=git("rev-parse", "HEAD"),
         protocol_commit=git("log", "-1", "--format=%H", "--", paths[1]),
         sha256={path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in paths},
-        python=platform.python_version(), platform=platform.platform(), library=__version__,
+        core_sha256={
+            str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted((root / "src" / "strategy_inference").rglob("*.py"))
+        },
+        python=platform.python_version(),
+        platform=platform.platform(),
+        library=__version__,
         dependencies={name: importlib.metadata.version(name) for name in ("numpy", "scipy")},
+        thread_environment={
+            name: os.environ.get(name)
+            for name in (
+                "OMP_NUM_THREADS",
+                "OPENBLAS_NUM_THREADS",
+                "MKL_NUM_THREADS",
+                "VECLIB_MAXIMUM_THREADS",
+                "NUMEXPR_NUM_THREADS",
+            )
+        },
     )
 
 
@@ -230,18 +301,24 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.output.exists():
         parser.error(f"Output already exists: {args.output}")
+    started = time.perf_counter()
     record = dict(schema_version=1, mode=args.mode, protocol=PROTOCOL, source=_source())
     if args.suite != "simulation":
         record["source"]["dependencies"]["statsmodels"] = importlib.metadata.version("statsmodels")
         record["panel"] = panel(cache_dir=args.cache_dir, offline=args.offline)
     if args.suite != "panel":
         record["simulation"] = simulation(args.mode)
+    record["elapsed_seconds"] = time.perf_counter() - started
     contents = json.dumps(record, indent=2, allow_nan=False) + "\n"
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x", encoding="utf-8") as stream:
         stream.write(contents)
     print(args.output.resolve())
-    if any(not check["passed"] for row in record.get("panel", {}).get("series", []) for check in row["references"]):
+    if any(
+        not check["passed"]
+        for row in record.get("panel", {}).get("series", [])
+        for check in row["references"]
+    ):
         return 1
     return 0
 

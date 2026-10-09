@@ -66,8 +66,10 @@ def test_simulation_preserves_loss_target_pairing_seeds_and_oracle(benchmark, mo
         assert cell["paired_mcse"] == pytest.approx(np.std(differences, ddof=1) / np.sqrt(3))
         offset = protocol["simulation"]["phi"].index(cell["phi"]) * 6
         selected = observed[offset + (0 if cell["delta"] == 0 else 1) : offset + 6 : 2]
-        expected = [bool(-values.mean() / np.sqrt(cell["oracle_mean_variance"]) > norm.isf(0.05))
-                    for values, _ in selected]
+        expected = [
+            bool(-values.mean() / np.sqrt(cell["oracle_mean_variance"]) > norm.isf(0.05))
+            for values, _ in selected
+        ]
         assert bits["oracle"] == expected
     json.dumps(cells, allow_nan=False)
 
@@ -82,7 +84,9 @@ def test_short_simulation_runs_actual_forecast_comparison(benchmark, monkeypatch
     assert all(len(cell["decisions"]["bootstrap"]) == 2 for cell in first)
 
 
-def test_test_labels_never_select_model_and_reference_histories_end_before_target(benchmark, monkeypatch):
+def test_test_labels_never_select_model_and_reference_histories_end_before_target(
+    benchmark, monkeypatch
+):
     values = np.random.default_rng(290).normal(size=728).cumsum()
     reference_histories, comparisons = [], []
 
@@ -106,7 +110,12 @@ def test_test_labels_never_select_model_and_reference_histories_end_before_targe
     assert first["train"] == [0, 509] and first["validation"] == [509, 618]
     assert first["test"] == [618, 728] and first["n_test_targets"] == 110
     assert len(first["configurations"]) == 4
-    assert [row["model"] for row in first["scores"]] == ["naive", "seasonal", "drift", "selected_ar"]
+    assert [row["model"] for row in first["scores"]] == [
+        "naive",
+        "seasonal",
+        "drift",
+        "selected_ar",
+    ]
     for histories in reference_histories[:2]:
         for history, target in zip(histories, range(618, 728), strict=True):
             np.testing.assert_array_equal(history, values[target - 120 : target])
@@ -139,6 +148,35 @@ def test_dirty_protocol_blocks_execution(benchmark, monkeypatch):
     monkeypatch.setattr(benchmark.subprocess, "check_output", lambda *args, **kwargs: " M protocol")
     with pytest.raises(RuntimeError, match="Commit the runner and protocol"):
         benchmark._source()
+
+
+def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, tmp_path, monkeypatch):
+    folder = tmp_path / "benchmarks"
+    folder.mkdir()
+    protocol, runner = folder / "protocol.json", folder / "runner.py"
+    protocol.write_text("{}", encoding="utf-8")
+    runner.write_text("# runner", encoding="utf-8")
+    core = tmp_path / "src" / "strategy_inference" / "core.py"
+    core.parent.mkdir(parents=True)
+    core.write_text("value = 1", encoding="utf-8")
+    monkeypatch.setattr(benchmark, "PROTOCOL_PATH", protocol)
+    monkeypatch.setattr(benchmark, "__file__", str(runner))
+    actual_check_output = benchmark.subprocess.check_output
+
+    def git_only(arguments, **kwargs):
+        if arguments[0] == "git":
+            return "" if arguments[1] == "status" else "a" * 40
+        return actual_check_output(arguments, **kwargs)
+
+    monkeypatch.setattr(benchmark.subprocess, "check_output", git_only)
+    monkeypatch.setenv("OMP_NUM_THREADS", "1")
+    before = benchmark._source()
+    core.write_text("value = 2", encoding="utf-8")
+    after = benchmark._source()
+    assert before["commit"] == after["commit"]
+    assert before["core_sha256"] != after["core_sha256"]
+    assert list(after["core_sha256"]) == ["src/strategy_inference/core.py"]
+    assert after["thread_environment"]["OMP_NUM_THREADS"] == "1"
 
 
 def test_existing_output_is_rejected_before_benchmark_runs(benchmark, tmp_path, monkeypatch):
