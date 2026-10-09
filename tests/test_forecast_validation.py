@@ -150,6 +150,23 @@ def test_dirty_protocol_blocks_execution(benchmark, monkeypatch):
         benchmark._source()
 
 
+def test_external_install_is_rejected_before_recording_checkout_hashes(
+    benchmark, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        benchmark.strategy_inference, "__file__", str(tmp_path / "other" / "__init__.py")
+    )
+    monkeypatch.setattr(
+        benchmark.subprocess,
+        "check_output",
+        lambda *args, **kwargs: pytest.fail(
+            "External package must be rejected before provenance is recorded"
+        ),
+    )
+    with pytest.raises(RuntimeError, match="this checkout's editable package"):
+        benchmark._source()
+
+
 def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, tmp_path, monkeypatch):
     folder = tmp_path / "benchmarks"
     folder.mkdir()
@@ -161,6 +178,7 @@ def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, tmp_path, 
     core.write_text("value = 1", encoding="utf-8")
     monkeypatch.setattr(benchmark, "PROTOCOL_PATH", protocol)
     monkeypatch.setattr(benchmark, "__file__", str(runner))
+    monkeypatch.setattr(benchmark.strategy_inference, "__file__", str(core))
     actual_check_output = benchmark.subprocess.check_output
 
     def git_only(arguments, **kwargs):
@@ -177,6 +195,7 @@ def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, tmp_path, 
     assert before["core_sha256"] != after["core_sha256"]
     assert list(after["core_sha256"]) == ["src/strategy_inference/core.py"]
     assert after["thread_environment"]["OMP_NUM_THREADS"] == "1"
+    assert after["package_path"] == str(core.parent)
 
 
 def test_existing_output_is_rejected_before_benchmark_runs(benchmark, tmp_path, monkeypatch):

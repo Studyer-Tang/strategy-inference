@@ -22,10 +22,10 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import norm
 
+import strategy_inference
 from strategy_inference import (
     Autoregression,
     SeasonalNaive,
-    __version__,
     backtest,
     compare_forecasts,
     drift_forecast,
@@ -259,6 +259,13 @@ def simulation(mode="quick"):
 
 def _source():
     root = PROTOCOL_PATH.parent.parent
+    package_path = Path(strategy_inference.__file__).resolve().parent
+    if package_path != (root / "src" / "strategy_inference").resolve():
+        raise RuntimeError(
+            "Benchmark requires this checkout's editable package; "
+            "run python -m pip install -e '.[dev]'. "
+            f"Imported package from {package_path}."
+        )
 
     def git(*arguments):
         return subprocess.check_output(["git", *arguments], cwd=root, text=True).strip()
@@ -276,7 +283,8 @@ def _source():
         },
         python=platform.python_version(),
         platform=platform.platform(),
-        library=__version__,
+        library=strategy_inference.__version__,
+        package_path=str(package_path),
         dependencies={name: importlib.metadata.version(name) for name in ("numpy", "scipy")},
         thread_environment={
             name: os.environ.get(name)
