@@ -1,8 +1,10 @@
 """Benchmark-specific protocol, causal selection and independent-reference checks."""
 
 import copy
+import hashlib
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -18,6 +20,32 @@ def benchmark():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def source_checkout(benchmark, tmp_path, monkeypatch):
+    """A real Git index exercises staged, unstaged and untracked provenance."""
+    runner = tmp_path / "benchmarks" / "forecast_validation.py"
+    runner.parent.mkdir()
+    runner.write_bytes(Path(benchmark.__file__).read_bytes())
+    protocol = runner.with_name("forecast_validation_protocol.json")
+    protocol.write_text(json.dumps(benchmark.PROTOCOL), encoding="utf-8")
+    core = tmp_path / "src" / "strategy_inference" / "__init__.py"
+    core.parent.mkdir(parents=True)
+    core.write_text("value = 1\n", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'fixture'\n", encoding="utf-8")
+
+    def git(*arguments):
+        return subprocess.check_output(["git", *arguments], cwd=tmp_path, text=True).strip()
+
+    git("init", "--quiet")
+    git("add", ".")
+    git("-c", "user.name=Benchmark test", "-c", "user.email=benchmark@example.invalid",
+        "commit", "--quiet", "-m", "Committed benchmark inputs")
+    monkeypatch.setattr(benchmark, "PROTOCOL_PATH", protocol)
+    monkeypatch.setattr(benchmark, "__file__", str(runner))
+    monkeypatch.setattr(benchmark.strategy_inference, "__file__", str(core))
+    return SimpleNamespace(root=tmp_path, runner=runner, protocol=protocol, core=core, git=git)
 
 
 @pytest.mark.parametrize("n,phi", [(8, 0.0), (17, 0.6), (256, 0.9)])
@@ -144,10 +172,13 @@ def test_ols_forecasts_match_external_dense_and_sparse_reference(benchmark, lags
     assert all(len(times) == 2 for times in result["timing_seconds"].values())
 
 
-def test_dirty_protocol_blocks_execution(benchmark, monkeypatch):
-    monkeypatch.setattr(benchmark.subprocess, "check_output", lambda *args, **kwargs: " M protocol")
+@pytest.mark.parametrize("mode", ["quick", "full"])
+@pytest.mark.parametrize("name", ["runner", "protocol"])
+def test_dirty_runner_or_protocol_blocks_execution(benchmark, source_checkout, mode, name):
+    path = getattr(source_checkout, name)
+    path.write_bytes(path.read_bytes() + b"\n")
     with pytest.raises(RuntimeError, match="Commit the runner and protocol"):
-        benchmark._source()
+        benchmark._source(mode)
 
 
 def test_external_install_is_rejected_before_recording_checkout_hashes(
@@ -167,35 +198,211 @@ def test_external_install_is_rejected_before_recording_checkout_hashes(
         benchmark._source()
 
 
-def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, tmp_path, monkeypatch):
-    folder = tmp_path / "benchmarks"
-    folder.mkdir()
-    protocol, runner = folder / "protocol.json", folder / "runner.py"
-    protocol.write_text("{}", encoding="utf-8")
-    runner.write_text("# runner", encoding="utf-8")
-    core = tmp_path / "src" / "strategy_inference" / "core.py"
-    core.parent.mkdir(parents=True)
-    core.write_text("value = 1", encoding="utf-8")
-    monkeypatch.setattr(benchmark, "PROTOCOL_PATH", protocol)
-    monkeypatch.setattr(benchmark, "__file__", str(runner))
-    monkeypatch.setattr(benchmark.strategy_inference, "__file__", str(core))
-    actual_check_output = benchmark.subprocess.check_output
-
-    def git_only(arguments, **kwargs):
-        if arguments[0] == "git":
-            return "" if arguments[1] == "status" else "a" * 40
-        return actual_check_output(arguments, **kwargs)
-
-    monkeypatch.setattr(benchmark.subprocess, "check_output", git_only)
+def test_core_edits_are_visible_even_with_unchanged_commit(benchmark, source_checkout, monkeypatch):
     monkeypatch.setenv("OMP_NUM_THREADS", "1")
     before = benchmark._source()
-    core.write_text("value = 2", encoding="utf-8")
+    source_checkout.core.write_text("value = 2\n", encoding="utf-8")
     after = benchmark._source()
     assert before["commit"] == after["commit"]
     assert before["core_sha256"] != after["core_sha256"]
-    assert list(after["core_sha256"]) == ["src/strategy_inference/core.py"]
+    assert list(after["core_sha256"]) == ["src/strategy_inference/__init__.py"]
+    assert not before["dirty"] and before["changes"] == []
+    assert after["dirty"] and after["run_kind"] == "development"
+    assert after["changes"] == [dict(status=" M", path="src/strategy_inference/__init__.py")]
+    assert after["input_sha256"]["src/strategy_inference/__init__.py"] == hashlib.sha256(
+        source_checkout.core.read_bytes()
+    ).hexdigest()
     assert after["thread_environment"]["OMP_NUM_THREADS"] == "1"
-    assert after["package_path"] == str(core.parent)
+    assert after["package_path"] == str(source_checkout.core.parent)
+    json.dumps(after, allow_nan=False)
+
+
+@pytest.mark.parametrize("relative_path,staged", [
+    ("src/strategy_inference/__init__.py", False),
+    ("src/strategy_inference/__init__.py", True),
+    ("src/strategy_inference/new model.py", False),
+    ("src/strategy_inference/protocols/new.json", False),
+    ("pyproject.toml", False),
+    ("requirements-dev.txt", False),
+    ("uv.lock", False),
+])
+def test_full_rejects_changed_runtime_inputs_and_quick_records_them(
+    benchmark, source_checkout, relative_path, staged
+):
+    path = source_checkout.root / relative_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("changed input\n", encoding="utf-8")
+    if staged:
+        source_checkout.git("add", relative_path)
+    quick = benchmark._source("quick")
+    assert quick["dirty"] and quick["run_kind"] == "development"
+    assert [change["path"] for change in quick["changes"]] == [relative_path]
+    assert quick["input_sha256"][relative_path] == hashlib.sha256(path.read_bytes()).hexdigest()
+    with pytest.raises(RuntimeError, match="Full validation requires committed") as error:
+        benchmark._source("full")
+    assert relative_path in str(error.value)
+
+
+def test_full_records_committed_inputs_and_ignores_unrelated_outputs(benchmark, source_checkout):
+    (source_checkout.root / "result.json").write_text("{}", encoding="utf-8")
+    source = benchmark._source("full")
+    assert source["run_kind"] == "formal" and not source["dirty"]
+    assert source["formal_eligible"] and source["index_flags"] == [] and source["symlinks"] == []
+    assert source["changes"] == []
+    assert source["commit"] == source_checkout.git("rev-parse", "HEAD")
+    assert source["protocol_commit"] == source["commit"]
+    for path, fingerprint in source["input_sha256"].items():
+        committed = subprocess.check_output(
+            ["git", "show", f"HEAD:{path}"], cwd=source_checkout.root,
+        )
+        actual = (source_checkout.root / path).read_bytes()
+        assert committed == actual
+        assert fingerprint == hashlib.sha256(actual).hexdigest()
+    assert set(source["sha256"]) <= set(source["input_sha256"])
+    assert set(source["core_sha256"]) <= set(source["input_sha256"])
+    assert "pyproject.toml" in source["input_sha256"]
+    assert "result.json" not in source["input_sha256"]
+
+
+@pytest.mark.parametrize("relative_path", ["src/strategy_inference/ignored.py", "uv.lock"])
+def test_ignored_source_or_dependencies_cannot_be_reported_as_committed(
+    benchmark, source_checkout, relative_path
+):
+    (source_checkout.root / ".gitignore").write_text(relative_path + "\n", encoding="utf-8")
+    source_checkout.git("add", ".gitignore")
+    source_checkout.git(
+        "-c", "user.name=Benchmark test", "-c", "user.email=benchmark@example.invalid",
+        "commit", "--quiet", "-m", "Ignore a local benchmark input",
+    )
+    path = source_checkout.root / relative_path
+    path.write_text("ignored local input\n", encoding="utf-8")
+    assert source_checkout.git("status", "--porcelain") == ""
+    quick = benchmark._source("quick")
+    assert quick["dirty"] and quick["changes"] == [dict(status="!!", path=relative_path)]
+    assert relative_path in quick["input_sha256"]
+    with pytest.raises(RuntimeError, match="Full validation requires committed"):
+        benchmark._source("full")
+
+
+@pytest.mark.parametrize("flags", [
+    ("assume-unchanged",), ("skip-worktree",), ("assume-unchanged", "skip-worktree"),
+])
+@pytest.mark.parametrize("modified", [False, True])
+def test_index_flags_cannot_hide_changes_in_formal_validation(
+    benchmark, source_checkout, flags, modified
+):
+    relative = "src/strategy_inference/__init__.py"
+    for flag in flags:
+        source_checkout.git("update-index", f"--{flag}", relative)
+    if modified:
+        source_checkout.core.write_text("value = 2\n", encoding="utf-8")
+    assert source_checkout.git("status", "--porcelain") == ""
+    quick = benchmark._source("quick")
+    assert not quick["dirty"] and quick["changes"] == []
+    assert not quick["formal_eligible"] and quick["run_kind"] == "development"
+    assert quick["index_flags"] == [dict(
+        path=relative, assume_unchanged="assume-unchanged" in flags,
+        skip_worktree="skip-worktree" in flags,
+    )]
+    assert quick["input_sha256"][relative] == hashlib.sha256(
+        source_checkout.core.read_bytes()
+    ).hexdigest()
+    with pytest.raises(RuntimeError, match="Git index flags") as error:
+        benchmark._source("full")
+    assert relative in str(error.value)
+
+
+@pytest.mark.parametrize("external", [False, True])
+def test_committed_symlinks_are_explicitly_ineligible_for_formal_validation(
+    benchmark, source_checkout, external
+):
+    target = source_checkout.core
+    if external:
+        target = source_checkout.root.parent / f"{source_checkout.root.name}-external.py"
+        target.write_text("external_value = 1\n", encoding="utf-8")
+    link = source_checkout.core.with_name("linked.py")
+    link.symlink_to(target)
+    source_checkout.git("add", "src")
+    source_checkout.git(
+        "-c", "user.name=Benchmark test", "-c", "user.email=benchmark@example.invalid",
+        "commit", "--quiet", "-m", "Committed source symlink",
+    )
+    assert source_checkout.git("status", "--porcelain") == ""
+    relative = "src/strategy_inference/linked.py"
+    quick = benchmark._source("quick")
+    assert not quick["dirty"] and quick["changes"] == [] and not quick["formal_eligible"]
+    assert quick["symlinks"] == [dict(path=relative, target=str(target))]
+    assert quick["input_sha256"][relative] == hashlib.sha256(target.read_bytes()).hexdigest()
+    with pytest.raises(RuntimeError, match="regular input files") as error:
+        benchmark._source("full")
+    assert relative in str(error.value)
+
+
+def test_renamed_source_paths_are_recorded_without_losing_spaces(benchmark, source_checkout):
+    source_checkout.git("mv", "src/strategy_inference/__init__.py",
+                        "src/strategy_inference/renamed model.py")
+    source = benchmark._source("quick")
+    assert source["changes"] == [dict(
+        status="R ", path="src/strategy_inference/renamed model.py",
+        previous_path="src/strategy_inference/__init__.py",
+    )]
+    with pytest.raises(RuntimeError, match="Full validation requires committed"):
+        benchmark._source("full")
+
+
+def test_cli_full_rejects_dirty_source_before_running_benchmarks(
+    benchmark, source_checkout, monkeypatch
+):
+    source_checkout.core.write_text("value = 2\n", encoding="utf-8")
+    monkeypatch.setattr(benchmark, "simulation", lambda *_: pytest.fail("Must not simulate"))
+    monkeypatch.setattr(benchmark, "panel", lambda **_: pytest.fail("Must not load data"))
+    output = source_checkout.root / "result.json"
+    with pytest.raises(RuntimeError, match="Full validation requires committed"):
+        benchmark.main(["--mode", "full", "--output", str(output)])
+    assert not output.exists()
+
+
+def test_cli_quick_serializes_development_provenance(benchmark, source_checkout, monkeypatch):
+    source_checkout.core.write_text("value = 2\n", encoding="utf-8")
+    monkeypatch.setattr(benchmark, "simulation", lambda mode: [dict(mode=mode)])
+    output = source_checkout.root / "result.json"
+    assert benchmark.main(["--suite", "simulation", "--output", str(output)]) == 0
+    record = json.loads(output.read_text(encoding="utf-8"))
+    assert record["mode"] == "quick" and record["simulation"] == [dict(mode="quick")]
+    assert record["source"]["dirty"] and record["source"]["run_kind"] == "development"
+    assert record["source"]["changes"][0]["path"] == "src/strategy_inference/__init__.py"
+
+
+def test_cli_full_serializes_formal_provenance(benchmark, source_checkout, monkeypatch):
+    monkeypatch.setattr(benchmark, "simulation", lambda mode: [dict(mode=mode)])
+    output = source_checkout.root / "result.json"
+    assert benchmark.main([
+        "--mode", "full", "--suite", "simulation", "--output", str(output),
+    ]) == 0
+    record = json.loads(output.read_text(encoding="utf-8"))
+    assert record["mode"] == "full" and record["simulation"] == [dict(mode="full")]
+    assert record["source"]["run_kind"] == "formal" and not record["source"]["dirty"]
+
+
+@pytest.mark.parametrize("committed", [False, True])
+def test_cli_full_never_writes_report_if_inputs_change_during_run(
+    benchmark, source_checkout, monkeypatch, committed
+):
+    def simulation(mode):
+        source_checkout.core.write_text("value = 2\n", encoding="utf-8")
+        if committed:
+            source_checkout.git("add", "src")
+            source_checkout.git(
+                "-c", "user.name=Benchmark test", "-c", "user.email=benchmark@example.invalid",
+                "commit", "--quiet", "-m", "Changed benchmark inputs during execution",
+            )
+        return [dict(mode=mode)]
+
+    monkeypatch.setattr(benchmark, "simulation", simulation)
+    output = source_checkout.root / "result.json"
+    with pytest.raises(RuntimeError):
+        benchmark.main(["--mode", "full", "--suite", "simulation", "--output", str(output)])
+    assert not output.exists()
 
 
 def test_existing_output_is_rejected_before_benchmark_runs(benchmark, tmp_path, monkeypatch):

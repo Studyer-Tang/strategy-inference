@@ -3,8 +3,11 @@
 Install the package and statsmodels in a validation environment, then run:
   python benchmarks/forecast_validation.py --mode quick --output result.json
 Commit this runner and its sibling protocol before running the benchmark.
-Only JSON is written; the output must be a new file. Full mode changes only
-the simulation replication count, not models, data selection or inference.
+Only JSON is written; the output must be a new file. Quick mode records a
+development run, including local source changes. Full mode uses the larger
+fixed simulation budget and requires committed source and dependency declarations.
+Full inputs must be regular files without assume-unchanged or skip-worktree flags.
+Neither mode changes the models, data selection or inference settings.
 """
 
 from __future__ import annotations
@@ -257,7 +260,7 @@ def simulation(mode="quick"):
     return cells
 
 
-def _source():
+def _source(mode="quick"):
     root = PROTOCOL_PATH.parent.parent
     package_path = Path(strategy_inference.__file__).resolve().parent
     if package_path != (root / "src" / "strategy_inference").resolve():
@@ -268,14 +271,86 @@ def _source():
         )
 
     def git(*arguments):
-        return subprocess.check_output(["git", *arguments], cwd=root, text=True).strip()
+        return subprocess.check_output(["git", *arguments], cwd=root, text=True)
 
     paths = [str(Path(__file__).relative_to(root)), str(PROTOCOL_PATH.relative_to(root))]
-    if git("status", "--porcelain", "--", *paths):
+    dependency_paths = [
+        "pyproject.toml", "setup.py", "setup.cfg", "requirements*.txt",
+        "constraints*.txt", "requirements", "uv.lock", "poetry.lock", "Pipfile",
+        "Pipfile.lock", "environment*.yml", "environment*.yaml",
+    ]
+    checked_paths = [*paths, "src", *dependency_paths]
+    # NUL separators preserve spaces, newlines and rename source paths verbatim.
+    status = iter(git(
+        "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", *checked_paths,
+    ).split("\0"))
+    changes = []
+    changed_paths = set()
+    for entry in status:
+        if not entry:
+            continue
+        change = dict(status=entry[:2], path=entry[3:])
+        changed_paths.add(change["path"])
+        if "R" in change["status"] or "C" in change["status"]:
+            change["previous_path"] = next(status)
+            changed_paths.add(change["previous_path"])
+        changes.append(change)
+    input_paths = set(git(
+        "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", *checked_paths,
+    ).split("\0")) - {""}
+    index_flags = [
+        dict(path=entry[2:], assume_unchanged=entry[0].islower(),
+             skip_worktree=entry[0].upper() == "S")
+        for entry in git("ls-files", "-v", "-z", "--", *checked_paths).split("\0")
+        if entry and (entry[0].islower() or entry[0].upper() == "S")
+    ]
+    # An ignored Python file can still be imported; it must not look committed.
+    extra_inputs = [
+        *(root / "src").rglob("*.py"),
+        *(path for pattern in dependency_paths for path in root.glob(pattern) if path.is_file()),
+    ]
+    for path in sorted(extra_inputs):
+        relative = str(path.relative_to(root))
+        if relative not in input_paths:
+            changes.append(dict(status="!!", path=relative))
+            changed_paths.add(relative)
+            input_paths.add(relative)
+    if changed_paths.intersection(paths) or not set(paths).issubset(input_paths):
         raise RuntimeError("Commit the runner and protocol before running the benchmark.")
+    symlinks = [
+        dict(path=path, target=os.readlink(root / path))
+        for path in sorted(input_paths) if (root / path).is_symlink()
+    ]
+    if mode == "full" and changes:
+        raise RuntimeError(
+            "Full validation requires committed source and dependency declarations; "
+            f"changed paths: {', '.join(sorted(changed_paths))}. "
+            "Use --mode quick for a recorded development run."
+        )
+    if mode == "full" and index_flags:
+        raise RuntimeError(
+            "Full validation refuses assume-unchanged or skip-worktree Git index flags; "
+            f"clear flags on: {', '.join(item['path'] for item in index_flags)}."
+        )
+    if mode == "full" and symlinks:
+        raise RuntimeError(
+            "Full validation requires regular input files; symbolic links: "
+            f"{', '.join(item['path'] for item in symlinks)}."
+        )
     return dict(
-        commit=git("rev-parse", "HEAD"),
-        protocol_commit=git("log", "-1", "--format=%H", "--", paths[1]),
+        commit=git("rev-parse", "HEAD").strip(),
+        protocol_commit=git("log", "-1", "--format=%H", "--", paths[1]).strip(),
+        run_kind="formal" if mode == "full" else "development",
+        dirty=bool(changes),
+        formal_eligible=not (changes or index_flags or symlinks),
+        changes=changes,
+        index_flags=index_flags,
+        symlinks=symlinks,
+        checked_paths=checked_paths,
+        input_sha256={
+            path: hashlib.sha256((root / path).read_bytes()).hexdigest()
+            for path in sorted(input_paths) if (root / path).is_file()
+        },
         sha256={path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in paths},
         core_sha256={
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -301,7 +376,10 @@ def _source():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("quick", "full"), default="quick")
+    parser.add_argument(
+        "--mode", choices=("quick", "full"), default="quick",
+        help="quick records development changes; full requires committed benchmark inputs",
+    )
     parser.add_argument("--suite", choices=("all", "panel", "simulation"), default="all")
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--offline", action="store_true")
@@ -310,12 +388,16 @@ def main(argv=None):
     if args.output.exists():
         parser.error(f"Output already exists: {args.output}")
     started = time.perf_counter()
-    record = dict(schema_version=1, mode=args.mode, protocol=PROTOCOL, source=_source())
+    record = dict(schema_version=1, mode=args.mode, protocol=PROTOCOL, source=_source(args.mode))
     if args.suite != "simulation":
         record["source"]["dependencies"]["statsmodels"] = importlib.metadata.version("statsmodels")
         record["panel"] = panel(cache_dir=args.cache_dir, offline=args.offline)
     if args.suite != "panel":
         record["simulation"] = simulation(args.mode)
+    if args.mode == "full":
+        final_source = _source(args.mode)
+        if any(final_source[key] != record["source"][key] for key in ("commit", "input_sha256")):
+            raise RuntimeError("Benchmark inputs changed during full validation; no report written.")
     record["elapsed_seconds"] = time.perf_counter() - started
     contents = json.dumps(record, indent=2, allow_nan=False) + "\n"
     args.output.parent.mkdir(parents=True, exist_ok=True)

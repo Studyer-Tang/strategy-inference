@@ -45,6 +45,10 @@ rolling_splits(n_obs, *, initial_train_size, horizon=1, step=1, gap=0, window=No
 
 参数要求非布尔整数；除 `gap>=0` 外均须为正。没有完整测试窗口时明确报错。输入按观测位置处理，不推断日期频率、排序或自动填补缺失值。
 
+## 已有模型预测
+
+开发版新增 `BacktestResult.from_predictions(y, predictions, *, splits)`：显式提供 `RollingSplit`，各模型预测严格为 `(folds, horizon)`，从 `y` 推导目标值。校验时间范围、共同物理步长与有限数值，保留跨折重叠，复制并只读保存结果。导入不重新训练模型，不验证外部模型的实际训练历史，也不绕过后续统计入口的等间隔或成熟反馈要求。v0.11.0 发布包尚未包含；完整例子与边界见[已有预测指南](external-predictions.md)。
+
 ## 预测模型接口
 
 ```python

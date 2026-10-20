@@ -20,50 +20,39 @@ python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.gi
 
 For development, run `python -m pip install -e '.[dev]'` in a source checkout. DataFrame exports such as `to_frame()` require optional pandas: `python -m pip install 'pandas>=2'`.
 
-## Forecast, compare and calibrate
+## Choose one task
 
-This example generates its own data and fixes models and comparison lead in advance:
+| Your input and task | Entry point |
+| --- | --- |
+| Fit and forecast models chronologically | `backtest` → `evaluate_forecasts` |
+| Evaluate predictions saved by an existing pipeline | `BacktestResult.from_predictions` → scoring and comparison; **unreleased** |
+| Update intervals when labels mature | One-step `adaptive_intervals` / multi-step `multistep_intervals` |
+
+The [complete simulated workflow](examples/time_series.py) and [API conditions](docs/time-series.md) distinguish fixed-sample comparison, sequential comparison and interval guarantees.
+
+## Import saved predictions · unreleased
+
+Supply the evaluation schedule explicitly. Each model array has shape `folds × horizon`; importing does not refit models, sort observations or remove missing values.
 
 ```python
-import numpy as np
-from strategy_inference import (
-    backtest, evaluate_forecasts, compare_forecasts, adaptive_intervals,
-    sequential_compare_forecasts, naive_forecast, drift_forecast, SeasonalNaive,
-)
+from strategy_inference import BacktestResult, evaluate_forecasts, rolling_splits
 
-rng = np.random.default_rng(17)
-y = np.empty(384)
-y[0] = rng.normal()
-for t in range(1, len(y)):
-    y[t] = 0.6 * y[t - 1] + 0.8 * rng.normal()
-
-models = {
-    "naive": naive_forecast,
-    "seasonal": SeasonalNaive(period=12),
-    "drift": drift_forecast,
-}
-run = backtest(
-    y, models, initial_train_size=120, window=120, horizon=3,
+y = [1, 2, 3, 4, 5, 6, 7, 8]
+splits = rolling_splits(8, initial_train_size=3, window=3, horizon=2, gap=1)
+run = BacktestResult.from_predictions(
+    y, {"naive": [[3, 3], [4, 4], [5, 5]],
+        "linear": [[5, 6], [6, 7], [7, 8]]}, splits=splits,
 )
 scores = evaluate_forecasts(run, loss="squared")
-comparison = compare_forecasts(
-    run, baseline="naive", lead_time=1, loss="squared",
-    n_resamples=1999, seed=17, search_complete=True,
-)
-sequential = sequential_compare_forecasts(run, lead_time=1, loss="absolute")
-# Consecutive one-step forecasts: issue naive's forecast before its feedback.
-intervals = adaptive_intervals(
-    run.actuals[:, 0], run.forecasts[:, 0, 0], alpha=0.1, scale=1.0,
-)
-
-print(run.forecasts.shape)        # (262, 3, 3): origin × lead × model
-print(scores.mean_loss)           # (3, 3): mean loss for each lead and model
-print(comparison.records())       # Improvement over naive, adjusted p values, decisions
-print(sequential.to_dict())       # Continuous comparison snapshot for the fixed family
-print(intervals.coverage)         # Realized average coverage of evaluated one-step forecasts
+print(scores.lead_times)  # (2, 3), not (1, 2)
+print(scores.mean_loss)   # [[4., 0.], [9., 0.]]: lead × model
 ```
 
-A positive `mean_improvement` means lower candidate loss than baseline loss. This example uses squared loss for bootstrap and absolute loss for sequential comparison; their targets and assumptions are described below. It demonstrates the interfaces, without establishing model superiority or coverage validity.
+This interface is not in the v0.11.0 release wheel. Install a source checkout containing it with `python -m pip install -e .`. Validation checks the declared schedule and arrays, not whether an external model actually avoided future information. This small example demonstrates alignment, not inference; see the [saved-prediction guide](docs/external-predictions.md) for the full runnable example, outputs and conditions.
+
+![Saved forecasts: explicit time alignment and errors by physical lead](examples/assets/external-predictions.svg)
+
+The figure uses seeded synthetic data. Two-step mean error decreases, while the adjusted p-value is about 0.283 and does not reach the prespecified 0.05 threshold. Descriptive scores and statistical evidence remain separate; this is not a superiority or calibration claim.
 
 ## Real data
 

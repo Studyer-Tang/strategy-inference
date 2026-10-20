@@ -144,7 +144,7 @@ def _panel(result: BacktestResult):
     from .model_selection import BacktestResult
 
     if not isinstance(result, BacktestResult):
-        raise TypeError("Supply a BacktestResult from backtest().")
+        raise TypeError("Supply a BacktestResult from backtest() or BacktestResult.from_predictions().")
     origins = np.asarray([split.origin for split in result.splits], dtype=np.int64)
     leads = result.target_indices - origins[:, None]
     if not len(origins) or not np.all(leads == leads[0]) or np.any(leads <= 0):
