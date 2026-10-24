@@ -20,50 +20,39 @@ python -m pip install 'git+https://github.com/Studyer-Tang/strategy-inference.gi
 
 开发时，在源码 checkout 中运行 `python -m pip install -e '.[dev]'`。只有 `to_frame()` 等 DataFrame 功能需要可选 pandas，可用 `python -m pip install 'pandas>=2'` 安装。
 
-## 从预测到比较与区间
+## 按任务开始
 
-下面的例子生成模拟序列，预先确定模型和比较步长，不需要下载数据：
+| 你的输入与任务 | 入口 |
+| --- | --- |
+| 已有模型，需要按时间重新拟合与预测 | `backtest` → `evaluate_forecasts` |
+| 已保存模型预测，需要校验时间表后比较 | `BacktestResult.from_predictions` → 评分与比较；**开发版新增** |
+| 为未来预测添加随成熟标签更新的区间 | 单步 `adaptive_intervals` / 多步 `multistep_intervals` |
+
+先从一个任务开始；[完整模拟流程](examples/time_series.py)与[任务条件](docs/time-series.md)分别说明固定样本比较、连续比较和区间的统计目标。
+
+## 导入已有预测 · 开发版
+
+无需在评估器中重新训练模型。明确提供时间切分，各模型数组为 `folds × horizon`，返回保留全部时间索引的只读结果：
 
 ```python
-import numpy as np
-from strategy_inference import (
-    backtest, evaluate_forecasts, compare_forecasts, adaptive_intervals,
-    sequential_compare_forecasts, naive_forecast, drift_forecast, SeasonalNaive,
-)
+from strategy_inference import BacktestResult, evaluate_forecasts, rolling_splits
 
-rng = np.random.default_rng(17)
-y = np.empty(384)
-y[0] = rng.normal()
-for t in range(1, len(y)):
-    y[t] = 0.6 * y[t - 1] + 0.8 * rng.normal()
-
-models = {
-    "naive": naive_forecast,
-    "seasonal": SeasonalNaive(period=12),
-    "drift": drift_forecast,
-}
-run = backtest(
-    y, models, initial_train_size=120, window=120, horizon=3,
+y = [1, 2, 3, 4, 5, 6, 7, 8]
+splits = rolling_splits(8, initial_train_size=3, window=3, horizon=2, gap=1)
+run = BacktestResult.from_predictions(
+    y, {"naive": [[3, 3], [4, 4], [5, 5]],
+        "linear": [[5, 6], [6, 7], [7, 8]]}, splits=splits,
 )
 scores = evaluate_forecasts(run, loss="squared")
-comparison = compare_forecasts(
-    run, baseline="naive", lead_time=1, loss="squared",
-    n_resamples=1999, seed=17, search_complete=True,
-)
-sequential = sequential_compare_forecasts(run, lead_time=1, loss="absolute")
-# 单步、连续 origin：先发出 naive 预测，再用该步真实值更新。
-intervals = adaptive_intervals(
-    run.actuals[:, 0], run.forecasts[:, 0, 0], alpha=0.1, scale=1.0,
-)
-
-print(run.forecasts.shape)        # (262, 3, 3): origin × lead × model
-print(scores.mean_loss)           # (3, 3): 每个 lead、model 的平均损失
-print(comparison.records())       # 相对 naive 的改善、调整 p 值与拒绝决定
-print(sequential.to_dict())       # 固定模型族的连续比较快照
-print(intervals.coverage)         # 已评价单步预测的实际平均覆盖
+print(scores.lead_times)  # (2, 3), not (1, 2)
+print(scores.mean_loss)   # [[4., 0.], [9., 0.]]: lead × model
 ```
 
-`mean_improvement > 0` 表示候选损失低于 baseline。上例的 bootstrap 使用平方损失，连续比较使用绝对损失；两者统计目标和条件见下文。示例演示接口，不建立模型优劣或覆盖保证。
+该接口尚未包含在 v0.11.0 发布包；需从包含此改动的源码 checkout 运行 `python -m pip install -e .`。导入检查声明的时间表与数值，不证明外部模型无信息泄漏。上面的短例子仅说明对齐；可复现的较长例子、实际输出与适用条件见[已有预测指南](docs/external-predictions.md)。
+
+![Saved forecasts: explicit time alignment and errors by physical lead](examples/assets/external-predictions.svg)
+
+图片来自固定种子的模拟示例：两步平均误差下降，但调整 p 值约 0.283，未达 0.05 阈值。描述性结果与统计证据分别保留，不作为模型优越性或校准保证。
 
 ## 真实数据
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -124,6 +124,99 @@ class BacktestResult:
     forecasts: NDArray[np.float64]
     target_indices: NDArray[np.int64]
     actuals: NDArray[np.float64]
+
+    @classmethod
+    def from_predictions(
+        cls,
+        y: ArrayLike,
+        predictions: Mapping[str, ArrayLike],
+        *,
+        splits: Iterable[RollingSplit],
+    ) -> BacktestResult:
+        """Import saved forecasts on an explicitly declared evaluation schedule.
+
+        Each mapping value must have shape ``(folds, horizon)`` in the supplied
+        split order. Model order follows the mapping. All splits must share a
+        positive horizon and the same gap; origins must strictly increase, but
+        need not be equally spaced. Overlapping targets remain separate forecast
+        occasions. Arrays are copied and made read-only; positions use the full
+        finite, equally spaced series ``y`` without sorting or dropping rows.
+
+        Training ranges are retained as declared, not inferred or verified.
+        The caller must ensure each prediction used only information available
+        at its origin; importing predictions cannot establish that provenance.
+        """
+        values = _real_vector(y, "y")
+        if not isinstance(predictions, Mapping) or not predictions:
+            raise ValueError("predictions must be a nonempty mapping of model names to arrays.")
+        models = tuple(predictions.items())
+        if any(not isinstance(name, str) or not name.strip() for name, _ in models):
+            raise ValueError("predictions must use nonempty string model names.")
+        try:
+            declared = tuple(splits)
+        except TypeError as exc:
+            raise ValueError("splits must be a nonempty iterable of RollingSplit objects.") from exc
+        if not declared or any(not isinstance(split, RollingSplit) for split in declared):
+            raise ValueError("splits must be a nonempty iterable of RollingSplit objects.")
+        checked = []
+        fields = ("train_start", "train_stop", "test_start", "test_stop", "origin")
+        for fold, split in enumerate(declared):
+            split = RollingSplit(
+                *(
+                    positive_integer(getattr(split, field), f"splits[{fold}].{field}", 0)
+                    for field in fields
+                )
+            )
+            if not (
+                split.train_start
+                < split.train_stop
+                <= split.test_start
+                < split.test_stop
+                <= len(values)
+            ):
+                raise ValueError(f"splits[{fold}] must declare nonempty, ordered ranges within y.")
+            if split.origin != split.train_stop - 1:
+                raise ValueError(f"splits[{fold}].origin must equal train_stop - 1.")
+            if checked and split.origin <= checked[-1].origin:
+                raise ValueError("splits must have strictly increasing origins.")
+            checked.append(split)
+        splits = tuple(checked)
+        horizon = splits[0].test_stop - splits[0].test_start
+        gap = splits[0].test_start - splits[0].train_stop
+        if any(
+            split.test_stop - split.test_start != horizon
+            or split.test_start - split.train_stop != gap
+            for split in splits
+        ):
+            raise ValueError("All splits must use the same horizon and physical lead times (gap).")
+        shape = (len(splits), horizon)
+        forecasts = np.empty((*shape, len(models)), dtype=np.float64)
+        for model, (name, prediction) in enumerate(models):
+            context = f"Predictions for {name!r}"
+            try:
+                if np.ma.isMaskedArray(prediction) and np.any(np.ma.getmaskarray(prediction)):
+                    raise ValueError
+                raw = np.asarray(prediction)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValueError(
+                    f"{context} must have shape {shape} with real numeric values."
+                ) from exc
+            if raw.shape != shape:
+                raise ValueError(f"{context} must have shape {shape}, in supplied split order.")
+            forecasts[:, :, model] = _real_vector(raw.reshape(-1), context).reshape(shape)
+        starts = np.fromiter((split.test_start for split in splits), dtype=np.int64)
+        target_indices = starts[:, None] + np.arange(horizon, dtype=np.int64)
+        actuals = values[target_indices]
+        for array in (forecasts, target_indices, actuals):
+            array.flags.writeable = False
+        return cls(
+            len(values),
+            tuple(name for name, _ in models),
+            splits,
+            forecasts,
+            target_indices,
+            actuals,
+        )
 
     @property
     def n_obs(self) -> int:

@@ -5,6 +5,6 @@ include CHANGELOG.md
 include CITATION.cff
 recursive-include docs *.md *.bib
 recursive-include experiments *.json
-recursive-include examples *.csv *.json *.py
+recursive-include examples *.csv *.json *.py *.svg
 recursive-include scripts *.py
 recursive-include benchmarks *.py *.json *.md

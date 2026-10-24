@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Import saved model forecasts with `BacktestResult.from_predictions`: validate explicit rolling splits, model arrays and physical leads, retain overlapping forecast occasions, and return detached read-only results without refitting or new dependencies.
+- Distinguish development forecast validation from formal clean-source runs. Record relevant changes and input hashes, reject uncommitted formal inputs, and check source identity again before writing formal evidence.
+- Add a runnable external NumPy prediction example, a descriptive result figure and task-oriented bilingual entry points. The new import API is explicitly marked unreleased; v0.11.0 installation links remain unchanged.
+
 ## 0.11.0
 
 - Extend `Autoregression` with explicit sparse lag tuples, retaining dense defaults and the stable least-squares solver. Add `Differenced` to compose ordinary or seasonal differencing with any forecaster and restore every physical lead to original levels. Share lead validation across all baselines.
